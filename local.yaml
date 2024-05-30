@@ -1,0 +1,14 @@
+env: local
+port: 50051
+temporal:
+  localDev: true # temporary
+  hostPort: 0.0.0.0:7233
+  namespace: default
+postgres:
+  schemaVersion: 2
+  host: 0.0.0.0
+  port: 5432
+  database: postgres
+  user: postgres
+  password: password
+inMemory: true # temporary

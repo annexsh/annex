@@ -1,0 +1,4 @@
+DROP TABLE IF EXISTS tests CASCADE;
+DROP TABLE IF EXISTS test_default_payloads CASCADE;
+DROP TABLE IF EXISTS test_executions CASCADE;
+DROP TABLE IF EXISTS case_executions CASCADE;
