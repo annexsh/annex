@@ -175,10 +175,6 @@ func (e *executor) retry(ctx context.Context, execID test.TestExecutionID) (*tes
 			break
 		}
 
-		if isFailedEvent(event.EventType) {
-			break
-		}
-
 		if isResettableEvent(event.EventType) {
 			resetID = event.EventId
 		}
