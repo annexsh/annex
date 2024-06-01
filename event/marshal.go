@@ -61,9 +61,9 @@ func (e *ExecutionEvent) Proto() *testv1.ExecutionEvent {
 			}
 		}
 	case DataTypeExecutionLog:
-		if e.Data.TestExecution != nil {
-			data.Data = &testv1.ExecutionEvent_Data_TestExecution{
-				TestExecution: e.Data.TestExecution.Proto(),
+		if e.Data.ExecutionLog != nil {
+			data.Data = &testv1.ExecutionEvent_Data_ExecutionLog{
+				ExecutionLog: e.Data.ExecutionLog.Proto(),
 			}
 		}
 	}

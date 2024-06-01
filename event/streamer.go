@@ -42,7 +42,7 @@ func (s *streamer) streamTestExecutionEvents(ctx context.Context, id test.TestEx
 			errs <- fmt.Errorf("failed to get test execution: %w", err)
 		}
 
-		sub, unsub := s.eventSource.Subscribe(ctx, id)
+		sub, unsub := s.eventSource.Subscribe(id)
 		defer unsub()
 
 		h, err := s.newEventHandler(ctx, testExec, out)

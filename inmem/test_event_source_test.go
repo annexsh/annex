@@ -19,65 +19,59 @@ func TestTestExecutionEventSource(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	numEvents := 50
-	numSubs := 100
-	wantTotalReceived := numEvents * numSubs
+	numTestExecs := 4
+	numClients := numTestExecs * 2
+	numEventsPerTestExec := 50
+	wantTotalReceived := numEventsPerTestExec * numClients
 
 	// Use buffer size equal to the number of expected messages so that
 	// no messages are dropped in the test.
-	bufSizeOpt := WithSubscriberBufferSize(numEvents)
+	bufSizeOpt := conc.WithSubscribeBufferSize(numEventsPerTestExec)
 	es := NewTestExecutionEventSource(bufSizeOpt)
-	defer es.Stop()
+	go es.Start(ctx)
 
-	testExecID := test.NewTestExecutionID()
-	subStartWG := new(sync.WaitGroup)
-	subFinWG := new(sync.WaitGroup)
-
-	wantEvents := make([]*event.ExecutionEvent, numEvents)
-	for i := range numEvents {
-		wantEvents[i] = fake.GenExecEvent(testExecID)
+	testExecIDs := make([]test.TestExecutionID, numTestExecs)
+	for i := range numTestExecs {
+		testExecIDs[i] = test.NewTestExecutionID()
 	}
 
-	totalReceived := atomic.NewInt64(0)
+	wantTestExecEvents := map[test.TestExecutionID][]*event.ExecutionEvent{}
 
-	for i := 0; i < numSubs; i++ {
-		subStartWG.Add(1)
-		subFinWG.Add(1)
+	totalReceived := atomic.NewInt64(0)
+	var wg sync.WaitGroup
+
+	for i := range numClients {
+		id := testExecIDs[i%len(testExecIDs)]
+		sub, unsub := es.Subscribe(id)
+
+		wg.Add(1)
 		go func() {
-			defer subFinWG.Done()
-			sub, unsub := es.Subscribe(ctx, testExecID)
+			defer wg.Done()
 			defer unsub()
-			subStartWG.Done()
-			j := 0
+			eventCount := 0
 			for execEvent := range sub {
-				require.Equal(t, wantEvents[j], execEvent)
-				j++
+				require.Equal(t, wantTestExecEvents[id][eventCount], execEvent)
+				eventCount++
 			}
-			totalReceived.Add(int64(j))
+			totalReceived.Add(int64(eventCount))
 		}()
 	}
 
-	subStartWG.Wait()
-
-	require.Len(t, es.testExecBrokers, 1)
-	require.Contains(t, es.testExecBrokers, testExecID)
-	broker, _ := es.testExecBrokers[testExecID]
-	waitSubCount(t, broker, numSubs)
-
-	for _, want := range wantEvents {
-		es.Publish(want)
+	for _, id := range testExecIDs {
+		for range numEventsPerTestExec {
+			nextEvent := fake.GenExecEvent(id)
+			wantEvents, ok := wantTestExecEvents[id]
+			if !ok {
+				wantTestExecEvents[id] = []*event.ExecutionEvent{nextEvent}
+			}
+			wantEvents = append(wantEvents, nextEvent)
+			wantTestExecEvents[id] = wantEvents
+			es.Publish(nextEvent)
+		}
 	}
 
 	es.Stop()
-	subFinWG.Wait()
+	wg.Wait()
 
-	waitSubCount(t, broker, 0)
-	require.Len(t, es.testExecBrokers, 0)
 	require.Equal(t, int64(wantTotalReceived), totalReceived.Load())
-}
-
-func waitSubCount[T any](t *testing.T, b *conc.Broker[T], count int) {
-	require.Eventually(t, func() bool {
-		return b.SubscriberCount() == int64(count)
-	}, 300*time.Millisecond, 2*time.Millisecond)
 }

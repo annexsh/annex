@@ -5,6 +5,7 @@ import (
 
 	eventservicev1 "github.com/annexhq/annex-proto/gen/go/rpc/eventservice/v1"
 
+	"github.com/annexhq/annex/internal/conc"
 	"github.com/annexhq/annex/log"
 	"github.com/annexhq/annex/test"
 )
@@ -12,7 +13,7 @@ import (
 var _ eventservicev1.EventServiceServer = (*Service)(nil)
 
 type EventSource interface {
-	Subscribe(ctx context.Context, testExecID test.TestExecutionID) (sub <-chan *ExecutionEvent, unsub func())
+	Subscribe(testExecID test.TestExecutionID) (sub <-chan *ExecutionEvent, unsub conc.Unsubscribe)
 }
 
 type ExecutionReader interface {
