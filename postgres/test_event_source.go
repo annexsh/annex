@@ -26,13 +26,13 @@ const (
 )
 
 type TestExecutionEventSource struct {
-	children *conc.Map[*conc.Broker[*event.ExecutionEvent]]
-	pgConn   *pgx.Conn
-	stopCh   chan struct{}
-	pgCloser func()
+	broker      *conc.Broker[*event.ExecutionEvent]
+	pgConn      *pgx.Conn
+	connRelease func()
+	ctxCancel   context.CancelFunc
 }
 
-func NewTestExecutionEventSource(ctx context.Context, pgPool *pgxpool.Pool) (*TestExecutionEventSource, error) {
+func NewTestExecutionEventSource(ctx context.Context, pgPool *pgxpool.Pool, opts ...conc.BrokerOption) (*TestExecutionEventSource, error) {
 	conn, err := pgPool.Acquire(ctx)
 	if err != nil {
 		return nil, err
@@ -44,145 +44,119 @@ func NewTestExecutionEventSource(ctx context.Context, pgPool *pgxpool.Pool) (*Te
 	}
 
 	return &TestExecutionEventSource{
-		children: conc.NewMap[*conc.Broker[*event.ExecutionEvent]](),
-		pgConn:   pgConn,
-		stopCh:   make(chan struct{}),
-		pgCloser: conn.Release,
+		broker:      conc.NewBroker[*event.ExecutionEvent](opts...),
+		pgConn:      pgConn,
+		connRelease: conn.Release,
 	}, nil
 }
 
 func (t *TestExecutionEventSource) Start(ctx context.Context) <-chan error {
-	fn := func() error {
-		for {
-			select {
-			case <-t.stopCh:
-				return nil
-			default:
-			}
-
-			notif, err := t.pgConn.WaitForNotification(ctx)
-			if errors.Is(err, context.Canceled) {
-				return nil
-			} else if err != nil {
-				return err
-			}
-
-			var tableMsg tableMessage
-
-			if err = json.Unmarshal([]byte(notif.Payload), &tableMsg); err != nil {
-				return err
-			}
-
-			execEvent := &event.ExecutionEvent{
-				ID:         uuid.New(),
-				CreateTime: time.Now().UTC(),
-			}
-
-			switch tableMsg.Table {
-			case testExecsTableName:
-				if tableMsg.Action != "UPDATE" {
-					continue
-				}
-				var msg eventMessage[*sqlc.TestExecution]
-				if err = json.Unmarshal([]byte(notif.Payload), &msg); err != nil {
-					return err
-				}
-				if !msg.Data.FinishedAt.Valid {
-					continue
-				}
-
-				execEvent.TestExecID = msg.Data.ID
-				execEvent.Data.Type = event.DataTypeTestExecution
-				execEvent.Data.TestExecution = marshalTestExec(msg.Data)
-				execEvent.Type = event.TypeTestExecutionFinished
-			case caseExecsTableName:
-				var msg eventMessage[*sqlc.CaseExecution]
-				if err = json.Unmarshal([]byte(notif.Payload), &msg); err != nil {
-					return err
-				}
-
-				execEvent.TestExecID = msg.Data.TestExecID
-				execEvent.Data.Type = event.DataTypeCaseExecution
-				execEvent.Data.CaseExecution = marshalCaseExec(msg.Data)
-
-				switch tableMsg.Action {
-				case "INSERT":
-					execEvent.Type = event.TypeCaseExecutionScheduled
-				case "UPDATE":
-					if !msg.Data.StartedAt.Valid && !msg.Data.FinishedAt.Valid {
-						continue
-					}
-					execEvent.Type = event.TypeCaseExecutionStarted
-					if msg.Data.FinishedAt.Valid {
-						execEvent.Type = event.TypeCaseExecutionFinished
-					}
-				}
-			case logsTableName:
-				var msg eventMessage[*sqlc.Log]
-				if err = json.Unmarshal([]byte(notif.Payload), &msg); err != nil {
-					return err
-				}
-				if tableMsg.Action != "INSERT" {
-					continue
-				}
-				execEvent.TestExecID = msg.Data.TestExecID
-				execEvent.Data.Type = event.DataTypeExecutionLog
-				execEvent.Data.ExecutionLog = marshalExecLog(msg.Data)
-				execEvent.Type = event.TypeExecutionLogPublished
-			default:
-				continue
-			}
-
-			key := execEvent.TestExecID
-			if b, ok := t.children.Load(key); ok {
-				b.Publish(execEvent)
-			}
-		}
-	}
-
 	errCh := make(chan error, 1)
 	go func() {
-		if err := fn(); err != nil {
-			errCh <- err
+		defer close(errCh)
+		ctx, cancel := context.WithCancel(ctx)
+		t.ctxCancel = cancel
+		t.broker.Start(ctx)
+
+		for {
+			if err := t.handleNextEvent(ctx); err != nil {
+				if errors.Is(err, context.Canceled) {
+					return
+				}
+				errCh <- err
+			}
 		}
-		close(errCh)
 	}()
 
 	return errCh
 }
 
-func (t *TestExecutionEventSource) Subscribe(ctx context.Context, testExecID test.TestExecutionID) (sub <-chan *event.ExecutionEvent, unsub func()) {
-	key := testExecID
-
-	childBroker, ok := t.children.Load(key)
-	if !ok {
-		childBroker = conc.NewBroker[*event.ExecutionEvent]()
-		go childBroker.Start(ctx)
-		t.children.Set(key, childBroker)
-	}
-
-	events := childBroker.Subscribe()
-
-	finishFn := func() {
-		childBroker.Unsubscribe(events)
-		if childBroker.SubscriberCount() == 0 {
-			t.children.Delete(key)
-			childBroker.Stop()
-		}
-	}
-
-	return events, finishFn
+func (t *TestExecutionEventSource) Subscribe(testExecID test.TestExecutionID) (<-chan *event.ExecutionEvent, conc.Unsubscribe) {
+	return t.broker.Subscribe(testExecID)
 }
 
-// Stop waits for the active event handler to finish before instructing the
-// broker to stop listening for future events and stop all subscriptions.
 func (t *TestExecutionEventSource) Stop() {
-	close(t.stopCh)
-	t.children.Range(func(_ any, broker *conc.Broker[*event.ExecutionEvent]) bool {
-		broker.Stop()
-		return true
-	})
-	t.pgCloser()
+	if t.ctxCancel != nil {
+		t.ctxCancel()
+	}
+	t.broker.Stop()
+	t.connRelease()
+}
+
+func (t *TestExecutionEventSource) handleNextEvent(ctx context.Context) error {
+	notif, err := t.pgConn.WaitForNotification(ctx)
+	if err != nil {
+		return err
+	}
+
+	var tableMsg tableMessage
+
+	if err = json.Unmarshal([]byte(notif.Payload), &tableMsg); err != nil {
+		return err
+	}
+
+	execEvent := &event.ExecutionEvent{
+		ID:         uuid.New(),
+		CreateTime: time.Now().UTC(),
+	}
+
+	switch tableMsg.Table {
+	case testExecsTableName:
+		if tableMsg.Action != "UPDATE" {
+			return nil
+		}
+		var msg eventMessage[*sqlc.TestExecution]
+		if err = json.Unmarshal([]byte(notif.Payload), &msg); err != nil {
+			return err
+		}
+		if !msg.Data.FinishedAt.Valid {
+			return nil
+		}
+
+		execEvent.TestExecID = msg.Data.ID
+		execEvent.Data.Type = event.DataTypeTestExecution
+		execEvent.Data.TestExecution = marshalTestExec(msg.Data)
+		execEvent.Type = event.TypeTestExecutionFinished
+	case caseExecsTableName:
+		var msg eventMessage[*sqlc.CaseExecution]
+		if err = json.Unmarshal([]byte(notif.Payload), &msg); err != nil {
+			return err
+		}
+
+		execEvent.TestExecID = msg.Data.TestExecID
+		execEvent.Data.Type = event.DataTypeCaseExecution
+		execEvent.Data.CaseExecution = marshalCaseExec(msg.Data)
+
+		switch tableMsg.Action {
+		case "INSERT":
+			execEvent.Type = event.TypeCaseExecutionScheduled
+		case "UPDATE":
+			if !msg.Data.StartedAt.Valid && !msg.Data.FinishedAt.Valid {
+				return nil
+			}
+			execEvent.Type = event.TypeCaseExecutionStarted
+			if msg.Data.FinishedAt.Valid {
+				execEvent.Type = event.TypeCaseExecutionFinished
+			}
+		}
+	case logsTableName:
+		var msg eventMessage[*sqlc.Log]
+		if err = json.Unmarshal([]byte(notif.Payload), &msg); err != nil {
+			return err
+		}
+		if tableMsg.Action != "INSERT" {
+			return nil
+		}
+		execEvent.TestExecID = msg.Data.TestExecID
+		execEvent.Data.Type = event.DataTypeExecutionLog
+		execEvent.Data.ExecutionLog = marshalExecLog(msg.Data)
+		execEvent.Type = event.TypeExecutionLogPublished
+	default:
+		return nil
+	}
+
+	t.broker.Publish(execEvent.TestExecID, execEvent)
+	return nil
 }
 
 type tableMessage struct {

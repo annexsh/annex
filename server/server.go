@@ -45,7 +45,7 @@ func Start(ctx context.Context, cfg Config, opts ...Option) error {
 	var err error
 
 	if cfg.InMemory {
-		deps = setupInMemoryDeps()
+		deps = setupInMemoryDeps(ctx)
 	} else {
 		if deps, err = setupPostgresDeps(ctx, cfg.Postgres.URL(), cfg.Postgres.SchemaVersion); err != nil {
 			return err

@@ -15,48 +15,40 @@ func TestBroker(t *testing.T) {
 	defer cancel()
 
 	numClients := 100
-	numMsgs := 1000
-	wantCount := numClients * numMsgs
-	gotCount := new(atomic.Int64)
+	numMsgsPerTopic := 1000
+	wantMsgsRecvd := numClients * numMsgsPerTopic // 100,000
+	gotNumMsgsRecvd := new(atomic.Int64)
+	topics := []string{"foo", "bar", "baz", "qux"}
 
 	// Use buffer size equal to the number of expected messages so that
 	// no messages are dropped in the test.
-	b := NewBroker[struct{}](WithSubscriberBufferSize(wantCount + 1))
+	b := NewBroker[struct{}](WithSubscribeBufferSize(wantMsgsRecvd))
 	go b.Start(ctx)
 
 	var wg sync.WaitGroup
 
-	var subs []chan struct{}
-	for i := 0; i < numClients; i++ {
-		subs = append(subs, b.Subscribe())
-	}
+	for i := range numClients {
+		topic := topics[i%len(topics)]
+		sub, unsub := b.Subscribe(topic)
 
-	for _, sub := range subs {
 		wg.Add(1)
-		go func(sub chan struct{}) {
+		go func() {
 			defer wg.Done()
+			defer unsub()
 			for range sub {
-				gotCount.Add(1)
+				gotNumMsgsRecvd.Add(1)
 			}
-		}(sub)
+		}()
 	}
 
-	waitSubCount(t, b, numClients)
-
-	for i := 0; i < numMsgs; i++ {
-		b.Publish(struct{}{})
+	for range numMsgsPerTopic {
+		for _, topic := range topics {
+			b.Publish(topic, struct{}{})
+		}
 	}
 
 	b.Stop()
 	wg.Wait()
 
-	waitSubCount(t, b, 0)
-
-	require.Equal(t, int64(wantCount), gotCount.Load())
-}
-
-func waitSubCount[T any](t *testing.T, b *Broker[T], count int) {
-	require.Eventually(t, func() bool {
-		return b.SubscriberCount() == int64(count)
-	}, 200*time.Millisecond, 2*time.Millisecond)
+	require.Equal(t, int64(wantMsgsRecvd), gotNumMsgsRecvd.Load())
 }

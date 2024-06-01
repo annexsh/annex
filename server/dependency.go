@@ -55,7 +55,7 @@ func setupPostgresDeps(ctx context.Context, url string, schemaVersion uint) (*de
 }
 
 // Temporary option during initial development phase
-func setupInMemoryDeps() *dependencies {
+func setupInMemoryDeps(ctx context.Context) *dependencies {
 	deps := &dependencies{
 		errs: make(chan error), // will never be published to
 	}
@@ -63,8 +63,8 @@ func setupInMemoryDeps() *dependencies {
 	db := inmem.NewDB()
 	deps.repo = inmem.NewTestRepository(db)
 	eventSrc := db.TestExecutionEventSource()
+	eventSrc.Start(ctx)
 	deps.eventSrc = eventSrc
-
 	deps.close = eventSrc.Stop
 
 	return deps
