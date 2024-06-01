@@ -98,6 +98,11 @@ func (t *TestWriter) CreateTests(_ context.Context, definitions ...*test.TestDef
 }
 
 func (t *TestWriter) createTestUnsafe(definition *test.TestDefinition) *test.Test {
+	for _, tt := range t.db.tests {
+		if tt.Project == definition.Project && tt.Name == definition.Name {
+			definition.TestID = tt.ID
+		}
+	}
 	tt := &test.Test{
 		ID:         definition.TestID,
 		Project:    definition.Project,

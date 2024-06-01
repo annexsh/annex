@@ -30,11 +30,11 @@ func (s *ProxyService) PollWorkflowTaskQueue(ctx context.Context, req *workflows
 		return nil, err
 	}
 
-	if res.Attempt == 1 && tkn.ScheduledEventId == 2 && tkn.StartedEventId == 3 {
-		if res.History != nil && len(res.History.Events) > 3 {
+	if tkn.ScheduledEventId == 2 && tkn.StartedEventId == 3 {
+		if res.History != nil && len(res.History.Events) >= 3 {
 			if res.History.Events[0].GetWorkflowExecutionStartedEventAttributes() != nil &&
 				res.History.Events[1].GetWorkflowTaskScheduledEventAttributes() != nil &&
-				res.History.Events[2].GetWorkflowExecutionStartedEventAttributes() != nil {
+				res.History.Events[2].GetWorkflowTaskStartedEventAttributes() != nil {
 				testExecID, err := test.ParseTestWorkflowID(res.WorkflowExecution.WorkflowId)
 				if err == nil {
 					if _, err = s.test.AckTestExecutionStarted(ctx, &testservicev1.AckTestExecutionStartedRequest{
@@ -110,8 +110,8 @@ func (s *ProxyService) RespondWorkflowTaskCompleted(ctx context.Context, req *wo
 			}
 
 			var testExecError *string
-			if attrs.Failure != nil && attrs.Failure.Cause != nil {
-				testExecError = &attrs.Failure.Cause.Message
+			if attrs.Failure != nil {
+				testExecError = &attrs.Failure.Message
 			}
 
 			if _, err = s.test.AckTestExecutionFinished(ctx, &testservicev1.AckTestExecutionFinishedRequest{
