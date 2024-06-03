@@ -1,4 +1,4 @@
-package workflow
+package workflowservice
 
 import (
 	testservicev1 "github.com/annexhq/annex-proto/gen/go/rpc/testservice/v1"
