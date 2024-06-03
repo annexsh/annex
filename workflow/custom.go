@@ -25,28 +25,43 @@ func (s *ProxyService) PollWorkflowTaskQueue(ctx context.Context, req *workflows
 		return res, nil
 	}
 
-	tkn, err := common.NewProtoTaskTokenSerializer().Deserialize(res.TaskToken)
-	if err != nil {
-		return nil, err
+	// Set test execution start time if the polled event is for a started or reset
+	// workflow execution.
+	//
+	// Test workflow execution has 3 events on start:
+	// 1. One of:
+	//    - EVENT_TYPE_WORKFLOW_EXECUTION_STARTED - client triggered workflow
+	//    - EVENT_TYPE_WORKFLOW_EXECUTION_FAILED (reset cause) - client reset workflow
+	// 2. EVENT_TYPE_WORKFLOW_TASK_SCHEDULED - workflow put on task queue
+	// 3. EVENT_TYPE_WORKFLOW_TASK_STARTED - worker started running workflow
+
+	events := res.History.Events
+	startedID := res.StartedEventId
+
+	if startedID < 3 || len(events) < int(startedID) { // safeguard
+		return res, nil
 	}
 
-	if tkn.ScheduledEventId == 2 && tkn.StartedEventId == 3 {
-		if res.History != nil && len(res.History.Events) >= 3 {
-			if res.History.Events[0].GetWorkflowExecutionStartedEventAttributes() != nil &&
-				res.History.Events[1].GetWorkflowTaskScheduledEventAttributes() != nil &&
-				res.History.Events[2].GetWorkflowTaskStartedEventAttributes() != nil {
-				testExecID, err := test.ParseTestWorkflowID(res.WorkflowExecution.WorkflowId)
-				if err == nil {
-					if _, err = s.test.AckTestExecutionStarted(ctx, &testservicev1.AckTestExecutionStartedRequest{
-						TestExecId: testExecID.String(),
-						StartedAt:  res.StartedTime,
-					}); err != nil {
-						return nil, err
-					}
-				} else if !errors.Is(err, test.ErrorNotTestExecution) {
+	startedEvent := events[startedID-1]
+	schedEvent := events[startedID-2]
+	initEvent := events[startedID-3]
+
+	if startedEvent.GetWorkflowTaskStartedEventAttributes() != nil &&
+		schedEvent.GetWorkflowTaskScheduledEventAttributes() != nil {
+		isWorkflowExecStarted := initEvent.GetWorkflowExecutionStartedEventAttributes() != nil
+		failedEventAttrs := initEvent.GetWorkflowTaskFailedEventAttributes()
+		isWorkflowExecReset := failedEventAttrs != nil && failedEventAttrs.Cause == enums.WORKFLOW_TASK_FAILED_CAUSE_RESET_WORKFLOW
+		if isWorkflowExecStarted || isWorkflowExecReset {
+			testExecID, err := test.ParseTestWorkflowID(res.WorkflowExecution.WorkflowId)
+			if err == nil {
+				if _, err = s.test.AckTestExecutionStarted(ctx, &testservicev1.AckTestExecutionStartedRequest{
+					TestExecId: testExecID.String(),
+					StartedAt:  res.StartedTime,
+				}); err != nil {
 					return nil, err
 				}
-
+			} else if !errors.Is(err, test.ErrorNotTestExecution) {
+				return nil, err
 			}
 		}
 	}
