@@ -20,7 +20,6 @@ type fakeDeps struct {
 func newService() (*Service, *fakeDeps) {
 	repo := inmem.NewTestRepository(inmem.NewDB())
 	workflower := fake.NewWorkflower()
-	defer workflower.Cleanup()
 	return New(repo, workflower), &fakeDeps{
 		repo:       repo,
 		workflower: workflower,

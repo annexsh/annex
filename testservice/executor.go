@@ -61,8 +61,24 @@ func (e *executor) execute(ctx context.Context, testID uuid.UUID, opts ...execut
 	execID := test.NewTestExecutionID()
 	workflowID := execID.WorkflowID()
 
-	var payloadData []byte = nil
-	var wr client.WorkflowRun
+	scheduled := &test.ScheduledTestExecution{
+		ID:           execID,
+		TestID:       t.ID,
+		Payload:      nil, // TODO: payload metadata isn't saved: double check if it is needed
+		ScheduleTime: time.Now(),
+	}
+	if options.payload != nil {
+		if options.payload.Metadata == nil {
+			return nil, errors.New("payload metadata cannot be nil")
+		}
+		scheduled.Payload = options.payload.Data
+	}
+
+	testExec, err := e.repo.CreateScheduledTestExecution(ctx, scheduled)
+	if err != nil {
+		return nil, err
+	}
+
 	wfOpts := client.StartWorkflowOptions{
 		ID:                       workflowID,
 		TaskQueue:                t.Project,
@@ -70,40 +86,13 @@ func (e *executor) execute(ctx context.Context, testID uuid.UUID, opts ...execut
 	}
 
 	if options.payload == nil {
-		wr, err = e.temporal.ExecuteWorkflow(ctx, wfOpts, t.Name)
-		if err != nil {
+		if _, err = e.temporal.ExecuteWorkflow(ctx, wfOpts, t.Name); err != nil {
 			return nil, err
 		}
 	} else {
-		if options.payload.Metadata == nil {
-			return nil, errors.New("payload metadata cannot be nil")
-		}
-		payloadData = options.payload.Data
-		wr, err = e.temporal.ExecuteWorkflow(ctx, wfOpts, t.Name, options.payload)
-		if err != nil {
+		if _, err = e.temporal.ExecuteWorkflow(ctx, wfOpts, t.Name, options.payload); err != nil {
 			return nil, err
 		}
-	}
-
-	scheduled := &test.ScheduledTestExecution{
-		ID:           execID,
-		TestID:       t.ID,
-		Payload:      payloadData, // TODO: payload metadata isn't saved: double check if it is needed
-		ScheduleTime: time.Now(),
-	}
-
-	testExec, err := e.repo.CreateScheduledTestExecution(ctx, scheduled)
-	if err != nil {
-		if cancelErr := e.temporal.CancelWorkflow(ctx, workflowID, wr.GetRunID()); cancelErr != nil {
-			return nil, errors.Join(err, cancelErr)
-		}
-		return nil, err
-	}
-
-	signal := testv1.TestSignal_TEST_SIGNAL_START_TEST.String()
-	err = e.temporal.SignalWorkflow(ctx, wr.GetID(), wr.GetRunID(), signal, nil)
-	if err != nil {
-		return nil, err // TODO: rollback created record on error
 	}
 
 	return testExec, nil

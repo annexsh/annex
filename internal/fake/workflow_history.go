@@ -3,7 +3,6 @@ package fake
 import (
 	"time"
 
-	testv1 "github.com/annexhq/annex-proto/gen/go/type/test/v1"
 	"github.com/google/uuid"
 	"go.temporal.io/api/common/v1"
 	"go.temporal.io/api/enums/v1"
@@ -113,26 +112,6 @@ func GenCaseFailureHistory(
 			},
 			{
 				EventId:   3,
-				EventTime: parseTime("2024-05-28T10:04:10.569149Z"),
-				EventType: enums.EVENT_TYPE_WORKFLOW_EXECUTION_SIGNALED,
-				TaskId:    1048612,
-				Attributes: &history.HistoryEvent_WorkflowExecutionSignaledEventAttributes{
-					WorkflowExecutionSignaledEventAttributes: &history.WorkflowExecutionSignaledEventAttributes{
-						SignalName: testv1.TestSignal_TEST_SIGNAL_START_TEST.String(),
-						Input: &common.Payloads{
-							Payloads: []*common.Payload{
-								{
-									Metadata: map[string][]byte{"encoding": []byte("YmluYXJ5L251bGw=")},
-								},
-							},
-						},
-						Identity: "hidden",
-						Header:   &common.Header{},
-					},
-				},
-			},
-			{
-				EventId:   4,
 				EventTime: parseTime("2024-05-28T10:04:10.579381Z"),
 				EventType: enums.EVENT_TYPE_WORKFLOW_TASK_STARTED,
 				TaskId:    1048614,
@@ -146,14 +125,14 @@ func GenCaseFailureHistory(
 				},
 			},
 			{
-				EventId:   5,
+				EventId:   4,
 				EventTime: parseTime("2024-05-28T10:04:10.596592Z"),
 				EventType: enums.EVENT_TYPE_WORKFLOW_TASK_COMPLETED,
 				TaskId:    1048618,
 				Attributes: &history.HistoryEvent_WorkflowTaskCompletedEventAttributes{
 					WorkflowTaskCompletedEventAttributes: &history.WorkflowTaskCompletedEventAttributes{
 						ScheduledEventId: 2,
-						StartedEventId:   4,
+						StartedEventId:   3,
 						Identity:         "hidden",
 						WorkerVersion: &common.WorkerVersionStamp{
 							BuildId: "81194cb0e5cc14ffb23da13a22ce4152",
@@ -164,20 +143,7 @@ func GenCaseFailureHistory(
 				},
 			},
 			{
-				EventId:   6,
-				EventTime: parseTime("2024-05-28T10:04:10.596617Z"),
-				EventType: enums.EVENT_TYPE_TIMER_STARTED,
-				TaskId:    1048619,
-				Attributes: &history.HistoryEvent_TimerStartedEventAttributes{
-					TimerStartedEventAttributes: &history.TimerStartedEventAttributes{
-						TimerId:                      "6",
-						StartToFireTimeout:           durationpb.New(30 * time.Second),
-						WorkflowTaskCompletedEventId: 5,
-					},
-				},
-			},
-			{
-				EventId:   7,
+				EventId:   5,
 				EventTime: parseTime("2024-05-28T10:04:10.596623Z"),
 				EventType: enums.EVENT_TYPE_MARKER_RECORDED,
 				TaskId:    1048620,
@@ -199,12 +165,12 @@ func GenCaseFailureHistory(
 								},
 							},
 						},
-						WorkflowTaskCompletedEventId: 5,
+						WorkflowTaskCompletedEventId: 4,
 					},
 				},
 			},
 			{
-				EventId:   8,
+				EventId:   6,
 				EventTime: parseTime("2024-05-28T10:04:10.596632Z"),
 				EventType: enums.EVENT_TYPE_ACTIVITY_TASK_SCHEDULED,
 				TaskId:    1048621,
@@ -223,7 +189,7 @@ func GenCaseFailureHistory(
 						ScheduleToStartTimeout:       durationpb.New(60 * time.Second),
 						StartToCloseTimeout:          durationpb.New(60 * time.Second),
 						HeartbeatTimeout:             durationpb.New(0),
-						WorkflowTaskCompletedEventId: 5,
+						WorkflowTaskCompletedEventId: 4,
 						RetryPolicy: &common.RetryPolicy{
 							InitialInterval:    durationpb.New(time.Second),
 							BackoffCoefficient: 2,
@@ -235,13 +201,13 @@ func GenCaseFailureHistory(
 				},
 			},
 			{
-				EventId:   9,
+				EventId:   7,
 				EventTime: parseTime("2024-05-28T10:04:10.603343Z"),
 				EventType: enums.EVENT_TYPE_ACTIVITY_TASK_STARTED,
 				TaskId:    1048629,
 				Attributes: &history.HistoryEvent_ActivityTaskStartedEventAttributes{
 					ActivityTaskStartedEventAttributes: &history.ActivityTaskStartedEventAttributes{
-						ScheduledEventId: 8,
+						ScheduledEventId: 6,
 						Identity:         "hidden",
 						RequestId:        "a7f20551-57c4-49e5-92f5-9f11c87a836b",
 						Attempt:          1,
@@ -249,7 +215,7 @@ func GenCaseFailureHistory(
 				},
 			},
 			{
-				EventId:   10,
+				EventId:   8,
 				EventTime: parseTime("2024-05-28T10:04:11.649503Z"),
 				EventType: enums.EVENT_TYPE_ACTIVITY_TASK_COMPLETED,
 				TaskId:    1048630,
@@ -263,14 +229,14 @@ func GenCaseFailureHistory(
 								},
 							},
 						},
-						ScheduledEventId: 8,
-						StartedEventId:   9,
+						ScheduledEventId: 6,
+						StartedEventId:   7,
 						Identity:         "hidden",
 					},
 				},
 			},
 			{
-				EventId:   11,
+				EventId:   9,
 				EventTime: parseTime("2024-05-28T10:04:11.649515Z"),
 				EventType: enums.EVENT_TYPE_WORKFLOW_TASK_SCHEDULED,
 				TaskId:    1048631,
@@ -287,13 +253,13 @@ func GenCaseFailureHistory(
 				},
 			},
 			{
-				EventId:   12,
+				EventId:   10,
 				EventTime: parseTime("2024-05-28T10:04:11.662908Z"),
 				EventType: enums.EVENT_TYPE_WORKFLOW_TASK_STARTED,
 				TaskId:    1048635,
 				Attributes: &history.HistoryEvent_WorkflowTaskStartedEventAttributes{
 					WorkflowTaskStartedEventAttributes: &history.WorkflowTaskStartedEventAttributes{
-						ScheduledEventId: 11,
+						ScheduledEventId: 9,
 						Identity:         "hidden",
 						RequestId:        "1b374228-7af8-451e-9797-b59b8af00313",
 						HistorySizeBytes: 1466,
@@ -301,14 +267,14 @@ func GenCaseFailureHistory(
 				},
 			},
 			{
-				EventId:   13,
+				EventId:   11,
 				EventTime: parseTime("2024-05-28T10:04:11.666495Z"),
 				EventType: enums.EVENT_TYPE_WORKFLOW_TASK_COMPLETED,
 				TaskId:    1048639,
 				Attributes: &history.HistoryEvent_WorkflowTaskCompletedEventAttributes{
 					WorkflowTaskCompletedEventAttributes: &history.WorkflowTaskCompletedEventAttributes{
-						ScheduledEventId: 11,
-						StartedEventId:   12,
+						ScheduledEventId: 9,
+						StartedEventId:   10,
 						Identity:         "hidden",
 						WorkerVersion: &common.WorkerVersionStamp{
 							BuildId: "81194cb0e5cc14ffb23da13a22ce4152",
@@ -338,7 +304,7 @@ func GenCaseFailureHistory(
 						ScheduleToStartTimeout:       durationpb.New(60 * time.Second),
 						StartToCloseTimeout:          durationpb.New(60 * time.Second),
 						HeartbeatTimeout:             durationpb.New(0),
-						WorkflowTaskCompletedEventId: 13,
+						WorkflowTaskCompletedEventId: 11,
 						RetryPolicy: &common.RetryPolicy{
 							InitialInterval:    durationpb.New(time.Second),
 							BackoffCoefficient: 2,
@@ -350,13 +316,13 @@ func GenCaseFailureHistory(
 				},
 			},
 			{
-				EventId:   15,
+				EventId:   13,
 				EventTime: parseTime("2024-05-28T10:04:11.670613Z"),
 				EventType: enums.EVENT_TYPE_ACTIVITY_TASK_STARTED,
 				TaskId:    1048646,
 				Attributes: &history.HistoryEvent_ActivityTaskStartedEventAttributes{
 					ActivityTaskStartedEventAttributes: &history.ActivityTaskStartedEventAttributes{
-						ScheduledEventId: 14,
+						ScheduledEventId: 12,
 						Identity:         "hidden",
 						RequestId:        "bee10f15-2991-47f5-82c4-2be605848abd",
 						Attempt:          1,
@@ -364,7 +330,7 @@ func GenCaseFailureHistory(
 				},
 			},
 			{
-				EventId:   16,
+				EventId:   14,
 				EventTime: parseTime("2024-05-28T10:04:12.679629Z"),
 				EventType: enums.EVENT_TYPE_ACTIVITY_TASK_FAILED,
 				TaskId:    1048647,
@@ -386,15 +352,15 @@ func GenCaseFailureHistory(
 								},
 							},
 						},
-						ScheduledEventId: 14,
-						StartedEventId:   15,
+						ScheduledEventId: 12,
+						StartedEventId:   13,
 						Identity:         "hidden",
 						RetryState:       enums.RETRY_STATE_MAXIMUM_ATTEMPTS_REACHED,
 					},
 				},
 			},
 			{
-				EventId:   17,
+				EventId:   15,
 				EventTime: parseTime("2024-05-28T10:04:12.679638Z"),
 				EventType: enums.EVENT_TYPE_WORKFLOW_TASK_SCHEDULED,
 				TaskId:    1048648,
@@ -411,13 +377,13 @@ func GenCaseFailureHistory(
 				},
 			},
 			{
-				EventId:   18,
+				EventId:   16,
 				EventTime: parseTime("2024-05-28T10:04:12.692857Z"),
 				EventType: enums.EVENT_TYPE_WORKFLOW_TASK_STARTED,
 				TaskId:    1048652,
 				Attributes: &history.HistoryEvent_WorkflowTaskStartedEventAttributes{
 					WorkflowTaskStartedEventAttributes: &history.WorkflowTaskStartedEventAttributes{
-						ScheduledEventId: 17,
+						ScheduledEventId: 15,
 						Identity:         "hidden",
 						RequestId:        "4e6645eb-08bd-4379-99f3-db2e15fff8d4",
 						HistorySizeBytes: 2153,
@@ -425,14 +391,14 @@ func GenCaseFailureHistory(
 				},
 			},
 			{
-				EventId:   19,
+				EventId:   17,
 				EventTime: parseTime("2024-05-28T10:04:12.698410Z"),
 				EventType: enums.EVENT_TYPE_WORKFLOW_TASK_COMPLETED,
 				TaskId:    1048656,
 				Attributes: &history.HistoryEvent_WorkflowTaskCompletedEventAttributes{
 					WorkflowTaskCompletedEventAttributes: &history.WorkflowTaskCompletedEventAttributes{
-						ScheduledEventId: 17,
-						StartedEventId:   18,
+						ScheduledEventId: 15,
+						StartedEventId:   16,
 						Identity:         "hidden",
 						WorkerVersion: &common.WorkerVersionStamp{
 							BuildId: "81194cb0e5cc14ffb23da13a22ce4152",
@@ -443,7 +409,7 @@ func GenCaseFailureHistory(
 				},
 			},
 			{
-				EventId:   20,
+				EventId:   18,
 				EventTime: parseTime("2024-05-28T10:04:12.698499Z"),
 				EventType: enums.EVENT_TYPE_WORKFLOW_EXECUTION_FAILED,
 				TaskId:    1048657,
@@ -457,7 +423,7 @@ func GenCaseFailureHistory(
 							},
 						},
 						RetryState:                   enums.RETRY_STATE_RETRY_POLICY_NOT_SET,
-						WorkflowTaskCompletedEventId: 19,
+						WorkflowTaskCompletedEventId: 17,
 					},
 				},
 			},

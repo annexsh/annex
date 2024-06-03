@@ -5,9 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
-	"time"
 
-	testv1 "github.com/annexhq/annex-proto/gen/go/type/test/v1"
 	"github.com/google/uuid"
 	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/api/history/v1"
@@ -15,10 +13,7 @@ import (
 	"go.temporal.io/sdk/client"
 )
 
-const (
-	WorkflowName               = "FakeWorkflow"
-	defaultFakeWorkflowTimeout = 10 * time.Second
-)
+const WorkflowName = "FakeWorkflow"
 
 type WorkflowerOption func(w *Workflower)
 
@@ -49,13 +44,7 @@ func NewWorkflower(opts ...WorkflowerOption) *Workflower {
 	return w
 }
 
-func (w *Workflower) Cleanup() {
-	for _, wr := range w.workflows {
-		wr.stop()
-	}
-}
-
-func (w *Workflower) ExecuteWorkflow(ctx context.Context, options client.StartWorkflowOptions, wf any, _ ...any) (client.WorkflowRun, error) {
+func (w *Workflower) ExecuteWorkflow(_ context.Context, options client.StartWorkflowOptions, wf any, _ ...any) (client.WorkflowRun, error) {
 	if wf != WorkflowName {
 		return nil, fmt.Errorf("executed workflow must be %s", WorkflowName)
 	}
@@ -67,12 +56,7 @@ func (w *Workflower) ExecuteWorkflow(ctx context.Context, options client.StartWo
 		return nil, errors.New("fake workflow execution id is required in start workflow options")
 	}
 
-	timeout := defaultFakeWorkflowTimeout
-	if options.WorkflowExecutionTimeout > 0 {
-		timeout = options.WorkflowExecutionTimeout
-	}
-
-	wr := StartWorkflowRun(ctx, timeout, options.ID)
+	wr := newWorkflowRun(options.ID, nil, nil)
 
 	w.mu.Lock()
 	w.workflows[workflowsKey(wr.GetID(), wr.GetRunID())] = wr
@@ -89,23 +73,7 @@ func (w *Workflower) GetWorkflow(_ context.Context, workflowID string, runID str
 	return wr
 }
 
-func (w *Workflower) SignalWorkflow(_ context.Context, workflowID string, runID string, signalName string, _ any) error {
-	if signalName != testv1.TestSignal_TEST_SIGNAL_START_TEST.String() {
-		return fmt.Errorf("signal name for fake workflow must be '%s', got '%s'", testv1.TestSignal_TEST_SIGNAL_START_TEST.String(), signalName)
-	}
-
-	w.mu.RLock()
-	wr, ok := w.workflows[workflowsKey(workflowID, runID)]
-	w.mu.RUnlock()
-	if !ok {
-		return errors.New("fake workflow execution not found")
-	}
-
-	wr.signalStart()
-	return nil
-}
-
-func (w *Workflower) GetWorkflowHistory(_ context.Context, workflowID string, runID string, _ bool, _ enums.HistoryEventFilterType) client.HistoryEventIterator {
+func (w *Workflower) GetWorkflowHistory(_ context.Context, _ string, _ string, _ bool, _ enums.HistoryEventFilterType) client.HistoryEventIterator {
 	iter := &iterator{}
 
 	if w.history == nil {
@@ -145,14 +113,13 @@ func (w *Workflower) ResetWorkflowExecution(_ context.Context, req *workflowserv
 	)
 }
 
-func (w *Workflower) CancelWorkflow(ctx context.Context, workflowID string, runID string) error {
-	wr, err := w.getWorkflowRun(workflowID, runID)
-	if err != nil {
+func (w *Workflower) CancelWorkflow(_ context.Context, workflowID string, runID string) error {
+	if _, err := w.getWorkflowRun(workflowID, runID); err != nil {
 		return err
 	}
-	if fakeWR, ok := wr.(*WorkflowRun); ok {
-		fakeWR.stop()
-	}
+	w.mu.RLock()
+	defer w.mu.RUnlock()
+	delete(w.workflows, workflowsKey(workflowID, runID))
 	return nil
 }
 
