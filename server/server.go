@@ -7,7 +7,7 @@ import (
 
 	eventservicev1 "github.com/annexhq/annex-proto/gen/go/rpc/eventservice/v1"
 	testservicev1 "github.com/annexhq/annex-proto/gen/go/rpc/testservice/v1"
-	"go.temporal.io/api/workflowservice/v1"
+	workflowservicev1 "go.temporal.io/api/workflowservice/v1"
 	"go.temporal.io/sdk/client"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -19,7 +19,7 @@ import (
 	"github.com/annexhq/annex/internal/health"
 	"github.com/annexhq/annex/log"
 	"github.com/annexhq/annex/testservice"
-	"github.com/annexhq/annex/workflow"
+	"github.com/annexhq/annex/workflowservice"
 )
 
 type Option func(opts *serverOptions)
@@ -93,7 +93,7 @@ func Start(ctx context.Context, cfg Config, opts ...Option) error {
 	grpchealthv1.RegisterHealthServer(srv, healthSvc)
 	testservicev1.RegisterTestServiceServer(srv, testservice.New(deps.repo, tc, testservice.WithLogger(logger)))
 	eventservicev1.RegisterEventServiceServer(srv, event.NewService(deps.eventSrc, deps.repo))
-	workflowservice.RegisterWorkflowServiceServer(srv, workflow.NewProxyService(testClient, tc.WorkflowService()))
+	workflowservicev1.RegisterWorkflowServiceServer(srv, workflowservice.NewProxyService(testClient, tc.WorkflowService()))
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.Port))
 	if err != nil {
