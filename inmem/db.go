@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/annexhq/annex/test"
+	"github.com/annexsh/annex/test"
 )
 
 type DB struct {

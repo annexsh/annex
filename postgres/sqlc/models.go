@@ -5,7 +5,7 @@
 package sqlc
 
 import (
-	"github.com/annexhq/annex/test"
+	"github.com/annexsh/annex/test"
 	"github.com/google/uuid"
 )
 

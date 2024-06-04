@@ -8,7 +8,7 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/annexhq/annex/internal/ptr"
+	"github.com/annexsh/annex/internal/ptr"
 )
 
 type Timestamp struct {

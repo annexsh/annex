@@ -1,35 +1,20 @@
 package test
 
 import (
-	"time"
-
-	testv1 "github.com/annexhq/annex-proto/gen/go/type/test/v1"
+	testv1 "github.com/annexsh/annex-proto/gen/go/type/test/v1"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/annexhq/annex/internal/ptr"
+	"github.com/annexsh/annex/internal/ptr"
 )
 
-const runnerTTL = time.Minute + 30*time.Second
-
 func (t *Test) Proto() *testv1.Test {
-	testpb := &testv1.Test{
+	return &testv1.Test{
 		Id:         t.ID.String(),
 		Project:    t.Project,
 		Name:       t.Name,
 		HasPayload: t.HasPayload,
 		CreatedAt:  timestamppb.New(t.CreateTime),
 	}
-
-	if len(t.Runners) > 0 {
-		runner := t.Runners[0]
-		testpb.LastAvailable = &testv1.TestRunner{
-			Id:            runner.ID,
-			LastHeartbeat: timestamppb.New(runner.LastHeartbeatTime),
-			IsActive:      time.Since(runner.LastHeartbeatTime) < runnerTTL,
-		}
-	}
-
-	return testpb
 }
 
 func (t TestList) Proto() []*testv1.Test {

@@ -7,9 +7,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
-	"github.com/annexhq/annex/inmem"
-	"github.com/annexhq/annex/internal/fake"
-	"github.com/annexhq/annex/test"
+	"github.com/annexsh/annex/inmem"
+	"github.com/annexsh/annex/internal/fake"
+	"github.com/annexsh/annex/test"
 )
 
 type fakeDeps struct {

@@ -8,9 +8,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/annexhq/annex/internal/fake"
-	"github.com/annexhq/annex/internal/ptr"
-	"github.com/annexhq/annex/test"
+	"github.com/annexsh/annex/internal/fake"
+	"github.com/annexsh/annex/internal/ptr"
+	"github.com/annexsh/annex/test"
 )
 
 func TestCaseExecutionReader_GetCaseExecution(t *testing.T) {

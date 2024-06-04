@@ -13,7 +13,7 @@ import (
 	"google.golang.org/grpc"
 	grpchealthv1 "google.golang.org/grpc/health/grpc_health_v1"
 
-	"github.com/annexhq/annex/log"
+	"github.com/annexsh/annex/log"
 )
 
 func New(logger log.Logger) *grpc.Server {

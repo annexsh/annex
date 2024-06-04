@@ -1,7 +1,7 @@
 package workflowservice
 
 import (
-	testservicev1 "github.com/annexhq/annex-proto/gen/go/rpc/testservice/v1"
+	testservicev1 "github.com/annexsh/annex-proto/gen/go/rpc/testservice/v1"
 	"go.temporal.io/api/workflowservice/v1"
 )
 

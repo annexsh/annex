@@ -1,9 +1,9 @@
 package postgres
 
 import (
-	"github.com/annexhq/annex/postgres/sqlc"
+	"github.com/annexsh/annex/postgres/sqlc"
 
-	"github.com/annexhq/annex/test"
+	"github.com/annexsh/annex/test"
 )
 
 func marshalTest(t *sqlc.Test) *test.Test {

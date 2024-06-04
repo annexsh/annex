@@ -3,13 +3,13 @@ package testservice
 import (
 	"context"
 
-	testservicev1 "github.com/annexhq/annex-proto/gen/go/rpc/testservice/v1"
+	testservicev1 "github.com/annexsh/annex-proto/gen/go/rpc/testservice/v1"
 	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/api/workflowservice/v1"
 	"go.temporal.io/sdk/client"
 
-	"github.com/annexhq/annex/log"
-	"github.com/annexhq/annex/test"
+	"github.com/annexsh/annex/log"
+	"github.com/annexsh/annex/test"
 )
 
 const defaultPageSize int32 = 200

@@ -34,27 +34,27 @@ overrides:
           type: "Timestamp"
       - column: "test_executions.id"
         go_type:
-          import: "github.com/annexhq/annex/test"
+          import: "github.com/annexsh/annex/test"
           type: "TestExecutionID"
       - column: "test_execution_payloads.test_exec_id"
         go_type:
-          import: "github.com/annexhq/annex/test"
+          import: "github.com/annexsh/annex/test"
           type: "TestExecutionID"
       - column: "case_executions.test_exec_id"
         go_type:
-          import: "github.com/annexhq/annex/test"
+          import: "github.com/annexsh/annex/test"
           type: "TestExecutionID"
       - column: "logs.test_exec_id"
         go_type:
-          import: "github.com/annexhq/annex/test"
+          import: "github.com/annexsh/annex/test"
           type: "TestExecutionID"
       - column: "case_executions.id"
         go_type:
-          import: "github.com/annexhq/annex/test"
+          import: "github.com/annexsh/annex/test"
           type: "CaseExecutionID"
       - column: "logs.case_exec_id"
         nullable: true
         go_type:
-          import: "github.com/annexhq/annex/test"
+          import: "github.com/annexsh/annex/test"
           type: "CaseExecutionID"
           pointer: true

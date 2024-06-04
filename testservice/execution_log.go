@@ -3,11 +3,11 @@ package testservice
 import (
 	"context"
 
-	testservicev1 "github.com/annexhq/annex-proto/gen/go/rpc/testservice/v1"
+	testservicev1 "github.com/annexsh/annex-proto/gen/go/rpc/testservice/v1"
 	"github.com/google/uuid"
 
-	"github.com/annexhq/annex/internal/ptr"
-	"github.com/annexhq/annex/test"
+	"github.com/annexsh/annex/internal/ptr"
+	"github.com/annexsh/annex/test"
 )
 
 func (s *Service) PublishTestExecutionLog(ctx context.Context, req *testservicev1.PublishTestExecutionLogRequest) (*testservicev1.PublishTestExecutionLogResponse, error) {

@@ -11,11 +11,11 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/annexhq/annex/postgres/sqlc"
+	"github.com/annexsh/annex/postgres/sqlc"
 
-	"github.com/annexhq/annex/event"
-	"github.com/annexhq/annex/internal/conc"
-	"github.com/annexhq/annex/test"
+	"github.com/annexsh/annex/event"
+	"github.com/annexsh/annex/internal/conc"
+	"github.com/annexsh/annex/test"
 )
 
 const (

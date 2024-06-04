@@ -3,9 +3,9 @@ package postgres
 import (
 	"context"
 
-	"github.com/annexhq/annex/postgres/sqlc"
+	"github.com/annexsh/annex/postgres/sqlc"
 
-	"github.com/annexhq/annex/test"
+	"github.com/annexsh/annex/test"
 )
 
 var (
