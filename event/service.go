@@ -3,11 +3,11 @@ package event
 import (
 	"context"
 
-	eventservicev1 "github.com/annexhq/annex-proto/gen/go/rpc/eventservice/v1"
+	eventservicev1 "github.com/annexsh/annex-proto/gen/go/rpc/eventservice/v1"
 
-	"github.com/annexhq/annex/internal/conc"
-	"github.com/annexhq/annex/log"
-	"github.com/annexhq/annex/test"
+	"github.com/annexsh/annex/internal/conc"
+	"github.com/annexsh/annex/log"
+	"github.com/annexsh/annex/test"
 )
 
 var _ eventservicev1.EventServiceServer = (*Service)(nil)

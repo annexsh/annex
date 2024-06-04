@@ -3,9 +3,9 @@ package inmem
 import (
 	"context"
 
-	"github.com/annexhq/annex/event"
-	"github.com/annexhq/annex/internal/conc"
-	"github.com/annexhq/annex/test"
+	"github.com/annexsh/annex/event"
+	"github.com/annexsh/annex/internal/conc"
+	"github.com/annexsh/annex/test"
 )
 
 type TestExecutionEventSource struct {

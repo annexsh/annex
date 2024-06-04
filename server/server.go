@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"net"
 
-	eventservicev1 "github.com/annexhq/annex-proto/gen/go/rpc/eventservice/v1"
-	testservicev1 "github.com/annexhq/annex-proto/gen/go/rpc/testservice/v1"
+	eventservicev1 "github.com/annexsh/annex-proto/gen/go/rpc/eventservice/v1"
+	testservicev1 "github.com/annexsh/annex-proto/gen/go/rpc/testservice/v1"
 	workflowservicev1 "go.temporal.io/api/workflowservice/v1"
 	"go.temporal.io/sdk/client"
 	"google.golang.org/grpc"
@@ -14,12 +14,12 @@ import (
 	grpchealthv1 "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
 
-	"github.com/annexhq/annex/event"
-	"github.com/annexhq/annex/internal/grpcsrv"
-	"github.com/annexhq/annex/internal/health"
-	"github.com/annexhq/annex/log"
-	"github.com/annexhq/annex/testservice"
-	"github.com/annexhq/annex/workflowservice"
+	"github.com/annexsh/annex/event"
+	"github.com/annexsh/annex/internal/grpcsrv"
+	"github.com/annexsh/annex/internal/health"
+	"github.com/annexsh/annex/log"
+	"github.com/annexsh/annex/testservice"
+	"github.com/annexsh/annex/workflowservice"
 )
 
 type Option func(opts *serverOptions)

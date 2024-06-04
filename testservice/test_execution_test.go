@@ -5,16 +5,16 @@ import (
 	"testing"
 	"time"
 
-	testservicev1 "github.com/annexhq/annex-proto/gen/go/rpc/testservice/v1"
-	testv1 "github.com/annexhq/annex-proto/gen/go/type/test/v1"
+	testservicev1 "github.com/annexsh/annex-proto/gen/go/rpc/testservice/v1"
+	testv1 "github.com/annexsh/annex-proto/gen/go/type/test/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/annexhq/annex/inmem"
-	"github.com/annexhq/annex/internal/fake"
-	"github.com/annexhq/annex/internal/ptr"
-	"github.com/annexhq/annex/test"
+	"github.com/annexsh/annex/inmem"
+	"github.com/annexsh/annex/internal/fake"
+	"github.com/annexsh/annex/internal/ptr"
+	"github.com/annexsh/annex/test"
 )
 
 func TestService_GetTestExecution(t *testing.T) {

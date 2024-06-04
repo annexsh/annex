@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	testservicev1 "github.com/annexhq/annex-proto/gen/go/rpc/testservice/v1"
+	testservicev1 "github.com/annexsh/annex-proto/gen/go/rpc/testservice/v1"
 	"github.com/google/uuid"
 
-	"github.com/annexhq/annex/test"
+	"github.com/annexsh/annex/test"
 )
 
 func (s *Service) RegisterTests(ctx context.Context, req *testservicev1.RegisterTestsRequest) (*testservicev1.RegisterTestsResponse, error) {

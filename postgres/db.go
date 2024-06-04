@@ -7,7 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/annexhq/annex/postgres/sqlc"
+	"github.com/annexsh/annex/postgres/sqlc"
 )
 
 type DBTX interface {

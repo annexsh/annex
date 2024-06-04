@@ -8,9 +8,9 @@ import (
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/google/uuid"
 
-	"github.com/annexhq/annex/test"
+	"github.com/annexsh/annex/test"
 
-	"github.com/annexhq/annex/log"
+	"github.com/annexsh/annex/log"
 )
 
 const eventStreamBufferSize = 50

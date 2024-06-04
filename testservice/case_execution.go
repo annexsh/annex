@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	testservicev1 "github.com/annexhq/annex-proto/gen/go/rpc/testservice/v1"
+	testservicev1 "github.com/annexsh/annex-proto/gen/go/rpc/testservice/v1"
 
-	"github.com/annexhq/annex/test"
+	"github.com/annexsh/annex/test"
 )
 
 func (s *Service) ListTestCaseExecutions(ctx context.Context, req *testservicev1.ListTestCaseExecutionsRequest) (*testservicev1.ListTestCaseExecutionsResponse, error) {

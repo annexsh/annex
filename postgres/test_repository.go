@@ -1,6 +1,6 @@
 package postgres
 
-import "github.com/annexhq/annex/test"
+import "github.com/annexsh/annex/test"
 
 func NewTestRepository(db *DB) test.Repository {
 	return &testRepository{

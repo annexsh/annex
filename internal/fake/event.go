@@ -5,8 +5,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/annexhq/annex/event"
-	"github.com/annexhq/annex/test"
+	"github.com/annexsh/annex/event"
+	"github.com/annexsh/annex/test"
 )
 
 func GenExecEvent(testExecID test.TestExecutionID) *event.ExecutionEvent {

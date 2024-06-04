@@ -4,9 +4,9 @@ import (
 	"context"
 	"slices"
 
-	"github.com/annexhq/annex/event"
-	"github.com/annexhq/annex/internal/ptr"
-	"github.com/annexhq/annex/test"
+	"github.com/annexsh/annex/event"
+	"github.com/annexsh/annex/internal/ptr"
+	"github.com/annexsh/annex/test"
 )
 
 var (

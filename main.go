@@ -5,9 +5,9 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/annexhq/annex/server"
+	"github.com/annexsh/annex/server"
 
-	"github.com/annexhq/annex/log"
+	"github.com/annexsh/annex/log"
 )
 
 const appName = "annex"

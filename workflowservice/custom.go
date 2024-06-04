@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"time"
 
-	testservicev1 "github.com/annexhq/annex-proto/gen/go/rpc/testservice/v1"
+	testservicev1 "github.com/annexsh/annex-proto/gen/go/rpc/testservice/v1"
 	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/api/workflowservice/v1"
 	"go.temporal.io/server/common"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/annexhq/annex/test"
+	"github.com/annexsh/annex/test"
 )
 
 func (s *ProxyService) PollWorkflowTaskQueue(ctx context.Context, req *workflowservice.PollWorkflowTaskQueueRequest) (*workflowservice.PollWorkflowTaskQueueResponse, error) {

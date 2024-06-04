@@ -15,7 +15,7 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/annexhq/annex/test"
+	"github.com/annexsh/annex/test"
 )
 
 var _ client.HistoryEventIterator = (*iterator)(nil)

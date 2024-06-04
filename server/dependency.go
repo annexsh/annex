@@ -10,12 +10,12 @@ import (
 	"github.com/lmittmann/tint"
 	"github.com/temporalio/cli/temporalcli/devserver"
 
-	"github.com/annexhq/annex/event"
-	"github.com/annexhq/annex/inmem"
-	"github.com/annexhq/annex/test"
+	"github.com/annexsh/annex/event"
+	"github.com/annexsh/annex/inmem"
+	"github.com/annexsh/annex/test"
 
-	"github.com/annexhq/annex/internal/health"
-	"github.com/annexhq/annex/postgres"
+	"github.com/annexsh/annex/internal/health"
+	"github.com/annexsh/annex/postgres"
 )
 
 type dependencies struct {

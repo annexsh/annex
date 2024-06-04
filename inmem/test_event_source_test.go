@@ -9,10 +9,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/atomic"
 
-	"github.com/annexhq/annex/event"
-	"github.com/annexhq/annex/internal/conc"
-	"github.com/annexhq/annex/internal/fake"
-	"github.com/annexhq/annex/test"
+	"github.com/annexsh/annex/event"
+	"github.com/annexsh/annex/internal/conc"
+	"github.com/annexsh/annex/internal/fake"
+	"github.com/annexsh/annex/test"
 )
 
 func TestTestExecutionEventSource(t *testing.T) {

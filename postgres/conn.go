@@ -8,7 +8,7 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/annexhq/annex/postgres/migrations"
+	"github.com/annexsh/annex/postgres/migrations"
 )
 
 const (

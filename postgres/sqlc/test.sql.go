@@ -8,7 +8,7 @@ package sqlc
 import (
 	"context"
 
-	"github.com/annexhq/annex/test"
+	"github.com/annexsh/annex/test"
 	"github.com/google/uuid"
 )
 

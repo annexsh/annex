@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	paginationv1 "github.com/annexhq/annex-proto/gen/go/type/pagination/v1"
+	paginationv1 "github.com/annexsh/annex-proto/gen/go/type/pagination/v1"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"

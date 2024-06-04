@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	testv1 "github.com/annexhq/annex-proto/gen/go/type/test/v1"
+	testv1 "github.com/annexsh/annex-proto/gen/go/type/test/v1"
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/google/uuid"
 	"go.temporal.io/api/common/v1"
@@ -14,9 +14,9 @@ import (
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/converter"
 
-	"github.com/annexhq/annex/test"
+	"github.com/annexsh/annex/test"
 
-	"github.com/annexhq/annex/log"
+	"github.com/annexsh/annex/log"
 )
 
 const retryReason = "retry failed test execution"

@@ -1,9 +1,9 @@
-module github.com/annexhq/annex
+module github.com/annexsh/annex
 
 go 1.22.0
 
 require (
-	github.com/annexhq/annex-proto v0.0.0-20240603062920-3b6f92e0f992
+	github.com/annexsh/annex-proto v0.0.0-20240604134721-acbec99e95c8
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/cristalhq/aconfig v0.18.5
 	github.com/cristalhq/aconfig/aconfigyaml v0.17.1
