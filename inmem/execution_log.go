@@ -12,37 +12,37 @@ import (
 )
 
 var (
-	_ test.ExecutionLogReader = (*ExecutionLogReader)(nil)
-	_ test.ExecutionLogWriter = (*ExecutionLogWriter)(nil)
+	_ test.LogReader = (*LogReader)(nil)
+	_ test.LogWriter = (*LogWriter)(nil)
 )
 
-type ExecutionLogReader struct {
+type LogReader struct {
 	db *DB
 }
 
-func NewExecutionLogReader(db *DB) *ExecutionLogReader {
-	return &ExecutionLogReader{db: db}
+func NewLogReader(db *DB) *LogReader {
+	return &LogReader{db: db}
 }
 
-func (e *ExecutionLogReader) GetExecutionLog(_ context.Context, id uuid.UUID) (*test.ExecutionLog, error) {
+func (e *LogReader) GetLog(_ context.Context, id uuid.UUID) (*test.Log, error) {
 	execLog, ok := e.db.execLogs[id]
 	if !ok {
-		return nil, test.ErrorExecutionLogNotFound
+		return nil, test.ErrorLogNotFound
 	}
 	return ptr.Copy(execLog), nil
 }
 
-func (e *ExecutionLogReader) ListExecutionLogs(_ context.Context, testExecID test.TestExecutionID) (test.ExecutionLogList, error) {
+func (e *LogReader) ListLogs(_ context.Context, testExecID test.TestExecutionID) (test.LogList, error) {
 	e.db.mu.RLock()
 	defer e.db.mu.RUnlock()
 
-	var logs test.ExecutionLogList
+	var logs test.LogList
 	for _, l := range e.db.execLogs {
-		if l.TestExecID == testExecID {
+		if l.TestExecutionID == testExecID {
 			logs = append(logs, ptr.Copy(l))
 		}
 	}
-	slices.SortFunc(logs, func(a, b *test.ExecutionLog) int {
+	slices.SortFunc(logs, func(a, b *test.Log) int {
 		if a.CreateTime.Before(b.CreateTime) {
 			return -1
 		}
@@ -51,34 +51,34 @@ func (e *ExecutionLogReader) ListExecutionLogs(_ context.Context, testExecID tes
 	return logs, nil
 }
 
-type ExecutionLogWriter struct {
+type LogWriter struct {
 	db *DB
 }
 
-func NewExecutionLogWriter(db *DB) *ExecutionLogWriter {
-	return &ExecutionLogWriter{db: db}
+func NewLogWriter(db *DB) *LogWriter {
+	return &LogWriter{db: db}
 }
 
-func (e *ExecutionLogWriter) CreateExecutionLog(_ context.Context, log *test.ExecutionLog) error {
+func (e *LogWriter) CreateLog(_ context.Context, log *test.Log) error {
 	e.db.mu.Lock()
 	defer e.db.mu.Unlock()
 
-	if _, ok := e.db.testExecs[log.TestExecID]; !ok {
+	if _, ok := e.db.testExecs[log.TestExecutionID]; !ok {
 		return test.ErrorTestExecutionNotFound
 	}
 
-	if log.CaseExecID != nil {
-		if _, ok := e.db.caseExecs[caseExecKey(log.TestExecID, *log.CaseExecID)]; !ok {
+	if log.CaseExecutionID != nil {
+		if _, ok := e.db.caseExecs[caseExecKey(log.TestExecutionID, *log.CaseExecutionID)]; !ok {
 			return test.ErrorCaseExecutionNotFound
 		}
 	}
 
 	e.db.execLogs[log.ID] = log
-	e.db.events.Publish(event.NewExecutionLogEvent(event.TypeExecutionLogPublished, log))
+	e.db.events.Publish(event.NewLogEvent(event.TypeLogPublished, log))
 	return nil
 }
 
-func (e *ExecutionLogWriter) DeleteExecutionLog(_ context.Context, id uuid.UUID) error {
+func (e *LogWriter) DeleteLog(_ context.Context, id uuid.UUID) error {
 	e.db.mu.Lock()
 	defer e.db.mu.Unlock()
 	delete(e.db.execLogs, id)

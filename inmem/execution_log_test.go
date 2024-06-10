@@ -12,26 +12,26 @@ import (
 	"github.com/annexsh/annex/test"
 )
 
-func TestExecutionLogReader_GetExecutionLog(t *testing.T) {
+func TestLogReader_GetLog(t *testing.T) {
 	ctx := context.Background()
 	db := NewDB()
-	r := NewExecutionLogReader(db)
+	r := NewLogReader(db)
 
 	want := fake.GenTestExecLog(test.NewTestExecutionID())
 	db.execLogs[want.ID] = want
 
-	got, err := r.GetExecutionLog(ctx, want.ID)
+	got, err := r.GetLog(ctx, want.ID)
 	require.NoError(t, err)
 	assert.Equal(t, want, got)
 }
 
-func TestExecutionLogReader_ListExecutionLogs(t *testing.T) {
+func TestLogReader_ListLogs(t *testing.T) {
 	ctx := context.Background()
 	db := NewDB()
-	r := NewExecutionLogReader(db)
+	r := NewLogReader(db)
 
 	count := 30
-	want := make(test.ExecutionLogList, count)
+	want := make(test.LogList, count)
 	testExecID := test.NewTestExecutionID()
 
 	for i := range count {
@@ -40,12 +40,12 @@ func TestExecutionLogReader_ListExecutionLogs(t *testing.T) {
 		db.execLogs[l.ID] = l
 	}
 
-	got, err := r.ListExecutionLogs(ctx, testExecID)
+	got, err := r.ListLogs(ctx, testExecID)
 	require.NoError(t, err)
 	assert.Equal(t, want, got)
 }
 
-func TestExecutionLogWriter_CreateExecutionLog(t *testing.T) {
+func TestLogWriter_CreateLog(t *testing.T) {
 	tests := []struct {
 		name             string
 		existingTestExec bool
@@ -66,7 +66,7 @@ func TestExecutionLogWriter_CreateExecutionLog(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
 			db := NewDB()
-			w := NewExecutionLogWriter(db)
+			w := NewLogWriter(db)
 
 			testExec := fake.GenTestExec(uuid.New())
 			if tt.existingTestExec {
@@ -75,7 +75,7 @@ func TestExecutionLogWriter_CreateExecutionLog(t *testing.T) {
 
 			want := fake.GenTestExecLog(testExec.ID)
 
-			err := w.CreateExecutionLog(ctx, want)
+			err := w.CreateLog(ctx, want)
 			if tt.wantErr != "" {
 				require.EqualError(t, err, tt.wantErr)
 				return
@@ -89,16 +89,16 @@ func TestExecutionLogWriter_CreateExecutionLog(t *testing.T) {
 	}
 }
 
-func TestExecutionLogWriter_DeleteExecutionLog(t *testing.T) {
+func TestLogWriter_DeleteLog(t *testing.T) {
 	ctx := context.Background()
 	db := NewDB()
-	w := NewExecutionLogWriter(db)
+	w := NewLogWriter(db)
 
 	want := fake.GenTestExecLog(test.NewTestExecutionID())
 	db.execLogs[want.ID] = want
 	assert.NotEmpty(t, db.execLogs)
 
-	err := w.DeleteExecutionLog(ctx, want.ID)
+	err := w.DeleteLog(ctx, want.ID)
 	require.NoError(t, err)
 	assert.Empty(t, db.execLogs)
 }

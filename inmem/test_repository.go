@@ -10,8 +10,8 @@ func NewTestRepository(db *DB) test.Repository {
 		TestExecutionWriter: NewTestExecutionWriter(db),
 		CaseExecutionReader: NewCaseExecutionReader(db),
 		CaseExecutionWriter: NewCaseExecutionWriter(db),
-		ExecutionLogReader:  NewExecutionLogReader(db),
-		ExecutionLogWriter:  NewExecutionLogWriter(db),
+		LogReader:           NewLogReader(db),
+		LogWriter:           NewLogWriter(db),
 	}
 }
 
@@ -22,6 +22,6 @@ type testRepository struct {
 	*TestExecutionWriter
 	*CaseExecutionReader
 	*CaseExecutionWriter
-	*ExecutionLogReader
-	*ExecutionLogWriter
+	*LogReader
+	*LogWriter
 }

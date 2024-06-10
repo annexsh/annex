@@ -19,7 +19,7 @@ const (
 	TypeCaseExecutionScheduled
 	TypeCaseExecutionStarted
 	TypeCaseExecutionFinished
-	TypeExecutionLogPublished
+	TypeLogPublished
 )
 
 type DataType uint
@@ -29,14 +29,14 @@ const (
 	DataTypeNone
 	DataTypeTestExecution
 	DataTypeCaseExecution
-	DataTypeExecutionLog
+	DataTypeLog
 )
 
 type Data struct {
 	Type          DataType
 	TestExecution *test.TestExecution
 	CaseExecution *test.CaseExecution
-	ExecutionLog  *test.ExecutionLog
+	Log           *test.Log
 }
 
 func (d *Data) GetTestExecution() (*test.TestExecution, error) {
@@ -53,11 +53,11 @@ func (d *Data) GetCaseExecution() (*test.CaseExecution, error) {
 	return d.CaseExecution, nil
 }
 
-func (d *Data) GetExecutionLog() (*test.ExecutionLog, error) {
-	if d.Type != DataTypeExecutionLog || d.ExecutionLog == nil {
+func (d *Data) GetLog() (*test.Log, error) {
+	if d.Type != DataTypeLog || d.Log == nil {
 		return nil, errors.New("event data does not contain a valid execution log")
 	}
-	return d.ExecutionLog, nil
+	return d.Log, nil
 }
 
 type ExecutionEvent struct {
@@ -84,7 +84,7 @@ func NewTestExecutionEvent(eventType Type, testExec *test.TestExecution) *Execut
 func NewCaseExecutionEvent(eventType Type, caseExec *test.CaseExecution) *ExecutionEvent {
 	return &ExecutionEvent{
 		ID:         uuid.New(),
-		TestExecID: caseExec.TestExecID,
+		TestExecID: caseExec.TestExecutionID,
 		Type:       eventType,
 		Data: Data{
 			Type:          DataTypeCaseExecution,
@@ -94,14 +94,14 @@ func NewCaseExecutionEvent(eventType Type, caseExec *test.CaseExecution) *Execut
 	}
 }
 
-func NewExecutionLogEvent(eventType Type, execLog *test.ExecutionLog) *ExecutionEvent {
+func NewLogEvent(eventType Type, execLog *test.Log) *ExecutionEvent {
 	return &ExecutionEvent{
 		ID:         uuid.New(),
-		TestExecID: execLog.TestExecID,
+		TestExecID: execLog.TestExecutionID,
 		Type:       eventType,
 		Data: Data{
-			Type:         DataTypeExecutionLog,
-			ExecutionLog: execLog,
+			Type: DataTypeLog,
+			Log:  execLog,
 		},
 		CreateTime: time.Now().UTC(),
 	}

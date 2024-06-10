@@ -15,17 +15,16 @@ func (s *Service) RegisterTests(ctx context.Context, req *testservicev1.Register
 
 	for _, defpb := range req.Definitions {
 		def := &test.TestDefinition{
-			TestID:         uuid.New(),
-			Project:        defpb.Project,
-			Name:           defpb.Name,
-			DefaultPayload: nil,
-			RunnerID:       req.RunnerId,
+			TestID:       uuid.New(),
+			Group:        req.Group,
+			Name:         defpb.Name,
+			DefaultInput: nil,
+			RunnerID:     req.RunnerId,
 		}
 
-		if defpb.DefaultPayload != nil {
-			def.DefaultPayload = &test.Payload{
-				Payload: defpb.DefaultPayload.Data,
-				IsZero:  defpb.DefaultPayload.IsZero,
+		if defpb.DefaultInput != nil {
+			def.DefaultInput = &test.Payload{
+				Data: defpb.DefaultInput.Data,
 			}
 		}
 
@@ -38,22 +37,22 @@ func (s *Service) RegisterTests(ctx context.Context, req *testservicev1.Register
 	}
 
 	return &testservicev1.RegisterTestsResponse{
-		Registered: created.Proto(),
+		Tests: created.Proto(),
 	}, nil
 }
 
-func (s *Service) GetTestDefaultPayload(ctx context.Context, req *testservicev1.GetTestDefaultPayloadRequest) (*testservicev1.GetTestDefaultPayloadResponse, error) {
+func (s *Service) GetTestDefaultInput(ctx context.Context, req *testservicev1.GetTestDefaultInputRequest) (*testservicev1.GetTestDefaultInputResponse, error) {
 	testID, err := uuid.Parse(req.TestId)
 	if err != nil {
 		return nil, err
 	}
 
-	payload, err := s.repo.GetTestDefaultPayload(ctx, testID)
+	payload, err := s.repo.GetTestDefaultInput(ctx, testID)
 	if err != nil {
 		return nil, err
 	}
-	return &testservicev1.GetTestDefaultPayloadResponse{
-		DefaultPayload: string(payload.Payload),
+	return &testservicev1.GetTestDefaultInputResponse{
+		DefaultInput: string(payload.Data),
 	}, nil
 }
 
@@ -75,8 +74,8 @@ func (s *Service) ExecuteTest(ctx context.Context, req *testservicev1.ExecuteTes
 	}
 
 	var opts []executeOption
-	if req.Payload != nil {
-		opts = append(opts, withPayload(req.Payload))
+	if req.Input != nil {
+		opts = append(opts, withInput(req.Input))
 	}
 
 	testExec, err := s.executor.execute(ctx, testID, opts...)
@@ -87,4 +86,9 @@ func (s *Service) ExecuteTest(ctx context.Context, req *testservicev1.ExecuteTes
 	return &testservicev1.ExecuteTestResponse{
 		TestExecution: testExec.Proto(),
 	}, nil
+}
+
+func (s *Service) ListTestRunners(ctx context.Context, req *testservicev1.ListTestRunnersRequest) (*testservicev1.ListTestRunnersResponse, error) {
+	//TODO implement me
+	panic("implement me")
 }

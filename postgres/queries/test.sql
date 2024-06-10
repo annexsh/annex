@@ -1,13 +1,13 @@
 -- name: CreateTest :one
-INSERT INTO tests (id, project, name, has_payload, runner_id, runner_heartbeat_at)
+INSERT INTO tests (id, "group", name, has_input, runner_id, runner_heartbeat_at)
 VALUES ($1, $2, $3, $4, $5, $6)
-ON CONFLICT (project, name) DO UPDATE
-    SET project             = excluded.project,
+ON CONFLICT ("group", name) DO UPDATE
+    SET "group"             = excluded."group",
         name                = excluded.name,
-        has_payload         = excluded.has_payload,
+        has_input         = excluded.has_input,
         runner_id           = excluded.runner_id,
         runner_heartbeat_at = excluded.runner_heartbeat_at,
-        created_at          = now()
+        create_time          = now()
 RETURNING *;
 
 -- name: GetTest :one
@@ -19,64 +19,57 @@ WHERE id = $1;
 SELECT *
 FROM tests
 WHERE name = $1
-  AND project = $2;
+  AND "group" = $2;
 
 -- name: ListTests :many
 SELECT *
 FROM tests;
 
--- name: SetTestRunnerHeartbeat :exec
-UPDATE tests
-SET runner_id           = $2,
-    runner_heartbeat_at = NOW()
-WHERE id = $1;
-
--- name: CreateTestDefaultPayload :exec
-INSERT INTO test_default_payloads (test_id, payload, is_zero)
-VALUES ($1, $2, $3)
+-- name: CreateTestDefaultInput :exec
+INSERT INTO test_default_inputs (test_id, data)
+VALUES ($1, $2)
 ON CONFLICT (test_id) DO UPDATE
-    SET payload = excluded.payload,
-        is_zero = excluded.is_zero;
+    SET data = excluded.data;
 
--- name: GetTestDefaultPayload :one
+-- name: GetTestDefaultInput :one
 SELECT *
-FROM test_default_payloads
+FROM test_default_inputs
 WHERE test_id = $1;
 
 -- name: CreateTestExecution :one
-INSERT INTO test_executions (id, test_id, has_payload, scheduled_at)
+INSERT INTO test_executions (id, test_id, has_input, schedule_time)
 VALUES ($1, $2, $3, $4)
 ON CONFLICT (id) DO UPDATE
     SET test_id      = excluded.test_id,
-        has_payload  = excluded.has_payload,
-        scheduled_at = excluded.scheduled_at,
-        started_at   = null,
-        finished_at  = null,
+        has_input  = excluded.has_input,
+        schedule_time = excluded.schedule_time,
+        start_time   = null,
+        finish_time  = null,
         error        = null
 RETURNING *;
 
--- name: CreateTestExecutionPayload :exec
-INSERT INTO test_execution_payloads (test_exec_id, payload)
+-- name: CreateTestExecutionInput :exec
+INSERT INTO test_execution_inputs (test_execution_id, data)
 VALUES ($1, $2)
-ON CONFLICT (test_exec_id) DO UPDATE
-    SET payload = excluded.payload;
+ON CONFLICT (test_execution_id) DO UPDATE
+    SET data = excluded.data;
 
--- name: GetTestExecutionPayload :one
+-- name: GetTestExecutionInput :one
 SELECT *
-FROM test_execution_payloads
-WHERE test_exec_id = $1;
+FROM test_execution_inputs
+WHERE test_execution_id = $1;
 
 -- name: UpdateTestExecutionStarted :one
 UPDATE test_executions
-SET started_at  = $2,
-    finished_at = null,
+SET start_time  = $2,
+    finish_time = null,
     error       = null
 WHERE id = $1
 RETURNING *;
 
 -- name: UpdateTestExecutionFinished :one
 UPDATE test_executions
-SET finished_at = $2,
+SET finish_time = $2,
     error       = $3
 WHERE id = $1
 RETURNING *;
@@ -91,8 +84,8 @@ SELECT *
 FROM test_executions
 WHERE (@test_id = test_id)
   AND (
-    (sqlc.narg('last_scheduled_at')::timestamp IS NULL AND sqlc.narg('last_exec_id')::uuid IS NULL)
-        OR (scheduled_at, id) < (@last_scheduled_at::timestamp, @last_exec_id::uuid)
+    (sqlc.narg('last_schedule_time')::timestamp IS NULL AND sqlc.narg('last_exec_id')::uuid IS NULL)
+        OR (schedule_time, id) < (@last_schedule_time::timestamp, @last_test_execution_id::uuid)
     )
-ORDER BY scheduled_at DESC, id DESC
+ORDER BY schedule_time DESC, id DESC
 LIMIT (sqlc.narg('page_size')::integer);

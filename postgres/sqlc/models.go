@@ -10,51 +10,55 @@ import (
 )
 
 type CaseExecution struct {
-	ID          test.CaseExecutionID `json:"id"`
-	TestExecID  test.TestExecutionID `json:"test_exec_id"`
-	CaseName    string               `json:"case_name"`
-	ScheduledAt Timestamp            `json:"scheduled_at"`
-	StartedAt   Timestamp            `json:"started_at"`
-	FinishedAt  Timestamp            `json:"finished_at"`
-	Error       *string              `json:"error"`
+	ID              test.CaseExecutionID `json:"id"`
+	TestExecutionID test.TestExecutionID `json:"test_execution_id"`
+	CaseName        string               `json:"case_name"`
+	ScheduleTime    Timestamp            `json:"schedule_time"`
+	StartTime       Timestamp            `json:"start_time"`
+	FinishTime      Timestamp            `json:"finish_time"`
+	Error           *string              `json:"error"`
 }
 
 type Log struct {
-	ID         uuid.UUID             `json:"id"`
-	TestExecID test.TestExecutionID  `json:"test_exec_id"`
-	CaseExecID *test.CaseExecutionID `json:"case_exec_id"`
-	Level      string                `json:"level"`
-	Message    string                `json:"message"`
-	CreatedAt  Timestamp             `json:"created_at"`
+	ID              uuid.UUID             `json:"id"`
+	TestExecutionID test.TestExecutionID  `json:"test_execution_id"`
+	CaseExecutionID *test.CaseExecutionID `json:"case_execution_id"`
+	Level           string                `json:"level"`
+	Message         string                `json:"message"`
+	CreateTime      Timestamp             `json:"create_time"`
+}
+
+type Runner struct {
+	RunnerID string    `json:"runner_id"`
+	TestID   uuid.UUID `json:"test_id"`
 }
 
 type Test struct {
 	ID                uuid.UUID `json:"id"`
-	Project           string    `json:"project"`
+	Group             string    `json:"group"`
 	Name              string    `json:"name"`
-	HasPayload        bool      `json:"has_payload"`
+	HasInput          bool      `json:"has_input"`
 	RunnerID          string    `json:"runner_id"`
 	RunnerHeartbeatAt Timestamp `json:"runner_heartbeat_at"`
-	CreatedAt         Timestamp `json:"created_at"`
+	CreateTime        Timestamp `json:"create_time"`
 }
 
-type TestDefaultPayload struct {
-	TestID  uuid.UUID `json:"test_id"`
-	Payload []byte    `json:"payload"`
-	IsZero  bool      `json:"is_zero"`
+type TestDefaultInput struct {
+	TestID uuid.UUID `json:"test_id"`
+	Data   []byte    `json:"data"`
 }
 
 type TestExecution struct {
-	ID          test.TestExecutionID `json:"id"`
-	TestID      uuid.UUID            `json:"test_id"`
-	HasPayload  bool                 `json:"has_payload"`
-	ScheduledAt Timestamp            `json:"scheduled_at"`
-	StartedAt   Timestamp            `json:"started_at"`
-	FinishedAt  Timestamp            `json:"finished_at"`
-	Error       *string              `json:"error"`
+	ID           test.TestExecutionID `json:"id"`
+	TestID       uuid.UUID            `json:"test_id"`
+	HasInput     bool                 `json:"has_input"`
+	ScheduleTime Timestamp            `json:"schedule_time"`
+	StartTime    Timestamp            `json:"start_time"`
+	FinishTime   Timestamp            `json:"finish_time"`
+	Error        *string              `json:"error"`
 }
 
-type TestExecutionPayload struct {
-	TestExecID test.TestExecutionID `json:"test_exec_id"`
-	Payload    []byte               `json:"payload"`
+type TestExecutionInput struct {
+	TestExecutionID test.TestExecutionID `json:"test_execution_id"`
+	Data            []byte               `json:"data"`
 }

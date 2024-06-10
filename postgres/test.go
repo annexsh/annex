@@ -41,12 +41,12 @@ func (t *TestReader) ListTests(ctx context.Context) (test.TestList, error) {
 	return marshalTests(tests), nil
 }
 
-func (t *TestReader) GetTestDefaultPayload(ctx context.Context, testID uuid.UUID) (*test.Payload, error) {
-	payload, err := t.db.GetTestDefaultPayload(ctx, testID)
+func (t *TestReader) GetTestDefaultInput(ctx context.Context, testID uuid.UUID) (*test.Payload, error) {
+	payload, err := t.db.GetTestDefaultInput(ctx, testID)
 	if err != nil {
 		return nil, err
 	}
-	return marshalTestDefaultPayload(payload), nil
+	return marshalTestDefaultInput(payload), nil
 }
 
 type TestWriter struct {
@@ -96,20 +96,19 @@ func (t *TestWriter) CreateTests(ctx context.Context, definitions ...*test.TestD
 func createTest(ctx context.Context, querier sqlc.Querier, definition *test.TestDefinition) (*sqlc.Test, error) {
 	created, err := querier.CreateTest(ctx, sqlc.CreateTestParams{
 		ID:                definition.TestID,
-		Project:           definition.Project,
+		Group:             definition.Group,
 		Name:              definition.Name,
-		HasPayload:        definition.DefaultPayload != nil,
+		HasInput:          definition.DefaultInput != nil,
 		RunnerID:          definition.RunnerID,
 		RunnerHeartbeatAt: sqlc.NewTimestamp(time.Now()),
 	})
 	if err != nil {
 		return nil, err
 	}
-	if created.HasPayload {
-		if err = querier.CreateTestDefaultPayload(ctx, sqlc.CreateTestDefaultPayloadParams{
-			TestID:  created.ID,
-			Payload: definition.DefaultPayload.Payload,
-			IsZero:  definition.DefaultPayload.IsZero,
+	if created.HasInput {
+		if err = querier.CreateTestDefaultInput(ctx, sqlc.CreateTestDefaultInputParams{
+			TestID: created.ID,
+			Data:   definition.DefaultInput.Data,
 		}); err != nil {
 			return nil, err
 		}

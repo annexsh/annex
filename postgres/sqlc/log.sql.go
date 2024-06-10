@@ -13,27 +13,27 @@ import (
 )
 
 const createLog = `-- name: CreateLog :exec
-INSERT INTO logs (id, test_exec_id, case_exec_id, level, message, created_at)
+INSERT INTO logs (id, test_execution_id, case_execution_id, level, message, create_time)
 VALUES ($1, $2, $3, $4, $5, $6)
 `
 
 type CreateLogParams struct {
-	ID         uuid.UUID             `json:"id"`
-	TestExecID test.TestExecutionID  `json:"test_exec_id"`
-	CaseExecID *test.CaseExecutionID `json:"case_exec_id"`
-	Level      string                `json:"level"`
-	Message    string                `json:"message"`
-	CreatedAt  Timestamp             `json:"created_at"`
+	ID              uuid.UUID             `json:"id"`
+	TestExecutionID test.TestExecutionID  `json:"test_execution_id"`
+	CaseExecutionID *test.CaseExecutionID `json:"case_execution_id"`
+	Level           string                `json:"level"`
+	Message         string                `json:"message"`
+	CreateTime      Timestamp             `json:"create_time"`
 }
 
 func (q *Queries) CreateLog(ctx context.Context, arg CreateLogParams) error {
 	_, err := q.db.Exec(ctx, createLog,
 		arg.ID,
-		arg.TestExecID,
-		arg.CaseExecID,
+		arg.TestExecutionID,
+		arg.CaseExecutionID,
 		arg.Level,
 		arg.Message,
-		arg.CreatedAt,
+		arg.CreateTime,
 	)
 	return err
 }
@@ -49,35 +49,35 @@ func (q *Queries) DeleteLog(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
-const getExecutionLog = `-- name: GetExecutionLog :one
-SELECT id, test_exec_id, case_exec_id, level, message, created_at
+const getLog = `-- name: GetLog :one
+SELECT id, test_execution_id, case_execution_id, level, message, create_time
 FROM logs
 WHERE id = $1
 `
 
-func (q *Queries) GetExecutionLog(ctx context.Context, id uuid.UUID) (*Log, error) {
-	row := q.db.QueryRow(ctx, getExecutionLog, id)
+func (q *Queries) GetLog(ctx context.Context, id uuid.UUID) (*Log, error) {
+	row := q.db.QueryRow(ctx, getLog, id)
 	var i Log
 	err := row.Scan(
 		&i.ID,
-		&i.TestExecID,
-		&i.CaseExecID,
+		&i.TestExecutionID,
+		&i.CaseExecutionID,
 		&i.Level,
 		&i.Message,
-		&i.CreatedAt,
+		&i.CreateTime,
 	)
 	return &i, err
 }
 
-const listTestExecutionLogs = `-- name: ListTestExecutionLogs :many
-SELECT id, test_exec_id, case_exec_id, level, message, created_at
+const listLogs = `-- name: ListLogs :many
+SELECT id, test_execution_id, case_execution_id, level, message, create_time
 FROM logs
-WHERE test_exec_id = $1
-ORDER BY created_at
+WHERE test_execution_id = $1
+ORDER BY create_time
 `
 
-func (q *Queries) ListTestExecutionLogs(ctx context.Context, testExecID test.TestExecutionID) ([]*Log, error) {
-	rows, err := q.db.Query(ctx, listTestExecutionLogs, testExecID)
+func (q *Queries) ListLogs(ctx context.Context, testExecutionID test.TestExecutionID) ([]*Log, error) {
+	rows, err := q.db.Query(ctx, listLogs, testExecutionID)
 	if err != nil {
 		return nil, err
 	}
@@ -87,11 +87,11 @@ func (q *Queries) ListTestExecutionLogs(ctx context.Context, testExecID test.Tes
 		var i Log
 		if err := rows.Scan(
 			&i.ID,
-			&i.TestExecID,
-			&i.CaseExecID,
+			&i.TestExecutionID,
+			&i.CaseExecutionID,
 			&i.Level,
 			&i.Message,
-			&i.CreatedAt,
+			&i.CreateTime,
 		); err != nil {
 			return nil, err
 		}

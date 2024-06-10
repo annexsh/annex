@@ -109,7 +109,7 @@ func (t *TestExecutionEventSource) handleNextEvent(ctx context.Context) error {
 		if err = json.Unmarshal([]byte(notif.Payload), &msg); err != nil {
 			return err
 		}
-		if !msg.Data.FinishedAt.Valid {
+		if !msg.Data.FinishTime.Valid {
 			return nil
 		}
 
@@ -123,7 +123,7 @@ func (t *TestExecutionEventSource) handleNextEvent(ctx context.Context) error {
 			return err
 		}
 
-		execEvent.TestExecID = msg.Data.TestExecID
+		execEvent.TestExecID = msg.Data.TestExecutionID
 		execEvent.Data.Type = event.DataTypeCaseExecution
 		execEvent.Data.CaseExecution = marshalCaseExec(msg.Data)
 
@@ -131,11 +131,11 @@ func (t *TestExecutionEventSource) handleNextEvent(ctx context.Context) error {
 		case "INSERT":
 			execEvent.Type = event.TypeCaseExecutionScheduled
 		case "UPDATE":
-			if !msg.Data.StartedAt.Valid && !msg.Data.FinishedAt.Valid {
+			if !msg.Data.StartTime.Valid && !msg.Data.FinishTime.Valid {
 				return nil
 			}
 			execEvent.Type = event.TypeCaseExecutionStarted
-			if msg.Data.FinishedAt.Valid {
+			if msg.Data.FinishTime.Valid {
 				execEvent.Type = event.TypeCaseExecutionFinished
 			}
 		}
@@ -147,10 +147,10 @@ func (t *TestExecutionEventSource) handleNextEvent(ctx context.Context) error {
 		if tableMsg.Action != "INSERT" {
 			return nil
 		}
-		execEvent.TestExecID = msg.Data.TestExecID
-		execEvent.Data.Type = event.DataTypeExecutionLog
-		execEvent.Data.ExecutionLog = marshalExecLog(msg.Data)
-		execEvent.Type = event.TypeExecutionLogPublished
+		execEvent.TestExecID = msg.Data.TestExecutionID
+		execEvent.Data.Type = event.DataTypeLog
+		execEvent.Data.Log = marshalExecLog(msg.Data)
+		execEvent.Type = event.TypeLogPublished
 	default:
 		return nil
 	}

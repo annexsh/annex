@@ -19,9 +19,9 @@ func TestCaseExecutionReader_GetCaseExecution(t *testing.T) {
 	r := NewCaseExecutionReader(db)
 
 	want := fake.GenCaseExec(test.NewTestExecutionID())
-	db.caseExecs[caseExecKey(want.TestExecID, want.ID)] = want
+	db.caseExecs[caseExecKey(want.TestExecutionID, want.ID)] = want
 
-	got, err := r.GetCaseExecution(ctx, want.TestExecID, want.ID)
+	got, err := r.GetCaseExecution(ctx, want.TestExecutionID, want.ID)
 	require.NoError(t, err)
 	assert.Equal(t, want, got)
 }
@@ -38,7 +38,7 @@ func TestCaseExecutionReader_ListCaseExecutions(t *testing.T) {
 	for i := range count {
 		ce := fake.GenCaseExec(testExecID)
 		want[i] = ce
-		db.caseExecs[caseExecKey(ce.TestExecID, ce.ID)] = ce
+		db.caseExecs[caseExecKey(ce.TestExecutionID, ce.ID)] = ce
 	}
 
 	got, err := r.ListCaseExecutions(ctx, testExecID)
@@ -85,7 +85,7 @@ func TestCaseExecutionWriter_CreateScheduledCaseExecution(t *testing.T) {
 
 			require.NoError(t, err)
 			assert.Equal(t, sched.ID, got.ID)
-			assert.Equal(t, sched.TestExecID, got.TestExecID)
+			assert.Equal(t, sched.TestExecID, got.TestExecutionID)
 			assert.Equal(t, sched.CaseName, got.CaseName)
 			assert.Equal(t, sched.ScheduleTime, got.ScheduleTime)
 			assert.Nil(t, got.StartTime)
@@ -122,13 +122,13 @@ func TestCaseExecutionWriter_UpdateStartedCaseExecution(t *testing.T) {
 			existing.StartTime = nil
 			existing.FinishTime = nil
 			existing.Error = nil
-			dbKey := caseExecKey(existing.TestExecID, existing.ID)
+			dbKey := caseExecKey(existing.TestExecutionID, existing.ID)
 
 			if tt.existingCase {
 				db.caseExecs[dbKey] = existing
 			}
 
-			started := fake.GenStartedCaseExec(existing.TestExecID, existing.ID)
+			started := fake.GenStartedCaseExec(existing.TestExecutionID, existing.ID)
 			got, err := w.UpdateStartedCaseExecution(ctx, started)
 			if tt.wantErr != nil {
 				require.ErrorIs(t, err, tt.wantErr)
@@ -137,7 +137,7 @@ func TestCaseExecutionWriter_UpdateStartedCaseExecution(t *testing.T) {
 
 			require.NoError(t, err)
 			assert.Equal(t, started.ID, got.ID)
-			assert.Equal(t, existing.TestExecID, got.TestExecID)
+			assert.Equal(t, existing.TestExecutionID, got.TestExecutionID)
 			assert.Equal(t, existing.CaseName, got.CaseName)
 			assert.Equal(t, existing.ScheduleTime, got.ScheduleTime)
 			assert.Equal(t, started.StartTime, *got.StartTime)
@@ -173,13 +173,13 @@ func TestCaseExecutionWriter_UpdateFinishedCaseExecution(t *testing.T) {
 			existing := fake.GenCaseExec(test.NewTestExecutionID())
 			existing.FinishTime = nil
 			existing.Error = nil
-			dbKey := caseExecKey(existing.TestExecID, existing.ID)
+			dbKey := caseExecKey(existing.TestExecutionID, existing.ID)
 
 			if tt.existingCase {
 				db.caseExecs[dbKey] = existing
 			}
 
-			finished := fake.GenFinishedCaseExec(existing.TestExecID, existing.ID, ptr.Get("bang"))
+			finished := fake.GenFinishedCaseExec(existing.TestExecutionID, existing.ID, ptr.Get("bang"))
 			got, err := w.UpdateFinishedCaseExecution(ctx, finished)
 			if tt.wantErr != nil {
 				require.ErrorIs(t, err, tt.wantErr)
@@ -188,7 +188,7 @@ func TestCaseExecutionWriter_UpdateFinishedCaseExecution(t *testing.T) {
 
 			require.NoError(t, err)
 			assert.Equal(t, finished.ID, got.ID)
-			assert.Equal(t, existing.TestExecID, got.TestExecID)
+			assert.Equal(t, existing.TestExecutionID, got.TestExecutionID)
 			assert.Equal(t, existing.CaseName, got.CaseName)
 			assert.Equal(t, existing.ScheduleTime, got.ScheduleTime)
 			assert.Equal(t, existing.StartTime, got.StartTime)
@@ -204,10 +204,10 @@ func TestCaseExecutionWriter_DeleteCaseExecution(t *testing.T) {
 	w := NewCaseExecutionWriter(db)
 
 	want := fake.GenCaseExec(test.NewTestExecutionID())
-	db.caseExecs[caseExecKey(want.TestExecID, want.ID)] = want
+	db.caseExecs[caseExecKey(want.TestExecutionID, want.ID)] = want
 	assert.NotEmpty(t, db.caseExecs)
 
-	err := w.DeleteCaseExecution(ctx, want.TestExecID, want.ID)
+	err := w.DeleteCaseExecution(ctx, want.TestExecutionID, want.ID)
 	require.NoError(t, err)
 	assert.Empty(t, db.caseExecs)
 }

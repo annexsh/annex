@@ -17,22 +17,22 @@ import (
 
 func TestService_RegisterTest(t *testing.T) {
 	tests := []struct {
-		name           string
-		testName       string
-		project        string
-		defaultPayload *testv1.Payload
+		name         string
+		testName     string
+		group        string
+		defaultInput *testv1.Payload
 	}{
 		{
-			name:           "create test without payload",
-			testName:       uuid.NewString(),
-			project:        uuid.NewString(),
-			defaultPayload: nil,
+			name:         "create test without payload",
+			testName:     uuid.NewString(),
+			group:        uuid.NewString(),
+			defaultInput: nil,
 		},
 		{
-			name:           "create test with payload",
-			testName:       uuid.NewString(),
-			project:        uuid.NewString(),
-			defaultPayload: fake.GenDefaultPayload().Proto(),
+			name:         "create test with payload",
+			testName:     uuid.NewString(),
+			group:        uuid.NewString(),
+			defaultInput: fake.GenDefaultInput().Proto(),
 		},
 	}
 
@@ -40,49 +40,46 @@ func TestService_RegisterTest(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			req := &testservicev1.RegisterTestsRequest{
 				RunnerId: uuid.NewString(),
+				Group:    tt.group,
 				Definitions: []*testv1.TestDefinition{
 					{
-						Project:        tt.project,
-						Name:           tt.testName,
-						DefaultPayload: tt.defaultPayload,
+						Name:         tt.testName,
+						DefaultInput: tt.defaultInput,
 					},
 				},
 			}
 			s, _ := newService()
 			res, err := s.RegisterTests(context.Background(), req)
 			require.NoError(t, err)
-			require.Len(t, res.Registered, len(req.Definitions))
+			require.Len(t, res.Tests, len(req.Definitions))
 
-			for _, gotTest := range res.Registered {
+			for _, gotTest := range res.Tests {
 				assert.NotEmpty(t, gotTest.Id)
-				assert.Equal(t, tt.project, gotTest.Project)
+				assert.Equal(t, tt.group, gotTest.Group)
 				assert.Equal(t, tt.testName, gotTest.Name)
-				assert.Equal(t, tt.defaultPayload != nil, gotTest.HasPayload)
-				assert.Equal(t, req.RunnerId, gotTest.LastAvailable.Id)
-				assert.NotEmpty(t, gotTest.LastAvailable.LastHeartbeat)
-				assert.True(t, gotTest.LastAvailable.IsActive)
-				assert.NotEmpty(t, gotTest.CreatedAt)
+				assert.Equal(t, tt.defaultInput != nil, gotTest.HasInput)
+				assert.NotEmpty(t, gotTest.CreateTime)
 			}
 		})
 	}
 }
 
-func TestService_GetDefaultPayload(t *testing.T) {
+func TestService_GetDefaultInput(t *testing.T) {
 	ctx := context.Background()
 	s, fakes := newService()
 
 	def := fake.GenTestDefinition()
-	want := string(def.DefaultPayload.Payload)
+	want := string(def.DefaultInput.Data)
 
 	_, err := fakes.repo.CreateTest(ctx, def)
 	require.NoError(t, err)
 
-	res, err := s.GetTestDefaultPayload(ctx, &testservicev1.GetTestDefaultPayloadRequest{
+	res, err := s.GetTestDefaultInput(ctx, &testservicev1.GetTestDefaultInputRequest{
 		TestId: def.TestID.String(),
 	})
 	require.NoError(t, err)
 
-	assert.Equal(t, want, res.DefaultPayload)
+	assert.Equal(t, want, res.DefaultInput)
 }
 
 func TestService_ListTests(t *testing.T) {
@@ -123,8 +120,8 @@ func TestService_ExecuteTest(t *testing.T) {
 	require.NoError(t, err)
 
 	res, err := s.ExecuteTest(ctx, &testservicev1.ExecuteTestRequest{
-		TestId:  tt.ID.String(),
-		Payload: fake.GenPayload().Proto(),
+		TestId: tt.ID.String(),
+		Input:  fake.GenInput().Proto(),
 	})
 	require.NoError(t, err)
 

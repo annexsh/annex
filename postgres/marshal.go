@@ -9,11 +9,11 @@ import (
 func marshalTest(t *sqlc.Test) *test.Test {
 	return &test.Test{
 		ID:         t.ID,
-		Project:    t.Project,
+		Group:      t.Group,
 		Name:       t.Name,
-		HasPayload: t.HasPayload,
-		CreateTime: t.CreatedAt.Time,
-		Runners: []*test.TestRunner{
+		HasInput:   t.HasInput,
+		CreateTime: t.CreateTime.Time,
+		Runners: []*test.Runner{
 			{
 				ID:                t.RunnerID,
 				LastHeartbeatTime: t.RunnerHeartbeatAt.Time,
@@ -30,17 +30,15 @@ func marshalTests(tests []*sqlc.Test) []*test.Test {
 	return testspb
 }
 
-func marshalTestDefaultPayload(payload *sqlc.TestDefaultPayload) *test.Payload {
+func marshalTestDefaultInput(input *sqlc.TestDefaultInput) *test.Payload {
 	return &test.Payload{
-		Payload: payload.Payload,
-		IsZero:  payload.IsZero,
+		Data: input.Data,
 	}
 }
 
-func marshalTestExecPayload(payload *sqlc.TestExecutionPayload) *test.Payload {
+func marshalTestExecPayload(input *sqlc.TestExecutionInput) *test.Payload {
 	return &test.Payload{
-		Payload: payload.Payload,
-		IsZero:  false,
+		Data: input.Data,
 	}
 }
 
@@ -48,15 +46,15 @@ func marshalTestExec(testExec *sqlc.TestExecution) *test.TestExecution {
 	t := &test.TestExecution{
 		ID:           testExec.ID,
 		TestID:       testExec.TestID,
-		HasPayload:   testExec.HasPayload,
-		ScheduleTime: testExec.ScheduledAt.Time,
+		HasInput:     testExec.HasInput,
+		ScheduleTime: testExec.ScheduleTime.Time,
 		Error:        testExec.Error,
 	}
-	if testExec.StartedAt.Valid {
-		t.StartTime = &testExec.StartedAt.Time
+	if testExec.StartTime.Valid {
+		t.StartTime = &testExec.StartTime.Time
 	}
-	if testExec.FinishedAt.Valid {
-		t.FinishTime = &testExec.FinishedAt.Time
+	if testExec.FinishTime.Valid {
+		t.FinishTime = &testExec.FinishTime.Time
 	}
 	return t
 }
@@ -71,17 +69,17 @@ func marshalTestExecs(testExecs []*sqlc.TestExecution) []*test.TestExecution {
 
 func marshalCaseExec(caseExec *sqlc.CaseExecution) *test.CaseExecution {
 	c := &test.CaseExecution{
-		ID:           caseExec.ID,
-		TestExecID:   caseExec.TestExecID,
-		CaseName:     caseExec.CaseName,
-		ScheduleTime: caseExec.ScheduledAt.Time,
-		Error:        caseExec.Error,
+		ID:              caseExec.ID,
+		TestExecutionID: caseExec.TestExecutionID,
+		CaseName:        caseExec.CaseName,
+		ScheduleTime:    caseExec.ScheduleTime.Time,
+		Error:           caseExec.Error,
 	}
-	if caseExec.StartedAt.Valid {
-		c.StartTime = &caseExec.StartedAt.Time
+	if caseExec.StartTime.Valid {
+		c.StartTime = &caseExec.StartTime.Time
 	}
-	if caseExec.FinishedAt.Valid {
-		c.FinishTime = &caseExec.FinishedAt.Time
+	if caseExec.FinishTime.Valid {
+		c.FinishTime = &caseExec.FinishTime.Time
 	}
 	return c
 }
@@ -94,19 +92,19 @@ func marshalCaseExecs(caseExecs []*sqlc.CaseExecution) []*test.CaseExecution {
 	return ce
 }
 
-func marshalExecLog(log *sqlc.Log) *test.ExecutionLog {
-	return &test.ExecutionLog{
-		ID:         log.ID,
-		TestExecID: log.TestExecID,
-		CaseExecID: log.CaseExecID,
-		Level:      log.Level,
-		Message:    log.Message,
-		CreateTime: log.CreatedAt.Time,
+func marshalExecLog(log *sqlc.Log) *test.Log {
+	return &test.Log{
+		ID:              log.ID,
+		TestExecutionID: log.TestExecutionID,
+		CaseExecutionID: log.CaseExecutionID,
+		Level:           log.Level,
+		Message:         log.Message,
+		CreateTime:      log.CreateTime.Time,
 	}
 }
 
-func marshalExecLogs(logs []*sqlc.Log) []*test.ExecutionLog {
-	execLogs := make([]*test.ExecutionLog, len(logs))
+func marshalExecLogs(logs []*sqlc.Log) []*test.Log {
+	execLogs := make([]*test.Log, len(logs))
 	for i, log := range logs {
 		execLogs[i] = marshalExecLog(log)
 	}

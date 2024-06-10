@@ -10,10 +10,10 @@ import (
 func (t *Test) Proto() *testv1.Test {
 	return &testv1.Test{
 		Id:         t.ID.String(),
-		Project:    t.Project,
+		Group:      t.Group,
 		Name:       t.Name,
-		HasPayload: t.HasPayload,
-		CreatedAt:  timestamppb.New(t.CreateTime),
+		HasInput:   t.HasInput,
+		CreateTime: timestamppb.New(t.CreateTime),
 	}
 }
 
@@ -28,25 +28,24 @@ func (t TestList) Proto() []*testv1.Test {
 func (p *Payload) Proto() *testv1.Payload {
 	return &testv1.Payload{
 		Metadata: p.Metadata,
-		Data:     p.Payload,
-		IsZero:   p.IsZero,
+		Data:     p.Data,
 	}
 }
 
 func (t *TestExecution) Proto() *testv1.TestExecution {
 	exec := &testv1.TestExecution{
-		Id:          t.ID.String(),
-		TestId:      t.TestID.String(),
-		Error:       t.Error,
-		ScheduledAt: timestamppb.New(t.ScheduleTime),
-		StartedAt:   nil,
-		FinishedAt:  nil,
+		Id:           t.ID.String(),
+		TestId:       t.TestID.String(),
+		Error:        t.Error,
+		ScheduleTime: timestamppb.New(t.ScheduleTime),
+		StartTime:    nil,
+		FinishTime:   nil,
 	}
 	if t.StartTime != nil {
-		exec.StartedAt = timestamppb.New(*t.StartTime)
+		exec.StartTime = timestamppb.New(*t.StartTime)
 	}
 	if t.FinishTime != nil {
-		exec.FinishedAt = timestamppb.New(*t.FinishTime)
+		exec.FinishTime = timestamppb.New(*t.FinishTime)
 	}
 	return exec
 }
@@ -61,18 +60,18 @@ func (t TestExecutionList) Proto() []*testv1.TestExecution {
 
 func (c *CaseExecution) Proto() *testv1.CaseExecution {
 	exec := &testv1.CaseExecution{
-		Id:          c.ID.Int32(),
-		CaseName:    c.CaseName,
-		TestExecId:  c.TestExecID.String(),
-		ScheduledAt: timestamppb.New(c.ScheduleTime),
-		FinishedAt:  nil,
-		Error:       c.Error,
+		Id:              c.ID.Int32(),
+		CaseName:        c.CaseName,
+		TestExecutionId: c.TestExecutionID.String(),
+		ScheduleTime:    timestamppb.New(c.ScheduleTime),
+		FinishTime:      nil,
+		Error:           c.Error,
 	}
 	if c.StartTime != nil {
-		exec.StartedAt = timestamppb.New(*c.StartTime)
+		exec.StartTime = timestamppb.New(*c.StartTime)
 	}
 	if c.FinishTime != nil {
-		exec.FinishedAt = timestamppb.New(*c.FinishTime)
+		exec.FinishTime = timestamppb.New(*c.FinishTime)
 	}
 	return exec
 }
@@ -85,24 +84,24 @@ func (c CaseExecutionList) Proto() []*testv1.CaseExecution {
 	return ce
 }
 
-func (l *ExecutionLog) Proto() *testv1.ExecutionLog {
+func (l *Log) Proto() *testv1.Log {
 	var caseExecID *int32
-	if l.CaseExecID != nil {
-		caseExecID = ptr.Get(l.CaseExecID.Int32())
+	if l.CaseExecutionID != nil {
+		caseExecID = ptr.Get(l.CaseExecutionID.Int32())
 	}
 
-	return &testv1.ExecutionLog{
-		Id:         l.ID.String(),
-		TestExecId: l.TestExecID.String(),
-		CaseExecId: caseExecID,
-		Level:      l.Level,
-		Message:    l.Message,
-		CreatedAt:  timestamppb.New(l.CreateTime),
+	return &testv1.Log{
+		Id:              l.ID.String(),
+		TestExecutionId: l.TestExecutionID.String(),
+		CaseExecutionId: caseExecID,
+		Level:           l.Level,
+		Message:         l.Message,
+		CreateTime:      timestamppb.New(l.CreateTime),
 	}
 }
 
-func (l ExecutionLogList) Proto() []*testv1.ExecutionLog {
-	execLogs := make([]*testv1.ExecutionLog, len(l))
+func (l LogList) Proto() []*testv1.Log {
+	execLogs := make([]*testv1.Log, len(l))
 	for i, log := range l {
 		execLogs[i] = log.Proto()
 	}

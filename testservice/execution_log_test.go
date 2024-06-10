@@ -52,29 +52,29 @@ func TestService_PublishTestExecutionLog(t *testing.T) {
 			}
 
 			req := &testservicev1.PublishTestExecutionLogRequest{
-				TestExecId: te.ID.String(),
-				CaseExecId: reqCaseExecID,
-				Level:      "INFO",
-				Message:    "lorem ipsum",
-				CreatedAt:  timestamppb.Now(),
+				TestExecutionId: te.ID.String(),
+				CaseExecutionId: reqCaseExecID,
+				Level:           "INFO",
+				Message:         "lorem ipsum",
+				CreateTime:      timestamppb.Now(),
 			}
 			res, err := s.PublishTestExecutionLog(ctx, req)
 			require.NoError(t, err)
 			assert.NotNil(t, res)
 
-			execLogID, err := uuid.Parse(res.Id)
+			execLogID, err := uuid.Parse(res.LogId)
 			require.NoError(t, err)
 
-			got, err := fakes.repo.GetExecutionLog(ctx, execLogID)
+			got, err := fakes.repo.GetLog(ctx, execLogID)
 			require.NoError(t, err)
 
-			want := &test.ExecutionLog{
-				ID:         execLogID,
-				TestExecID: te.ID,
-				CaseExecID: wantCaseExecID,
-				Level:      req.Level,
-				Message:    req.Message,
-				CreateTime: req.CreatedAt.AsTime(),
+			want := &test.Log{
+				ID:              execLogID,
+				TestExecutionID: te.ID,
+				CaseExecutionID: wantCaseExecID,
+				Level:           req.Level,
+				Message:         req.Message,
+				CreateTime:      req.CreateTime.AsTime(),
 			}
 
 			assert.Equal(t, got, want)
@@ -98,24 +98,24 @@ func TestService_ListTestExecutionLogs(t *testing.T) {
 	ce, err := fakes.repo.CreateScheduledCaseExecution(ctx, fake.GenScheduledCaseExec(te.ID))
 	require.NoError(t, err)
 
-	var want []*testv1.ExecutionLog
+	var want []*testv1.Log
 
 	for range wantNumTestLogs {
 		l := fake.GenTestExecLog(te.ID)
-		err = fakes.repo.CreateExecutionLog(ctx, l)
+		err = fakes.repo.CreateLog(ctx, l)
 		require.NoError(t, err)
 		want = append(want, l.Proto())
 	}
 
 	for range wantNumCaseLogs {
 		l := fake.GenCaseExecLog(te.ID, ce.ID)
-		err = fakes.repo.CreateExecutionLog(ctx, l)
+		err = fakes.repo.CreateLog(ctx, l)
 		require.NoError(t, err)
 		want = append(want, l.Proto())
 	}
 
 	res, err := s.ListTestExecutionLogs(ctx, &testservicev1.ListTestExecutionLogsRequest{
-		TestExecId: te.ID.String(),
+		TestExecutionId: te.ID.String(),
 	})
 	require.NoError(t, err)
 

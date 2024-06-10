@@ -36,7 +36,7 @@ func (t *TestExecutionReader) GetTestExecution(_ context.Context, id test.TestEx
 	return ptr.Copy(te), nil
 }
 
-func (t *TestExecutionReader) GetTestExecutionPayload(_ context.Context, id test.TestExecutionID) (*test.Payload, error) {
+func (t *TestExecutionReader) GetTestExecutionInput(_ context.Context, id test.TestExecutionID) (*test.Payload, error) {
 	t.db.mu.RLock()
 	defer t.db.mu.RUnlock()
 
@@ -45,7 +45,7 @@ func (t *TestExecutionReader) GetTestExecutionPayload(_ context.Context, id test
 		return nil, errors.New("not found")
 	}
 	return &test.Payload{
-		Payload: p,
+		Data: p,
 	}, nil
 }
 
@@ -79,8 +79,8 @@ func (t *TestExecutionReader) ListTestExecutions(_ context.Context, testID uuid.
 				}
 				// Skip already seen before last exec ID if schedule times are the same
 				if te.ScheduleTime.Equal(*filter.LastScheduleTime) &&
-					filter.LastExecID != nil &&
-					idstr <= filter.LastExecID.String() {
+					filter.LastTestExecutionID != nil &&
+					idstr <= filter.LastTestExecutionID.String() {
 					continue
 				}
 			}
@@ -114,7 +114,7 @@ func (t *TestExecutionWriter) CreateScheduledTestExecution(_ context.Context, sc
 	te := &test.TestExecution{
 		ID:           scheduled.ID,
 		TestID:       scheduled.TestID,
-		HasPayload:   scheduled.Payload != nil,
+		HasInput:     scheduled.Payload != nil,
 		ScheduleTime: scheduled.ScheduleTime,
 	}
 	t.db.testExecs[te.ID] = te
