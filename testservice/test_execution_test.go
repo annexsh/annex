@@ -29,7 +29,7 @@ func TestService_GetTestExecution(t *testing.T) {
 	require.NoError(t, err)
 
 	res, err := s.GetTestExecution(ctx, &testservicev1.GetTestExecutionRequest{
-		Id: te.ID.String(),
+		TestExecutionId: te.ID.String(),
 	})
 	require.NoError(t, err)
 
@@ -93,8 +93,8 @@ func TestService_AckTestExecutionStarted(t *testing.T) {
 	require.NoError(t, err)
 
 	req := &testservicev1.AckTestExecutionStartedRequest{
-		TestExecId: te.ID.String(),
-		StartedAt:  timestamppb.New(time.Now().UTC()),
+		TestExecutionId: te.ID.String(),
+		StartTime:       timestamppb.New(time.Now().UTC()),
 	}
 	res, err := s.AckTestExecutionStarted(ctx, req)
 	require.NoError(t, err)
@@ -102,7 +102,7 @@ func TestService_AckTestExecutionStarted(t *testing.T) {
 
 	ackd, err := fakes.repo.GetTestExecution(ctx, te.ID)
 	require.NoError(t, err)
-	assert.Equal(t, req.StartedAt.AsTime(), *ackd.StartTime)
+	assert.Equal(t, req.StartTime.AsTime(), *ackd.StartTime)
 }
 
 func TestService_AckTestExecutionFinished(t *testing.T) {
@@ -117,9 +117,9 @@ func TestService_AckTestExecutionFinished(t *testing.T) {
 	require.NoError(t, err)
 
 	req := &testservicev1.AckTestExecutionFinishedRequest{
-		TestExecId: te.ID.String(),
-		FinishedAt: timestamppb.New(time.Now().UTC()),
-		Error:      ptr.Get("bang"),
+		TestExecutionId: te.ID.String(),
+		FinishTime:      timestamppb.New(time.Now().UTC()),
+		Error:           ptr.Get("bang"),
 	}
 	res, err := s.AckTestExecutionFinished(ctx, req)
 	require.NoError(t, err)
@@ -127,7 +127,7 @@ func TestService_AckTestExecutionFinished(t *testing.T) {
 
 	ackd, err := fakes.repo.GetTestExecution(ctx, te.ID)
 	require.NoError(t, err)
-	assert.Equal(t, req.FinishedAt.AsTime(), *ackd.FinishTime)
+	assert.Equal(t, req.FinishTime.AsTime(), *ackd.FinishTime)
 }
 
 func TestService_RetryTestExecution(t *testing.T) {
@@ -148,7 +148,7 @@ func TestService_RetryTestExecution(t *testing.T) {
 
 	// Setup logs
 	testExecLog := fake.GenTestExecLog(testExec.ID)
-	err = repo.CreateExecutionLog(ctx, testExecLog)
+	err = repo.CreateLog(ctx, testExecLog)
 	require.NoError(t, err)
 	numCaseLogs := 10
 	successCaseLogs := createCaseLogs(t, ctx, repo, testExec.ID, successCaseExec.ID, numCaseLogs)
@@ -167,7 +167,7 @@ func TestService_RetryTestExecution(t *testing.T) {
 
 	// Retry test execution
 	res, err := svc.RetryTestExecution(ctx, &testservicev1.RetryTestExecutionRequest{
-		TestExecId: testExec.ID.String(),
+		TestExecutionId: testExec.ID.String(),
 	})
 	require.NoError(t, err)
 
@@ -175,26 +175,26 @@ func TestService_RetryTestExecution(t *testing.T) {
 	gotTestExec := res.TestExecution
 	assert.Equal(t, testExec.ID.String(), gotTestExec.Id)
 	assert.Equal(t, testExec.TestID.String(), gotTestExec.TestId)
-	assert.True(t, gotTestExec.ScheduledAt.AsTime().After(testExec.ScheduleTime))
-	assert.Nil(t, gotTestExec.StartedAt)
-	assert.Nil(t, gotTestExec.FinishedAt)
+	assert.True(t, gotTestExec.ScheduleTime.AsTime().After(testExec.ScheduleTime))
+	assert.Nil(t, gotTestExec.StartTime)
+	assert.Nil(t, gotTestExec.FinishTime)
 	assert.Nil(t, gotTestExec.Error)
 
 	// Assert test execution log record was not deleted
-	gotLog, err := repo.GetExecutionLog(ctx, testExecLog.ID)
+	gotLog, err := repo.GetLog(ctx, testExecLog.ID)
 	assert.NoError(t, err)
 	assert.Equal(t, testExecLog, gotLog)
 
 	// Assert success case execution log records were not deleted
 	for _, l := range successCaseLogs {
-		gotLog, err = repo.GetExecutionLog(ctx, l.ID)
+		gotLog, err = repo.GetLog(ctx, l.ID)
 		assert.NoError(t, err)
 		assert.Equal(t, l, gotLog)
 	}
 
 	// Assert success case execution log records were not deleted
 	for _, l := range failureCaseLogs {
-		_, err = repo.GetExecutionLog(ctx, l.ID)
-		assert.ErrorIs(t, err, test.ErrorExecutionLogNotFound)
+		_, err = repo.GetLog(ctx, l.ID)
+		assert.ErrorIs(t, err, test.ErrorLogNotFound)
 	}
 }

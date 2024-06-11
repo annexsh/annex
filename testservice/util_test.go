@@ -46,10 +46,10 @@ func createCaseExec(t *testing.T, ctx context.Context, repo test.Repository, tes
 	return ce
 }
 
-func createCaseLogs(t *testing.T, ctx context.Context, repo test.Repository, testExecID test.TestExecutionID, caseExecID test.CaseExecutionID, count int) test.ExecutionLogList {
+func createCaseLogs(t *testing.T, ctx context.Context, repo test.Repository, testExecID test.TestExecutionID, caseExecID test.CaseExecutionID, count int) test.LogList {
 	logs := fake.GenCaseExecLogs(count, testExecID, caseExecID)
 	for _, log := range logs {
-		err := repo.CreateExecutionLog(ctx, log)
+		err := repo.CreateLog(ctx, log)
 		require.NoError(t, err)
 	}
 	return logs

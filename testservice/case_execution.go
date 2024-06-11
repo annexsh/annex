@@ -10,7 +10,7 @@ import (
 )
 
 func (s *Service) ListTestCaseExecutions(ctx context.Context, req *testservicev1.ListTestCaseExecutionsRequest) (*testservicev1.ListTestCaseExecutionsResponse, error) {
-	testExecID, err := test.ParseTestExecutionID(req.TestExecId)
+	testExecID, err := test.ParseTestExecutionID(req.TestExecutionId)
 	if err != nil {
 		return nil, err
 	}
@@ -26,16 +26,16 @@ func (s *Service) ListTestCaseExecutions(ctx context.Context, req *testservicev1
 }
 
 func (s *Service) AckCaseExecutionScheduled(ctx context.Context, req *testservicev1.AckCaseExecutionScheduledRequest) (*testservicev1.AckCaseExecutionScheduledResponse, error) {
-	testExecID, err := test.ParseTestExecutionID(req.TestExecId)
+	testExecID, err := test.ParseTestExecutionID(req.TestExecutionId)
 	if err != nil {
 		return nil, err
 	}
 
 	scheduled := &test.ScheduledCaseExecution{
-		ID:           test.CaseExecutionID(req.Id),
+		ID:           test.CaseExecutionID(req.CaseExecutionId),
 		TestExecID:   testExecID,
 		CaseName:     req.CaseName,
-		ScheduleTime: req.ScheduledAt.AsTime().UTC(),
+		ScheduleTime: req.ScheduleTime.AsTime().UTC(),
 	}
 
 	if _, err = s.repo.CreateScheduledCaseExecution(ctx, scheduled); err != nil {
@@ -46,15 +46,15 @@ func (s *Service) AckCaseExecutionScheduled(ctx context.Context, req *testservic
 }
 
 func (s *Service) AckCaseExecutionStarted(ctx context.Context, req *testservicev1.AckCaseExecutionStartedRequest) (*testservicev1.AckCaseExecutionStartedResponse, error) {
-	testExecID, err := test.ParseTestExecutionID(req.TestExecId)
+	testExecID, err := test.ParseTestExecutionID(req.TestExecutionId)
 	if err != nil {
 		return nil, err
 	}
 
 	started := &test.StartedCaseExecution{
-		ID:         test.CaseExecutionID(req.Id),
-		TestExecID: testExecID,
-		StartTime:  req.StartedAt.AsTime().UTC(),
+		ID:              test.CaseExecutionID(req.CaseExecutionId),
+		TestExecutionID: testExecID,
+		StartTime:       req.StartTime.AsTime().UTC(),
 	}
 	_, err = s.repo.UpdateStartedCaseExecution(ctx, started)
 	if err != nil {
@@ -65,16 +65,16 @@ func (s *Service) AckCaseExecutionStarted(ctx context.Context, req *testservicev
 }
 
 func (s *Service) AckCaseExecutionFinished(ctx context.Context, req *testservicev1.AckCaseExecutionFinishedRequest) (*testservicev1.AckCaseExecutionFinishedResponse, error) {
-	testExecID, err := test.ParseTestExecutionID(req.TestExecId)
+	testExecID, err := test.ParseTestExecutionID(req.TestExecutionId)
 	if err != nil {
 		return nil, err
 	}
 
 	finished := &test.FinishedCaseExecution{
-		ID:         test.CaseExecutionID(req.Id),
-		TestExecID: testExecID,
-		FinishTime: req.FinishedAt.AsTime(),
-		Error:      req.Error,
+		ID:              test.CaseExecutionID(req.CaseExecutionId),
+		TestExecutionID: testExecID,
+		FinishTime:      req.FinishTime.AsTime(),
+		Error:           req.Error,
 	}
 	if _, err = s.repo.UpdateFinishedCaseExecution(ctx, finished); err != nil {
 		return nil, fmt.Errorf("failed to update case execution: %w", err)

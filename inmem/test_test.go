@@ -25,16 +25,16 @@ func TestTestReader_GetTest(t *testing.T) {
 	assert.Equal(t, want, got)
 }
 
-func TestTestReader_GetTestDefaultPayload(t *testing.T) {
+func TestTestReader_GetTestDefaultInput(t *testing.T) {
 	ctx := context.Background()
 	db := NewDB()
 	r := NewTestReader(db)
 
-	want := fake.GenDefaultPayload()
+	want := fake.GenDefaultInput()
 	testID := uuid.New()
-	db.defaultPayloads[testID] = want
+	db.defaultInputs[testID] = want
 
-	got, err := r.GetTestDefaultPayload(ctx, testID)
+	got, err := r.GetTestDefaultInput(ctx, testID)
 	require.NoError(t, err)
 	assert.Equal(t, want, got)
 }
@@ -92,10 +92,6 @@ func TestTestWriter_CreateTests(t *testing.T) {
 func assertCreatedTest(t *testing.T, def *test.TestDefinition, got *test.Test) {
 	assert.Equal(t, def.TestID, got.ID)
 	assert.Equal(t, def.Name, got.Name)
-	assert.Equal(t, def.Project, got.Project)
-	assert.Len(t, got.Runners, 1)
-	assert.Equal(t, def.RunnerID, got.Runners[0].ID)
-	assert.Equal(t, true, got.Runners[0].IsActive)
-	assert.NotEmpty(t, true, got.Runners[0].LastHeartbeatTime)
-	assert.Equal(t, def.DefaultPayload != nil, got.HasPayload)
+	assert.Equal(t, def.Group, got.Group)
+	assert.Equal(t, def.DefaultInput != nil, got.HasInput)
 }

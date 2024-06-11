@@ -12,27 +12,30 @@ import (
 )
 
 type Querier interface {
+	ContextExists(ctx context.Context, id string) error
 	CreateCaseExecution(ctx context.Context, arg CreateCaseExecutionParams) (*CaseExecution, error)
+	CreateContext(ctx context.Context, id string) error
+	CreateGroup(ctx context.Context, arg CreateGroupParams) error
 	CreateLog(ctx context.Context, arg CreateLogParams) error
 	CreateTest(ctx context.Context, arg CreateTestParams) (*Test, error)
-	CreateTestDefaultPayload(ctx context.Context, arg CreateTestDefaultPayloadParams) error
+	CreateTestDefaultInput(ctx context.Context, arg CreateTestDefaultInputParams) error
 	CreateTestExecution(ctx context.Context, arg CreateTestExecutionParams) (*TestExecution, error)
-	CreateTestExecutionPayload(ctx context.Context, arg CreateTestExecutionPayloadParams) error
+	CreateTestExecutionInput(ctx context.Context, arg CreateTestExecutionInputParams) error
 	DeleteCaseExecution(ctx context.Context, arg DeleteCaseExecutionParams) error
 	DeleteLog(ctx context.Context, id uuid.UUID) error
 	GetCaseExecution(ctx context.Context, arg GetCaseExecutionParams) (*CaseExecution, error)
-	GetExecutionLog(ctx context.Context, id uuid.UUID) (*Log, error)
+	GetLog(ctx context.Context, id uuid.UUID) (*Log, error)
 	GetTest(ctx context.Context, id uuid.UUID) (*Test, error)
 	GetTestByName(ctx context.Context, arg GetTestByNameParams) (*Test, error)
-	GetTestDefaultPayload(ctx context.Context, testID uuid.UUID) (*TestDefaultPayload, error)
+	GetTestDefaultInput(ctx context.Context, testID uuid.UUID) (*TestDefaultInput, error)
 	GetTestExecution(ctx context.Context, id test.TestExecutionID) (*TestExecution, error)
-	GetTestExecutionPayload(ctx context.Context, testExecID test.TestExecutionID) (*TestExecutionPayload, error)
-	ListTestCaseExecutions(ctx context.Context, testExecID test.TestExecutionID) ([]*CaseExecution, error)
-	ListTestExecutionLogs(ctx context.Context, testExecID test.TestExecutionID) ([]*Log, error)
+	GetTestExecutionInput(ctx context.Context, testExecutionID test.TestExecutionID) (*TestExecutionInput, error)
+	GroupExists(ctx context.Context, arg GroupExistsParams) error
+	ListCaseExecutions(ctx context.Context, testExecutionID test.TestExecutionID) ([]*CaseExecution, error)
+	ListLogs(ctx context.Context, testExecutionID test.TestExecutionID) ([]*Log, error)
 	ListTestExecutions(ctx context.Context, arg ListTestExecutionsParams) ([]*TestExecution, error)
 	ListTests(ctx context.Context) ([]*Test, error)
 	ResetCaseExecution(ctx context.Context, arg ResetCaseExecutionParams) (*CaseExecution, error)
-	SetTestRunnerHeartbeat(ctx context.Context, arg SetTestRunnerHeartbeatParams) error
 	UpdateCaseExecutionFinished(ctx context.Context, arg UpdateCaseExecutionFinishedParams) (*CaseExecution, error)
 	UpdateCaseExecutionStarted(ctx context.Context, arg UpdateCaseExecutionStartedParams) (*CaseExecution, error)
 	UpdateTestExecutionFinished(ctx context.Context, arg UpdateTestExecutionFinishedParams) (*TestExecution, error)

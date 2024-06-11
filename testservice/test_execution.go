@@ -12,7 +12,7 @@ import (
 )
 
 func (s *Service) GetTestExecution(ctx context.Context, req *testservicev1.GetTestExecutionRequest) (*testservicev1.GetTestExecutionResponse, error) {
-	execID, err := test.ParseTestExecutionID(req.Id)
+	execID, err := test.ParseTestExecutionID(req.TestExecutionId)
 	if err != nil {
 		return nil, err
 	}
@@ -26,8 +26,8 @@ func (s *Service) GetTestExecution(ctx context.Context, req *testservicev1.GetTe
 		TestExecution: exec.Proto(),
 	}
 
-	if exec.HasPayload {
-		input, err := s.repo.GetTestExecutionPayload(ctx, execID)
+	if exec.HasInput {
+		input, err := s.repo.GetTestExecutionInput(ctx, execID)
 		if err != nil {
 			return nil, err
 		}
@@ -59,7 +59,7 @@ func (s *Service) ListTestExecutions(ctx context.Context, req *testservicev1.Lis
 			return nil, err
 		}
 		filter.LastScheduleTime = &lastTimestamp
-		filter.LastExecID = &lastID
+		filter.LastTestExecutionID = &lastID
 	}
 
 	var testExecs test.TestExecutionList
@@ -86,14 +86,14 @@ func (s *Service) ListTestExecutions(ctx context.Context, req *testservicev1.Lis
 }
 
 func (s *Service) AckTestExecutionStarted(ctx context.Context, req *testservicev1.AckTestExecutionStartedRequest) (*testservicev1.AckTestExecutionStartedResponse, error) {
-	execID, err := test.ParseTestExecutionID(req.TestExecId)
+	execID, err := test.ParseTestExecutionID(req.TestExecutionId)
 	if err != nil {
 		return nil, err
 	}
 
 	started := &test.StartedTestExecution{
 		ID:        execID,
-		StartTime: req.StartedAt.AsTime(),
+		StartTime: req.StartTime.AsTime(),
 	}
 
 	if _, err = s.repo.UpdateStartedTestExecution(ctx, started); err != nil {
@@ -104,14 +104,14 @@ func (s *Service) AckTestExecutionStarted(ctx context.Context, req *testservicev
 }
 
 func (s *Service) AckTestExecutionFinished(ctx context.Context, req *testservicev1.AckTestExecutionFinishedRequest) (*testservicev1.AckTestExecutionFinishedResponse, error) {
-	execID, err := test.ParseTestExecutionID(req.TestExecId)
+	execID, err := test.ParseTestExecutionID(req.TestExecutionId)
 	if err != nil {
 		return nil, err
 	}
 
 	finished := &test.FinishedTestExecution{
 		ID:         execID,
-		FinishTime: req.FinishedAt.AsTime(),
+		FinishTime: req.FinishTime.AsTime(),
 		Error:      req.Error,
 	}
 
@@ -123,7 +123,7 @@ func (s *Service) AckTestExecutionFinished(ctx context.Context, req *testservice
 }
 
 func (s *Service) RetryTestExecution(ctx context.Context, req *testservicev1.RetryTestExecutionRequest) (*testservicev1.RetryTestExecutionResponse, error) {
-	testExecID, err := test.ParseTestExecutionID(req.TestExecId)
+	testExecID, err := test.ParseTestExecutionID(req.TestExecutionId)
 	if err != nil {
 		return nil, err
 	}

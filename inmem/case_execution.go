@@ -25,7 +25,7 @@ func NewCaseExecutionReader(db *DB) *CaseExecutionReader {
 func (c *CaseExecutionReader) GetCaseExecution(_ context.Context, testExecID test.TestExecutionID, caseExecID test.CaseExecutionID) (*test.CaseExecution, error) {
 	c.db.mu.RLock()
 	defer c.db.mu.RUnlock()
-	ce, ok := c.db.caseExecs[caseExecKey(testExecID, caseExecID)]
+	ce, ok := c.db.caseExecs[getCaseExecKey(testExecID, caseExecID)]
 	if !ok {
 		return nil, test.ErrorCaseExecutionNotFound
 	}
@@ -38,7 +38,7 @@ func (c *CaseExecutionReader) ListCaseExecutions(_ context.Context, testExecID t
 
 	var execs test.CaseExecutionList
 	for _, ce := range c.db.caseExecs {
-		if ce.TestExecID == testExecID {
+		if ce.TestExecutionID == testExecID {
 			execs = append(execs, ptr.Copy(ce))
 		}
 	}
@@ -69,12 +69,12 @@ func (c *CaseExecutionWriter) CreateScheduledCaseExecution(_ context.Context, sc
 	}
 
 	ce := &test.CaseExecution{
-		ID:           scheduled.ID,
-		TestExecID:   scheduled.TestExecID,
-		CaseName:     scheduled.CaseName,
-		ScheduleTime: scheduled.ScheduleTime,
+		ID:              scheduled.ID,
+		TestExecutionID: scheduled.TestExecID,
+		CaseName:        scheduled.CaseName,
+		ScheduleTime:    scheduled.ScheduleTime,
 	}
-	c.db.caseExecs[caseExecKey(ce.TestExecID, ce.ID)] = ce
+	c.db.caseExecs[getCaseExecKey(ce.TestExecutionID, ce.ID)] = ce
 	c.db.events.Publish(event.NewCaseExecutionEvent(event.TypeCaseExecutionScheduled, ce))
 	return ptr.Copy(ce), nil
 }
@@ -83,7 +83,7 @@ func (c *CaseExecutionWriter) UpdateStartedCaseExecution(_ context.Context, star
 	c.db.mu.Lock()
 	defer c.db.mu.Unlock()
 
-	key := caseExecKey(started.TestExecID, started.ID)
+	key := getCaseExecKey(started.TestExecutionID, started.ID)
 	ce, ok := c.db.caseExecs[key]
 	if !ok {
 		return nil, test.ErrorCaseExecutionNotFound
@@ -98,7 +98,7 @@ func (c *CaseExecutionWriter) UpdateFinishedCaseExecution(_ context.Context, fin
 	c.db.mu.Lock()
 	defer c.db.mu.Unlock()
 
-	key := caseExecKey(finished.TestExecID, finished.ID)
+	key := getCaseExecKey(finished.TestExecutionID, finished.ID)
 	ce, ok := c.db.caseExecs[key]
 	if !ok {
 		return nil, test.ErrorCaseExecutionNotFound
@@ -113,10 +113,18 @@ func (c *CaseExecutionWriter) UpdateFinishedCaseExecution(_ context.Context, fin
 func (c *CaseExecutionWriter) DeleteCaseExecution(_ context.Context, testExecID test.TestExecutionID, id test.CaseExecutionID) error {
 	c.db.mu.Lock()
 	defer c.db.mu.Unlock()
-	delete(c.db.caseExecs, caseExecKey(testExecID, id))
+	delete(c.db.caseExecs, getCaseExecKey(testExecID, id))
 	return nil
 }
 
-func caseExecKey(testExecID test.TestExecutionID, caseExecID test.CaseExecutionID) string {
-	return testExecID.String() + "." + caseExecID.String()
+type caseExecKey struct {
+	testExecID test.TestExecutionID
+	caseExecID test.CaseExecutionID
+}
+
+func getCaseExecKey(testExecID test.TestExecutionID, caseExecID test.CaseExecutionID) caseExecKey {
+	return caseExecKey{
+		testExecID: testExecID,
+		caseExecID: caseExecID,
+	}
 }

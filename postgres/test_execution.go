@@ -33,8 +33,8 @@ func (t *TestExecutionReader) GetTestExecution(ctx context.Context, id test.Test
 	return marshalTestExec(exec), nil
 }
 
-func (t *TestExecutionReader) GetTestExecutionPayload(ctx context.Context, id test.TestExecutionID) (*test.Payload, error) {
-	payload, err := t.db.GetTestExecutionPayload(ctx, id)
+func (t *TestExecutionReader) GetTestExecutionInput(ctx context.Context, id test.TestExecutionID) (*test.Payload, error) {
+	payload, err := t.db.GetTestExecutionInput(ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -43,9 +43,9 @@ func (t *TestExecutionReader) GetTestExecutionPayload(ctx context.Context, id te
 
 func (t *TestExecutionReader) ListTestExecutions(ctx context.Context, testID uuid.UUID, filter *test.TestExecutionListFilter) (test.TestExecutionList, error) {
 	params := sqlc.ListTestExecutionsParams{
-		TestID:          testID,
-		LastScheduledAt: sqlc.NewNullableTimestamp(filter.LastScheduleTime),
-		LastExecID:      filter.LastExecID,
+		TestID:           testID,
+		LastScheduleTime: sqlc.NewNullableTimestamp(filter.LastScheduleTime),
+		LastExecID:       filter.LastTestExecutionID,
 	}
 	if filter.PageSize > 0 {
 		params.PageSize = ptr.Get(int32(filter.PageSize))
@@ -70,18 +70,18 @@ func (t *TestExecutionWriter) CreateScheduledTestExecution(ctx context.Context, 
 
 	err := t.db.ExecuteTx(ctx, func(querier sqlc.Querier) error {
 		exec, err := t.db.CreateTestExecution(ctx, sqlc.CreateTestExecutionParams{
-			ID:          scheduled.ID,
-			TestID:      scheduled.TestID,
-			HasPayload:  scheduled.Payload != nil,
-			ScheduledAt: sqlc.NewTimestamp(scheduled.ScheduleTime),
+			ID:           scheduled.ID,
+			TestID:       scheduled.TestID,
+			HasInput:     scheduled.Payload != nil,
+			ScheduleTime: sqlc.NewTimestamp(scheduled.ScheduleTime),
 		})
 		if err != nil {
 			return err
 		}
-		if exec.HasPayload {
-			if err = querier.CreateTestExecutionPayload(ctx, sqlc.CreateTestExecutionPayloadParams{
-				TestExecID: exec.ID,
-				Payload:    scheduled.Payload,
+		if exec.HasInput {
+			if err = querier.CreateTestExecutionInput(ctx, sqlc.CreateTestExecutionInputParams{
+				TestExecutionID: exec.ID,
+				Data:            scheduled.Payload,
 			}); err != nil {
 				return err
 			}
@@ -99,7 +99,7 @@ func (t *TestExecutionWriter) CreateScheduledTestExecution(ctx context.Context, 
 func (t *TestExecutionWriter) UpdateStartedTestExecution(ctx context.Context, started *test.StartedTestExecution) (*test.TestExecution, error) {
 	exec, err := t.db.UpdateTestExecutionStarted(ctx, sqlc.UpdateTestExecutionStartedParams{
 		ID:        started.ID,
-		StartedAt: sqlc.NewTimestamp(started.StartTime),
+		StartTime: sqlc.NewTimestamp(started.StartTime),
 	})
 	if err != nil {
 		return nil, err
@@ -110,7 +110,7 @@ func (t *TestExecutionWriter) UpdateStartedTestExecution(ctx context.Context, st
 func (t *TestExecutionWriter) UpdateFinishedTestExecution(ctx context.Context, finished *test.FinishedTestExecution) (*test.TestExecution, error) {
 	exec, err := t.db.UpdateTestExecutionFinished(ctx, sqlc.UpdateTestExecutionFinishedParams{
 		ID:         finished.ID,
-		FinishedAt: sqlc.NewTimestamp(finished.FinishTime),
+		FinishTime: sqlc.NewTimestamp(finished.FinishTime),
 		Error:      finished.Error,
 	})
 	if err != nil {
@@ -140,8 +140,8 @@ func (t *TestExecutionWriter) ResetTestExecution(ctx context.Context, reset *tes
 
 	for _, caseExecID := range reset.StaleCaseExecutions {
 		if err = querier.DeleteCaseExecution(ctx, sqlc.DeleteCaseExecutionParams{
-			ID:         caseExecID,
-			TestExecID: reset.ID,
+			ID:              caseExecID,
+			TestExecutionID: reset.ID,
 		}); err != nil {
 			return nil, nil, err
 		}
@@ -156,10 +156,10 @@ func (t *TestExecutionWriter) ResetTestExecution(ctx context.Context, reset *tes
 	// CreateTestExecution is idempotent. On conflict, it resets the existing
 	// workflow to a new scheduled state matching the params below.
 	testExec, err := querier.CreateTestExecution(ctx, sqlc.CreateTestExecutionParams{
-		ID:          reset.ID,
-		TestID:      existing.TestID,
-		HasPayload:  existing.HasPayload,
-		ScheduledAt: sqlc.NewTimestamp(reset.ResetTime),
+		ID:           reset.ID,
+		TestID:       existing.TestID,
+		HasInput:     existing.HasInput,
+		ScheduleTime: sqlc.NewTimestamp(reset.ResetTime),
 	})
 	if err != nil {
 		return nil, nil, err

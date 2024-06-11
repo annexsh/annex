@@ -19,7 +19,7 @@ type EventSource interface {
 type ExecutionReader interface {
 	GetTestExecution(ctx context.Context, id test.TestExecutionID) (*test.TestExecution, error)
 	ListCaseExecutions(ctx context.Context, id test.TestExecutionID) (test.CaseExecutionList, error)
-	ListExecutionLogs(ctx context.Context, id test.TestExecutionID) (test.ExecutionLogList, error)
+	ListLogs(ctx context.Context, id test.TestExecutionID) (test.LogList, error)
 }
 
 type ServiceOption func(s *Service)
@@ -53,7 +53,7 @@ func NewService(eventSource EventSource, execReader ExecutionReader, opts ...Ser
 func (s Service) StreamTestExecutionEvents(req *eventservicev1.StreamTestExecutionEventsRequest, stream eventservicev1.EventService_StreamTestExecutionEventsServer) error {
 	ctx := stream.Context()
 
-	testExecID, err := test.ParseTestExecutionID(req.TestExecId)
+	testExecID, err := test.ParseTestExecutionID(req.TestExecutionId)
 	if err != nil {
 		return err
 	}

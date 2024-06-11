@@ -7,10 +7,38 @@ import (
 )
 
 type Repository interface {
+	ContextReadWriter
+	GroupReadWriter
 	TestReadWriter
 	TestExecutionReadWriter
 	CaseExecutionReadWriter
-	ExecutionLogReadWriter
+	LogReadWriter
+}
+
+type ContextReadWriter interface {
+	ContextReader
+	ContextWriter
+}
+
+type ContextReader interface {
+	ContextExists(ctx context.Context, id string) (bool, error)
+}
+
+type ContextWriter interface {
+	CreateContext(ctx context.Context, id string) error
+}
+
+type GroupReadWriter interface {
+	GroupReader
+	GroupWriter
+}
+
+type GroupReader interface {
+	GroupExists(ctx context.Context, contextID string, name string) (bool, error)
+}
+
+type GroupWriter interface {
+	CreateGroup(ctx context.Context, contextID string, name string) error
 }
 
 type TestReadWriter interface {
@@ -21,7 +49,7 @@ type TestReadWriter interface {
 type TestReader interface {
 	GetTest(ctx context.Context, id uuid.UUID) (*Test, error)
 	ListTests(ctx context.Context) (TestList, error)
-	GetTestDefaultPayload(ctx context.Context, testID uuid.UUID) (*Payload, error)
+	GetTestDefaultInput(ctx context.Context, testID uuid.UUID) (*Payload, error)
 }
 
 type TestWriter interface {
@@ -36,7 +64,7 @@ type TestExecutionReadWriter interface {
 
 type TestExecutionReader interface {
 	GetTestExecution(ctx context.Context, id TestExecutionID) (*TestExecution, error)
-	GetTestExecutionPayload(ctx context.Context, id TestExecutionID) (*Payload, error)
+	GetTestExecutionInput(ctx context.Context, id TestExecutionID) (*Payload, error)
 	ListTestExecutions(ctx context.Context, testID uuid.UUID, filter *TestExecutionListFilter) (TestExecutionList, error)
 }
 
@@ -64,19 +92,19 @@ type CaseExecutionWriter interface {
 	DeleteCaseExecution(ctx context.Context, testExecID TestExecutionID, id CaseExecutionID) error
 }
 
-type ExecutionLogReadWriter interface {
-	ExecutionLogReader
-	ExecutionLogWriter
+type LogReadWriter interface {
+	LogReader
+	LogWriter
 }
 
-type ExecutionLogReader interface {
-	GetExecutionLog(ctx context.Context, id uuid.UUID) (*ExecutionLog, error)
-	ListExecutionLogs(ctx context.Context, testExecID TestExecutionID) (ExecutionLogList, error)
+type LogReader interface {
+	GetLog(ctx context.Context, id uuid.UUID) (*Log, error)
+	ListLogs(ctx context.Context, testExecID TestExecutionID) (LogList, error)
 }
 
-type ExecutionLogWriter interface {
-	CreateExecutionLog(ctx context.Context, log *ExecutionLog) error
-	DeleteExecutionLog(ctx context.Context, id uuid.UUID) error
+type LogWriter interface {
+	CreateLog(ctx context.Context, log *Log) error
+	DeleteLog(ctx context.Context, id uuid.UUID) error
 }
 
 type ResetRollback func(ctx context.Context) error

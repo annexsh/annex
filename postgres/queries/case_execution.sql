@@ -1,53 +1,53 @@
 -- name: CreateCaseExecution :one
-INSERT INTO case_executions (id, test_exec_id, case_name, scheduled_at)
+INSERT INTO case_executions (id, test_execution_id, case_name, schedule_time)
 VALUES ($1, $2, $3, $4)
-ON CONFLICT (id, test_exec_id) DO UPDATE -- safeguard: shouldn't occur in theory
+ON CONFLICT (id, test_execution_id) DO UPDATE -- safeguard: shouldn't occur in theory
     SET case_name    = excluded.case_name,
-        scheduled_at = excluded.scheduled_at,
-        started_at   = null,
-        finished_at  = null,
+        schedule_time = excluded.schedule_time,
+        start_time   = null,
+        finish_time  = null,
         error        = null
 RETURNING *;
 
 -- name: ResetCaseExecution :one
 UPDATE case_executions
-SET scheduled_at = null,
-    started_at   = null,
-    finished_at  = null,
+SET schedule_time = null,
+    start_time   = null,
+    finish_time  = null,
     error        = null
 WHERE id = $1
-  AND test_exec_id = $2
+  AND test_execution_id = $2
 RETURNING *;
 
 -- name: UpdateCaseExecutionStarted :one
 UPDATE case_executions
-SET started_at = $3
+SET start_time = $3
 WHERE id = $1
-  AND test_exec_id = $2
+  AND test_execution_id = $2
 RETURNING *;
 
 -- name: UpdateCaseExecutionFinished :one
 UPDATE case_executions
-SET finished_at = $3,
+SET finish_time = $3,
     error       = $4
 WHERE id = $1
-  AND test_exec_id = $2
+  AND test_execution_id = $2
 RETURNING *;
 
 -- name: DeleteCaseExecution :exec
 DELETE
 FROM case_executions
 WHERE id = $1
-  AND test_exec_id = $2;
+  AND test_execution_id = $2;
 
 -- name: GetCaseExecution :one
 SELECT *
 FROM case_executions
 WHERE id = $1
-  AND test_exec_id = $2;
+  AND test_execution_id = $2;
 
--- name: ListTestCaseExecutions :many
+-- name: ListCaseExecutions :many
 SELECT *
 FROM case_executions
-WHERE test_exec_id = $1;
+WHERE test_execution_id = $1;
 

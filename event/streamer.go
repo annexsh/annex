@@ -72,7 +72,7 @@ func (s *streamer) streamTestExecutionEvents(ctx context.Context, id test.TestEx
 					handlerFn = h.handleTestExecution
 				case TypeCaseExecutionScheduled, TypeCaseExecutionStarted, TypeCaseExecutionFinished:
 					handlerFn = h.handleCase
-				case TypeExecutionLogPublished:
+				case TypeLogPublished:
 					handlerFn = h.handleLog
 				default:
 					s.logger.Error("unknown test execution event received", "event", event)
@@ -169,7 +169,7 @@ func (s *streamer) getLogEvents(ctx context.Context, testExecID test.TestExecuti
 	mapset.Set[uuid.UUID],
 	error,
 ) {
-	currLogs, err := s.execReader.ListExecutionLogs(ctx, testExecID)
+	currLogs, err := s.execReader.ListLogs(ctx, testExecID)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -180,17 +180,17 @@ func (s *streamer) getLogEvents(ctx context.Context, testExecID test.TestExecuti
 
 	for _, log := range currLogs {
 		seenLogs.Add(log.ID)
-		event := NewExecutionLogEvent(TypeExecutionLogPublished, log)
+		event := NewLogEvent(TypeLogPublished, log)
 
-		if log.CaseExecID == nil {
+		if log.CaseExecutionID == nil {
 			testLogs = append(testLogs, event)
 		} else {
 			caseLogEvent := event
-			if got, ok := caseLogs[*log.CaseExecID]; ok {
+			if got, ok := caseLogs[*log.CaseExecutionID]; ok {
 				got = append(got, caseLogEvent)
-				caseLogs[*log.CaseExecID] = got
+				caseLogs[*log.CaseExecutionID] = got
 			} else {
-				caseLogs[*log.CaseExecID] = []*ExecutionEvent{caseLogEvent}
+				caseLogs[*log.CaseExecutionID] = []*ExecutionEvent{caseLogEvent}
 			}
 		}
 	}
@@ -255,7 +255,7 @@ func (h *eventHandler) handleCase(event *ExecutionEvent) error {
 }
 
 func (h *eventHandler) handleLog(event *ExecutionEvent) error {
-	execLog, err := event.Data.GetExecutionLog()
+	execLog, err := event.Data.GetLog()
 	if err != nil {
 		return err
 	}

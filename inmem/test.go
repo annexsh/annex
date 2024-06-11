@@ -57,11 +57,11 @@ func (t *TestReader) ListTests(_ context.Context) (test.TestList, error) {
 	return tests, nil
 }
 
-func (t *TestReader) GetTestDefaultPayload(_ context.Context, testID uuid.UUID) (*test.Payload, error) {
+func (t *TestReader) GetTestDefaultInput(_ context.Context, testID uuid.UUID) (*test.Payload, error) {
 	t.db.mu.RLock()
 	defer t.db.mu.RUnlock()
 
-	p, ok := t.db.defaultPayloads[testID]
+	p, ok := t.db.defaultInputs[testID]
 	if !ok {
 		return nil, errors.New("not found")
 	}
@@ -99,25 +99,19 @@ func (t *TestWriter) CreateTests(_ context.Context, definitions ...*test.TestDef
 
 func (t *TestWriter) createTestUnsafe(definition *test.TestDefinition) *test.Test {
 	for _, tt := range t.db.tests {
-		if tt.Project == definition.Project && tt.Name == definition.Name {
+		if tt.Context == tt.Context && tt.Group == definition.Group && tt.Name == definition.Name {
 			definition.TestID = tt.ID
 		}
 	}
 	tt := &test.Test{
 		ID:         definition.TestID,
-		Project:    definition.Project,
+		Context:    definition.Context,
+		Group:      definition.Group,
 		Name:       definition.Name,
-		HasPayload: definition.DefaultPayload != nil,
-		Runners: []*test.TestRunner{
-			{
-				ID:                definition.RunnerID,
-				LastHeartbeatTime: time.Now().UTC(),
-				IsActive:          true,
-			},
-		},
+		HasInput:   definition.DefaultInput != nil,
 		CreateTime: time.Now().UTC(),
 	}
 	t.db.tests[tt.ID] = tt
-	t.db.defaultPayloads[tt.ID] = definition.DefaultPayload
+	t.db.defaultInputs[tt.ID] = definition.DefaultInput
 	return tt
 }

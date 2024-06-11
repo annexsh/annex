@@ -36,15 +36,15 @@ overrides:
         go_type:
           import: "github.com/annexsh/annex/test"
           type: "TestExecutionID"
-      - column: "test_execution_payloads.test_exec_id"
+      - column: "test_execution_inputs.test_execution_id"
         go_type:
           import: "github.com/annexsh/annex/test"
           type: "TestExecutionID"
-      - column: "case_executions.test_exec_id"
+      - column: "case_executions.test_execution_id"
         go_type:
           import: "github.com/annexsh/annex/test"
           type: "TestExecutionID"
-      - column: "logs.test_exec_id"
+      - column: "logs.test_execution_id"
         go_type:
           import: "github.com/annexsh/annex/test"
           type: "TestExecutionID"
@@ -52,7 +52,7 @@ overrides:
         go_type:
           import: "github.com/annexsh/annex/test"
           type: "CaseExecutionID"
-      - column: "logs.case_exec_id"
+      - column: "logs.case_execution_id"
         nullable: true
         go_type:
           import: "github.com/annexsh/annex/test"

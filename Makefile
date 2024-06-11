@@ -27,5 +27,5 @@ compose-down:
 
 .PHONY: sqlc-gen
 sqlc-gen:
-	rm -rf internal/postgres/sqlc/*.sql.go
-	docker run --rm -v $(shell pwd)/internal/postgres:/src -w /src sqlc/sqlc:$(SQLC_VERSION) generate
+	rm -rf postgres/sqlc/*.sql.go
+	docker run --rm -v $(shell pwd)/postgres:/src -w /src sqlc/sqlc:$(SQLC_VERSION) generate

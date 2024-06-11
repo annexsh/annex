@@ -6,41 +6,36 @@ import (
 	"github.com/google/uuid"
 )
 
+const runnerActiveExpireDuration = time.Minute
+
 type TestDefinition struct {
-	TestID         uuid.UUID
-	Project        string
-	Name           string
-	DefaultPayload *Payload
-	RunnerID       string
+	Context      string
+	Group        string
+	TestID       uuid.UUID
+	Name         string
+	DefaultInput *Payload
 }
 
 type Test struct {
+	Context    string
+	Group      string
 	ID         uuid.UUID
-	Project    string
 	Name       string
-	HasPayload bool
-	Runners    []*TestRunner
+	HasInput   bool
 	CreateTime time.Time
-}
-
-type TestRunner struct {
-	ID                string
-	LastHeartbeatTime time.Time
-	IsActive          bool
 }
 
 type TestList []*Test
 
 type Payload struct {
 	Metadata map[string][]byte
-	Payload  []byte
-	IsZero   bool
+	Data     []byte
 }
 
 type TestExecution struct {
 	ID           TestExecutionID
 	TestID       uuid.UUID
-	HasPayload   bool
+	HasInput     bool
 	ScheduleTime time.Time
 	StartTime    *time.Time
 	FinishTime   *time.Time
@@ -48,6 +43,13 @@ type TestExecution struct {
 }
 
 type TestExecutionList []*TestExecution
+
+type ResetTestExecution struct {
+	ID                  TestExecutionID
+	ResetTime           time.Time
+	StaleCaseExecutions []CaseExecutionID
+	StaleLogs           []uuid.UUID
+}
 
 type ScheduledTestExecution struct {
 	ID           TestExecutionID
@@ -68,19 +70,19 @@ type FinishedTestExecution struct {
 }
 
 type TestExecutionListFilter struct {
-	LastScheduleTime *time.Time // required when listing next page
-	LastExecID       *uuid.UUID // required when listing next page
-	PageSize         uint32
+	LastScheduleTime    *time.Time // required when listing next page
+	LastTestExecutionID *uuid.UUID // required when listing next page
+	PageSize            uint32
 }
 
 type CaseExecution struct {
-	ID           CaseExecutionID
-	TestExecID   TestExecutionID
-	CaseName     string
-	ScheduleTime time.Time
-	StartTime    *time.Time
-	FinishTime   *time.Time
-	Error        *string
+	ID              CaseExecutionID
+	TestExecutionID TestExecutionID
+	CaseName        string
+	ScheduleTime    time.Time
+	StartTime       *time.Time
+	FinishTime      *time.Time
+	Error           *string
 }
 
 type CaseExecutionList []*CaseExecution
@@ -93,32 +95,25 @@ type ScheduledCaseExecution struct {
 }
 
 type StartedCaseExecution struct {
-	ID         CaseExecutionID
-	TestExecID TestExecutionID
-	StartTime  time.Time
+	ID              CaseExecutionID
+	TestExecutionID TestExecutionID
+	StartTime       time.Time
 }
 
 type FinishedCaseExecution struct {
-	ID         CaseExecutionID
-	TestExecID TestExecutionID
-	FinishTime time.Time
-	Error      *string
+	ID              CaseExecutionID
+	TestExecutionID TestExecutionID
+	FinishTime      time.Time
+	Error           *string
 }
 
-type ExecutionLog struct {
-	ID         uuid.UUID
-	TestExecID TestExecutionID
-	CaseExecID *CaseExecutionID
-	Level      string
-	Message    string
-	CreateTime time.Time
+type Log struct {
+	ID              uuid.UUID
+	TestExecutionID TestExecutionID
+	CaseExecutionID *CaseExecutionID
+	Level           string
+	Message         string
+	CreateTime      time.Time
 }
 
-type ExecutionLogList []*ExecutionLog
-
-type ResetTestExecution struct {
-	ID                  TestExecutionID
-	ResetTime           time.Time
-	StaleCaseExecutions []CaseExecutionID
-	StaleLogs           []uuid.UUID
-}
+type LogList []*Log

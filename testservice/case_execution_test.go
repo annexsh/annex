@@ -28,10 +28,10 @@ func TestService_AckCaseExecutionScheduled(t *testing.T) {
 
 	caseID := fake.GenCaseID()
 	req := &testservicev1.AckCaseExecutionScheduledRequest{
-		Id:          caseID.Int32(),
-		TestExecId:  te.ID.String(),
-		CaseName:    uuid.NewString(),
-		ScheduledAt: timestamppb.New(time.Now().UTC()),
+		TestExecutionId: te.ID.String(),
+		CaseExecutionId: caseID.Int32(),
+		CaseName:        uuid.NewString(),
+		ScheduleTime:    timestamppb.New(time.Now().UTC()),
 	}
 	res, err := s.AckCaseExecutionScheduled(ctx, req)
 	require.NoError(t, err)
@@ -39,7 +39,7 @@ func TestService_AckCaseExecutionScheduled(t *testing.T) {
 
 	ackd, err := fakes.repo.GetCaseExecution(ctx, te.ID, caseID)
 	require.NoError(t, err)
-	assert.Equal(t, req.ScheduledAt.AsTime(), ackd.ScheduleTime)
+	assert.Equal(t, req.ScheduleTime.AsTime(), ackd.ScheduleTime)
 }
 
 func TestService_AckCaseExecutionStarted(t *testing.T) {
@@ -58,9 +58,9 @@ func TestService_AckCaseExecutionStarted(t *testing.T) {
 	require.NoError(t, err)
 
 	req := &testservicev1.AckCaseExecutionStartedRequest{
-		Id:         caseExec.ID.Int32(),
-		TestExecId: caseExec.TestExecID.String(),
-		StartedAt:  timestamppb.New(time.Now().UTC()),
+		TestExecutionId: caseExec.TestExecutionID.String(),
+		CaseExecutionId: caseExec.ID.Int32(),
+		StartTime:       timestamppb.New(time.Now().UTC()),
 	}
 	res, err := s.AckCaseExecutionStarted(ctx, req)
 	require.NoError(t, err)
@@ -68,7 +68,7 @@ func TestService_AckCaseExecutionStarted(t *testing.T) {
 
 	ackd, err := fakes.repo.GetCaseExecution(ctx, te.ID, caseExec.ID)
 	require.NoError(t, err)
-	assert.Equal(t, req.StartedAt.AsTime(), *ackd.StartTime)
+	assert.Equal(t, req.StartTime.AsTime(), *ackd.StartTime)
 }
 
 func TestService_AckCaseExecutionFinished(t *testing.T) {
@@ -87,10 +87,10 @@ func TestService_AckCaseExecutionFinished(t *testing.T) {
 	require.NoError(t, err)
 
 	req := &testservicev1.AckCaseExecutionFinishedRequest{
-		Id:         caseExec.ID.Int32(),
-		TestExecId: caseExec.TestExecID.String(),
-		FinishedAt: timestamppb.New(time.Now().UTC()),
-		Error:      ptr.Get("bang"),
+		TestExecutionId: caseExec.TestExecutionID.String(),
+		CaseExecutionId: caseExec.ID.Int32(),
+		FinishTime:      timestamppb.New(time.Now().UTC()),
+		Error:           ptr.Get("bang"),
 	}
 	res, err := s.AckCaseExecutionFinished(ctx, req)
 	require.NoError(t, err)
@@ -98,7 +98,7 @@ func TestService_AckCaseExecutionFinished(t *testing.T) {
 
 	ackd, err := fakes.repo.GetCaseExecution(ctx, te.ID, caseExec.ID)
 	require.NoError(t, err)
-	assert.Equal(t, req.FinishedAt.AsTime(), *ackd.FinishTime)
+	assert.Equal(t, req.FinishTime.AsTime(), *ackd.FinishTime)
 	assert.Equal(t, req.Error, ackd.Error)
 }
 
@@ -123,7 +123,7 @@ func TestService_ListTestCaseExecutions(t *testing.T) {
 	}
 
 	res, err := s.ListTestCaseExecutions(ctx, &testservicev1.ListTestCaseExecutionsRequest{
-		TestExecId: te.ID.String(),
+		TestExecutionId: te.ID.String(),
 	})
 	require.NoError(t, err)
 

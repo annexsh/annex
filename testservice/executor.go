@@ -41,9 +41,9 @@ type executeOptions struct {
 
 type executeOption func(opts *executeOptions)
 
-func withPayload(payload *testv1.Payload) executeOption {
+func withInput(input *testv1.Payload) executeOption {
 	return func(opts *executeOptions) {
-		opts.payload = payload
+		opts.payload = input
 	}
 }
 
@@ -81,7 +81,7 @@ func (e *executor) execute(ctx context.Context, testID uuid.UUID, opts ...execut
 
 	wfOpts := client.StartWorkflowOptions{
 		ID:                       workflowID,
-		TaskQueue:                t.Project,
+		TaskQueue:                getTaskQueue(t.Context, t.Group),
 		WorkflowExecutionTimeout: 7 * 24 * time.Hour, // 1 week
 	}
 
@@ -110,7 +110,7 @@ func (e *executor) retry(ctx context.Context, execID test.TestExecutionID) (*tes
 		return nil, err
 	}
 
-	origLogs, err := e.repo.ListExecutionLogs(ctx, testExec.ID)
+	origLogs, err := e.repo.ListLogs(ctx, testExec.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -118,14 +118,14 @@ func (e *executor) retry(ctx context.Context, execID test.TestExecutionID) (*tes
 	testLogsToDelete := mapset.NewSet[uuid.UUID]()
 	caseLogsToDelete := map[test.CaseExecutionID][]uuid.UUID{}
 	for _, l := range origLogs {
-		if l.CaseExecID == nil {
+		if l.CaseExecutionID == nil {
 			testLogsToDelete.Add(l.ID)
 		} else {
-			if caseLogs, ok := caseLogsToDelete[*l.CaseExecID]; ok {
+			if caseLogs, ok := caseLogsToDelete[*l.CaseExecutionID]; ok {
 				caseLogs = append(caseLogs, l.ID)
-				caseLogsToDelete[*l.CaseExecID] = caseLogs
+				caseLogsToDelete[*l.CaseExecutionID] = caseLogs
 			} else {
-				caseLogsToDelete[*l.CaseExecID] = []uuid.UUID{l.ID}
+				caseLogsToDelete[*l.CaseExecutionID] = []uuid.UUID{l.ID}
 			}
 		}
 	}

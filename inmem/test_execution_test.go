@@ -36,10 +36,9 @@ func TestTestExecutionReader_GetTestExecutionPayload(t *testing.T) {
 	want := []byte{1, 2, 3}
 	db.testExecPayloads[testExecID] = want
 
-	got, err := r.GetTestExecutionPayload(ctx, testExecID)
+	got, err := r.GetTestExecutionInput(ctx, testExecID)
 	require.NoError(t, err)
-	assert.Equal(t, want, got.Payload)
-	assert.False(t, got.IsZero)
+	assert.Equal(t, want, got.Data)
 }
 
 func TestTestExecutionReader_ListTestExecutions(t *testing.T) {
@@ -60,9 +59,9 @@ func TestTestExecutionReader_ListTestExecutions(t *testing.T) {
 	pageSize := 10
 	numReqs := wantCount / pageSize
 	filter := &test.TestExecutionListFilter{
-		LastScheduleTime: nil,
-		LastExecID:       nil,
-		PageSize:         uint32(pageSize),
+		LastScheduleTime:    nil,
+		LastTestExecutionID: nil,
+		PageSize:            uint32(pageSize),
 	}
 
 	var got test.TestExecutionList
@@ -74,7 +73,7 @@ func TestTestExecutionReader_ListTestExecutions(t *testing.T) {
 		if len(got) < wantCount {
 			lastExec := got[len(got)-1]
 			filter.LastScheduleTime = &lastExec.ScheduleTime
-			filter.LastExecID = &lastExec.ID.UUID
+			filter.LastTestExecutionID = &lastExec.ID.UUID
 		}
 	}
 
@@ -120,7 +119,7 @@ func TestTestExecutionWriter_CreateScheduledTestExecution(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, sched.ID, got.ID)
 			assert.Equal(t, sched.TestID, got.TestID)
-			assert.Equal(t, sched.Payload != nil, got.HasPayload)
+			assert.Equal(t, sched.Payload != nil, got.HasInput)
 			assert.Equal(t, sched.ScheduleTime, got.ScheduleTime)
 			assert.Nil(t, got.StartTime)
 			assert.Nil(t, got.FinishTime)
@@ -171,7 +170,7 @@ func TestTestExecutionWriter_UpdateStartedTestExecution(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, started.ID, got.ID)
 			assert.Equal(t, existing.TestID, got.TestID)
-			assert.Equal(t, existing.HasPayload, got.HasPayload)
+			assert.Equal(t, existing.HasInput, got.HasInput)
 			assert.Equal(t, existing.ScheduleTime, got.ScheduleTime)
 			assert.Equal(t, started.StartTime, *got.StartTime)
 			assert.Nil(t, got.FinishTime)
@@ -221,7 +220,7 @@ func TestTestExecutionWriter_UpdateFinishedTestExecution(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, finished.ID, got.ID)
 			assert.Equal(t, existing.TestID, got.TestID)
-			assert.Equal(t, existing.HasPayload, got.HasPayload)
+			assert.Equal(t, existing.HasInput, got.HasInput)
 			assert.Equal(t, existing.ScheduleTime, got.ScheduleTime)
 			assert.Equal(t, finished.FinishTime, *got.FinishTime)
 			assert.Equal(t, finished.Error, got.Error)
@@ -288,7 +287,7 @@ func TestTestExecutionWriter_ResetTestExecution(t *testing.T) {
 				// Create valid case executions
 				for range numValidCaseExecs {
 					caseExec := fake.GenCaseExec(existing.ID)
-					db.caseExecs[caseExecKey(existing.ID, caseExec.ID)] = caseExec
+					db.caseExecs[getCaseExecKey(existing.ID, caseExec.ID)] = caseExec
 					// Gen stale case execution logs
 					for range numValidLogsPerExec {
 						validLog := fake.GenCaseExecLog(existing.ID, caseExec.ID)
@@ -300,7 +299,7 @@ func TestTestExecutionWriter_ResetTestExecution(t *testing.T) {
 				for range numStaleCaseExecs {
 					caseExec := fake.GenCaseExec(existing.ID)
 					staleCaseExecIDs = append(staleCaseExecIDs, caseExec.ID)
-					db.caseExecs[caseExecKey(existing.ID, caseExec.ID)] = caseExec
+					db.caseExecs[getCaseExecKey(existing.ID, caseExec.ID)] = caseExec
 					// Gen stale case execution logs
 					for range numStaleLogsPerExec {
 						staleLog := fake.GenCaseExecLog(existing.ID, caseExec.ID)
@@ -326,7 +325,7 @@ func TestTestExecutionWriter_ResetTestExecution(t *testing.T) {
 			assert.NotNil(t, rollback)
 			assert.Equal(t, reset.ID, got.ID)
 			assert.Equal(t, existing.TestID, got.TestID)
-			assert.Equal(t, existing.HasPayload, got.HasPayload)
+			assert.Equal(t, existing.HasInput, got.HasInput)
 			assert.Equal(t, reset.ResetTime, got.ScheduleTime)
 			assert.Nil(t, got.StartTime)
 			assert.Nil(t, got.FinishTime)

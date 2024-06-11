@@ -11,41 +11,41 @@ import (
 )
 
 func (s *Service) PublishTestExecutionLog(ctx context.Context, req *testservicev1.PublishTestExecutionLogRequest) (*testservicev1.PublishTestExecutionLogResponse, error) {
-	testExecID, err := test.ParseTestExecutionID(req.TestExecId)
+	testExecID, err := test.ParseTestExecutionID(req.TestExecutionId)
 	if err != nil {
 		return nil, err
 	}
 
 	var caseExecID *test.CaseExecutionID
-	if req.CaseExecId != nil {
-		caseExecID = ptr.Get(test.CaseExecutionID(*req.CaseExecId))
+	if req.CaseExecutionId != nil {
+		caseExecID = ptr.Get(test.CaseExecutionID(*req.CaseExecutionId))
 	}
 
-	execLog := &test.ExecutionLog{
-		ID:         uuid.New(),
-		TestExecID: testExecID,
-		CaseExecID: caseExecID,
-		Level:      req.Level,
-		Message:    req.Message,
-		CreateTime: req.CreatedAt.AsTime(),
+	execLog := &test.Log{
+		ID:              uuid.New(),
+		TestExecutionID: testExecID,
+		CaseExecutionID: caseExecID,
+		Level:           req.Level,
+		Message:         req.Message,
+		CreateTime:      req.CreateTime.AsTime(),
 	}
 
-	if err = s.repo.CreateExecutionLog(ctx, execLog); err != nil {
+	if err = s.repo.CreateLog(ctx, execLog); err != nil {
 		return nil, err
 	}
 
 	return &testservicev1.PublishTestExecutionLogResponse{
-		Id: execLog.ID.String(),
+		LogId: execLog.ID.String(),
 	}, nil
 }
 
 func (s *Service) ListTestExecutionLogs(ctx context.Context, req *testservicev1.ListTestExecutionLogsRequest) (*testservicev1.ListTestExecutionLogsResponse, error) {
-	testExecID, err := test.ParseTestExecutionID(req.TestExecId)
+	testExecID, err := test.ParseTestExecutionID(req.TestExecutionId)
 	if err != nil {
 		return nil, err
 	}
 
-	logs, err := s.repo.ListExecutionLogs(ctx, testExecID)
+	logs, err := s.repo.ListLogs(ctx, testExecID)
 	if err != nil {
 		return nil, err
 	}

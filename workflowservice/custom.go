@@ -55,8 +55,8 @@ func (s *ProxyService) PollWorkflowTaskQueue(ctx context.Context, req *workflows
 			testExecID, err := test.ParseTestWorkflowID(res.WorkflowExecution.WorkflowId)
 			if err == nil {
 				if _, err = s.test.AckTestExecutionStarted(ctx, &testservicev1.AckTestExecutionStartedRequest{
-					TestExecId: testExecID.String(),
-					StartedAt:  res.StartedTime,
+					TestExecutionId: testExecID.String(),
+					StartTime:       res.StartedTime,
 				}); err != nil {
 					return nil, err
 				}
@@ -99,10 +99,10 @@ func (s *ProxyService) RespondWorkflowTaskCompleted(ctx context.Context, req *wo
 			}
 
 			if _, err = s.test.AckCaseExecutionScheduled(ctx, &testservicev1.AckCaseExecutionScheduledRequest{
-				Id:          caseExecID.Int32(),
-				TestExecId:  testExecID.String(),
-				CaseName:    attrs.ActivityType.Name,
-				ScheduledAt: timestamppb.New(time.Now().UTC()),
+				TestExecutionId: testExecID.String(),
+				CaseExecutionId: caseExecID.Int32(),
+				CaseName:        attrs.ActivityType.Name,
+				ScheduleTime:    timestamppb.New(time.Now().UTC()),
 			}); err != nil {
 				return nil, fmt.Errorf("failed to acknowledge scheduled case execution: %w", err)
 			}
@@ -113,8 +113,8 @@ func (s *ProxyService) RespondWorkflowTaskCompleted(ctx context.Context, req *wo
 			}
 
 			if _, err = s.test.AckTestExecutionFinished(ctx, &testservicev1.AckTestExecutionFinishedRequest{
-				TestExecId: testExecID.String(),
-				FinishedAt: timestamppb.New(time.Now().UTC()),
+				TestExecutionId: testExecID.String(),
+				FinishTime:      timestamppb.New(time.Now().UTC()),
 			}); err != nil {
 				return nil, err
 			}
@@ -130,9 +130,9 @@ func (s *ProxyService) RespondWorkflowTaskCompleted(ctx context.Context, req *wo
 			}
 
 			if _, err = s.test.AckTestExecutionFinished(ctx, &testservicev1.AckTestExecutionFinishedRequest{
-				TestExecId: testExecID.String(),
-				FinishedAt: timestamppb.New(time.Now().UTC()),
-				Error:      testExecError,
+				TestExecutionId: testExecID.String(),
+				FinishTime:      timestamppb.New(time.Now().UTC()),
+				Error:           testExecError,
 			}); err != nil {
 				return nil, err
 			}
@@ -169,9 +169,9 @@ func (s *ProxyService) PollActivityTaskQueue(ctx context.Context, req *workflows
 	}
 
 	if _, err = s.test.AckCaseExecutionStarted(ctx, &testservicev1.AckCaseExecutionStartedRequest{
-		Id:         caseExecID.Int32(),
-		TestExecId: testExecID.String(),
-		StartedAt:  timestamppb.Now(),
+		TestExecutionId: testExecID.String(),
+		CaseExecutionId: caseExecID.Int32(),
+		StartTime:       timestamppb.Now(),
 	}); err != nil {
 		return nil, err
 	}
@@ -206,9 +206,9 @@ func (s *ProxyService) RespondActivityTaskCompleted(ctx context.Context, req *wo
 	}
 
 	if _, err = s.test.AckCaseExecutionFinished(ctx, &testservicev1.AckCaseExecutionFinishedRequest{
-		Id:         caseExecID.Int32(),
-		TestExecId: testExecID.String(),
-		FinishedAt: timestamppb.Now(),
+		TestExecutionId: testExecID.String(),
+		CaseExecutionId: caseExecID.Int32(),
+		FinishTime:      timestamppb.Now(),
 	}); err != nil {
 		return nil, err
 	}
@@ -248,10 +248,10 @@ func (s *ProxyService) RespondActivityTaskFailed(ctx context.Context, req *workf
 	}
 
 	if _, err = s.test.AckCaseExecutionFinished(ctx, &testservicev1.AckCaseExecutionFinishedRequest{
-		Id:         caseExecID.Int32(),
-		TestExecId: testExecID.String(),
-		Error:      execErr,
-		FinishedAt: timestamppb.Now(),
+		TestExecutionId: testExecID.String(),
+		CaseExecutionId: caseExecID.Int32(),
+		Error:           execErr,
+		FinishTime:      timestamppb.Now(),
 	}); err != nil {
 		return nil, err
 	}

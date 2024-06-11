@@ -23,8 +23,8 @@ func NewCaseExecutionReader(db *DB) *CaseExecutionReader {
 
 func (c *CaseExecutionReader) GetCaseExecution(ctx context.Context, testExecID test.TestExecutionID, caseExecID test.CaseExecutionID) (*test.CaseExecution, error) {
 	caseExec, err := c.db.GetCaseExecution(ctx, sqlc.GetCaseExecutionParams{
-		ID:         caseExecID,
-		TestExecID: testExecID,
+		ID:              caseExecID,
+		TestExecutionID: testExecID,
 	})
 	if err != nil {
 		return nil, err
@@ -34,7 +34,7 @@ func (c *CaseExecutionReader) GetCaseExecution(ctx context.Context, testExecID t
 
 func (c *CaseExecutionReader) ListCaseExecutions(ctx context.Context, testExecID test.TestExecutionID) (test.CaseExecutionList, error) {
 	// TODO: pagination
-	execs, err := c.db.ListTestCaseExecutions(ctx, testExecID)
+	execs, err := c.db.ListCaseExecutions(ctx, testExecID)
 	if err != nil {
 		return nil, err
 	}
@@ -51,10 +51,10 @@ func NewCaseExecutionWriter(db *DB) *CaseExecutionWriter {
 
 func (c *CaseExecutionWriter) CreateScheduledCaseExecution(ctx context.Context, scheduled *test.ScheduledCaseExecution) (*test.CaseExecution, error) {
 	exec, err := c.db.CreateCaseExecution(ctx, sqlc.CreateCaseExecutionParams{
-		ID:          scheduled.ID,
-		TestExecID:  scheduled.TestExecID,
-		CaseName:    scheduled.CaseName,
-		ScheduledAt: sqlc.NewTimestamp(scheduled.ScheduleTime),
+		ID:              scheduled.ID,
+		TestExecutionID: scheduled.TestExecID,
+		CaseName:        scheduled.CaseName,
+		ScheduleTime:    sqlc.NewTimestamp(scheduled.ScheduleTime),
 	})
 	if err != nil {
 		return nil, err
@@ -64,9 +64,9 @@ func (c *CaseExecutionWriter) CreateScheduledCaseExecution(ctx context.Context, 
 
 func (c *CaseExecutionWriter) UpdateStartedCaseExecution(ctx context.Context, started *test.StartedCaseExecution) (*test.CaseExecution, error) {
 	exec, err := c.db.UpdateCaseExecutionStarted(ctx, sqlc.UpdateCaseExecutionStartedParams{
-		ID:         started.ID,
-		TestExecID: started.TestExecID,
-		StartedAt:  sqlc.NewTimestamp(started.StartTime),
+		ID:              started.ID,
+		TestExecutionID: started.TestExecutionID,
+		StartTime:       sqlc.NewTimestamp(started.StartTime),
 	})
 	if err != nil {
 		return nil, err
@@ -76,10 +76,10 @@ func (c *CaseExecutionWriter) UpdateStartedCaseExecution(ctx context.Context, st
 
 func (c *CaseExecutionWriter) UpdateFinishedCaseExecution(ctx context.Context, finished *test.FinishedCaseExecution) (*test.CaseExecution, error) {
 	exec, err := c.db.UpdateCaseExecutionFinished(ctx, sqlc.UpdateCaseExecutionFinishedParams{
-		ID:         finished.ID,
-		TestExecID: finished.TestExecID,
-		FinishedAt: sqlc.NewTimestamp(finished.FinishTime),
-		Error:      finished.Error,
+		ID:              finished.ID,
+		TestExecutionID: finished.TestExecutionID,
+		FinishTime:      sqlc.NewTimestamp(finished.FinishTime),
+		Error:           finished.Error,
 	})
 	if err != nil {
 		return nil, err
@@ -89,7 +89,7 @@ func (c *CaseExecutionWriter) UpdateFinishedCaseExecution(ctx context.Context, f
 
 func (c *CaseExecutionWriter) DeleteCaseExecution(ctx context.Context, testExecID test.TestExecutionID, id test.CaseExecutionID) error {
 	return c.db.DeleteCaseExecution(ctx, sqlc.DeleteCaseExecutionParams{
-		ID:         id,
-		TestExecID: testExecID,
+		ID:              id,
+		TestExecutionID: testExecID,
 	})
 }
