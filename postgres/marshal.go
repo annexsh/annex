@@ -8,17 +8,12 @@ import (
 
 func marshalTest(t *sqlc.Test) *test.Test {
 	return &test.Test{
-		ID:         t.ID,
+		Context:    t.Context,
 		Group:      t.Group,
+		ID:         t.ID,
 		Name:       t.Name,
 		HasInput:   t.HasInput,
 		CreateTime: t.CreateTime.Time,
-		Runners: []*test.Runner{
-			{
-				ID:                t.RunnerID,
-				LastHeartbeatTime: t.RunnerHeartbeatAt.Time,
-			},
-		},
 	}
 }
 

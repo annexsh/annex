@@ -5,12 +5,15 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/google/uuid"
 	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/api/history/v1"
+	"go.temporal.io/api/taskqueue/v1"
 	"go.temporal.io/api/workflowservice/v1"
 	"go.temporal.io/sdk/client"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const WorkflowName = "FakeWorkflow"
@@ -121,6 +124,18 @@ func (w *Workflower) CancelWorkflow(_ context.Context, workflowID string, runID 
 	defer w.mu.RUnlock()
 	delete(w.workflows, workflowsKey(workflowID, runID))
 	return nil
+}
+
+func (w *Workflower) DescribeTaskQueue(_ context.Context, _ string, _ enums.TaskQueueType) (*workflowservice.DescribeTaskQueueResponse, error) {
+	return &workflowservice.DescribeTaskQueueResponse{
+		Pollers: []*taskqueue.PollerInfo{
+			{
+				LastAccessTime: timestamppb.New(time.Now()),
+				Identity:       uuid.NewString(),
+				RatePerSecond:  30,
+			},
+		},
+	}, nil
 }
 
 func (w *Workflower) getWorkflowRun(workflowID string, runID string) (client.WorkflowRun, error) {

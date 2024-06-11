@@ -7,10 +7,38 @@ import (
 )
 
 type Repository interface {
+	ContextReadWriter
+	GroupReadWriter
 	TestReadWriter
 	TestExecutionReadWriter
 	CaseExecutionReadWriter
 	LogReadWriter
+}
+
+type ContextReadWriter interface {
+	ContextReader
+	ContextWriter
+}
+
+type ContextReader interface {
+	ContextExists(ctx context.Context, id string) (bool, error)
+}
+
+type ContextWriter interface {
+	CreateContext(ctx context.Context, id string) error
+}
+
+type GroupReadWriter interface {
+	GroupReader
+	GroupWriter
+}
+
+type GroupReader interface {
+	GroupExists(ctx context.Context, contextID string, name string) (bool, error)
+}
+
+type GroupWriter interface {
+	CreateGroup(ctx context.Context, contextID string, name string) error
 }
 
 type TestReadWriter interface {

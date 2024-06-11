@@ -19,19 +19,16 @@ func TestService_RegisterTest(t *testing.T) {
 	tests := []struct {
 		name         string
 		testName     string
-		group        string
 		defaultInput *testv1.Payload
 	}{
 		{
 			name:         "create test without payload",
 			testName:     uuid.NewString(),
-			group:        uuid.NewString(),
 			defaultInput: nil,
 		},
 		{
 			name:         "create test with payload",
 			testName:     uuid.NewString(),
-			group:        uuid.NewString(),
 			defaultInput: fake.GenDefaultInput().Proto(),
 		},
 	}
@@ -39,8 +36,8 @@ func TestService_RegisterTest(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			req := &testservicev1.RegisterTestsRequest{
-				RunnerId: uuid.NewString(),
-				Group:    tt.group,
+				Context: uuid.NewString(),
+				Group:   uuid.NewString(),
 				Definitions: []*testv1.TestDefinition{
 					{
 						Name:         tt.testName,
@@ -55,7 +52,8 @@ func TestService_RegisterTest(t *testing.T) {
 
 			for _, gotTest := range res.Tests {
 				assert.NotEmpty(t, gotTest.Id)
-				assert.Equal(t, tt.group, gotTest.Group)
+				assert.Equal(t, req.Context, gotTest.Context)
+				assert.Equal(t, req.Group, gotTest.Group)
 				assert.Equal(t, tt.testName, gotTest.Name)
 				assert.Equal(t, tt.defaultInput != nil, gotTest.HasInput)
 				assert.NotEmpty(t, gotTest.CreateTime)

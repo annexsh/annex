@@ -93,9 +93,5 @@ func assertCreatedTest(t *testing.T, def *test.TestDefinition, got *test.Test) {
 	assert.Equal(t, def.TestID, got.ID)
 	assert.Equal(t, def.Name, got.Name)
 	assert.Equal(t, def.Group, got.Group)
-	assert.Len(t, got.Runners, 1)
-	assert.Equal(t, def.RunnerID, got.Runners[0].ID)
-	assert.Equal(t, true, got.Runners[0].IsActive)
-	assert.NotEmpty(t, true, got.Runners[0].LastHeartbeatTime)
 	assert.Equal(t, def.DefaultInput != nil, got.HasInput)
 }

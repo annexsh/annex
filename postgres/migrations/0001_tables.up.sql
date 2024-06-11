@@ -1,35 +1,31 @@
+CREATE TABLE contexts
+(
+    id TEXT PRIMARY KEY
+);
+
 CREATE TABLE groups
 (
-    id   UUID PRIMARY KEY,
-    name TEXT NOT NULL UNIQUE
+    context_id TEXT NOT NULL REFERENCES contexts (id),
+    name       TEXT NOT NULL,
+    PRIMARY KEY (context_id, name)
 );
 
 CREATE TABLE tests
 (
-    group_id            UUID                    NOT NULL REFERENCES groups (id),
-    id                  UUID                    NOT NULL,
-    name                TEXT                    NOT NULL,
-    has_input           BOOLEAN                 NOT NULL,
-    runner_id           TEXT                    NOT NULL,
-    runner_heartbeat_at TIMESTAMP               NOT NULL,
-    create_time         TIMESTAMP DEFAULT now() NOT NULL,
-    PRIMARY KEY (group_id, id)
+    context     TEXT                    NOT NULL,
+    "group"     TEXT                    NOT NULL,
+    FOREIGN KEY (context, "group") REFERENCES groups (context_id, name) ON UPDATE CASCADE,
+    --
+    id          UUID                    NOT NULL PRIMARY KEY,
+    name        TEXT                    NOT NULL,
+    has_input   BOOLEAN                 NOT NULL,
+    create_time TIMESTAMP DEFAULT now() NOT NULL
 );
 
 CREATE TABLE test_default_inputs
 (
-    group_id UUID  NOT NULL REFERENCES groups (id),
-    test_id  UUID  NOT NULL REFERENCES tests (id) DEFERRABLE,
-    data     BYTEA NOT NULL,
-    PRIMARY KEY (group_id, test_id)
-);
-
-CREATE TABLE runners
-(
-    group_id UUID  NOT NULL REFERENCES groups (id),
-    id TEXT NOT NULL,
-    test_id   UUID NOT NULL REFERENCES tests (id) DEFERRABLE,
-    PRIMARY KEY (runner_id, test_id)
+    test_id UUID  NOT NULL REFERENCES tests (id) DEFERRABLE PRIMARY KEY,
+    data    BYTEA NOT NULL
 );
 
 CREATE TABLE test_executions

@@ -30,6 +30,8 @@ github.com/alecthomas/units v0.0.0-20190717042225-c3de453c63f4/go.mod h1:ybxpYRF
 github.com/alecthomas/units v0.0.0-20190924025748-f65c72e2690d/go.mod h1:rBZYJk541a8SKzHPHnH3zbiI+7dagKZ0cgpgrD7Fyho=
 github.com/annexsh/annex-proto v0.0.0-20240604135603-ff6a86059f03 h1:oFYUf37JbjXBUX8QmaKpzGqFpkjRGkxiGjrl23pL4oA=
 github.com/annexsh/annex-proto v0.0.0-20240604135603-ff6a86059f03/go.mod h1:yxmzF5yk/8rLEKu5VRbsMo1jFHB4/RotPSFrzMSJW2U=
+github.com/annexsh/annex-proto v0.0.0-20240611232825-bec6cd17612d h1:eBQtC7dPPRoOPM9IXW/572D5DWwGQa8wXHNl/ee9IOw=
+github.com/annexsh/annex-proto v0.0.0-20240611232825-bec6cd17612d/go.mod h1:yxmzF5yk/8rLEKu5VRbsMo1jFHB4/RotPSFrzMSJW2U=
 github.com/apache/thrift v0.16.0/go.mod h1:PHK3hniurgQaNMZYaCLEqXKsYK8upmhPbmdP2FXSqgU=
 github.com/apache/thrift v0.20.0 h1:631+KvYbsBZxmuJjYwhezVsrfc/TbqtZV4QcxOX1fOI=
 github.com/apache/thrift v0.20.0/go.mod h1:hOk1BQqcp2OLzGsyVXdfMk7YFlMxK3aoEVhjD06QhB8=

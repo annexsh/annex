@@ -53,6 +53,10 @@ func Start(ctx context.Context, cfg Config, opts ...Option) error {
 	}
 	defer deps.close()
 
+	if err = deps.repo.CreateContext(ctx, "default"); err != nil {
+		return err
+	}
+
 	if cfg.Temporal.LocalDev {
 		temporalSrv, hostPort, err := setupTemporalDevServer(cfg.Temporal.Namespace)
 		if err != nil {

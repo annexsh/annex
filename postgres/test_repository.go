@@ -4,6 +4,10 @@ import "github.com/annexsh/annex/test"
 
 func NewTestRepository(db *DB) test.Repository {
 	return &testRepository{
+		ContextReader:       NewContextReader(db),
+		ContextWriter:       NewContextWriter(db),
+		GroupReader:         NewGroupReader(db),
+		GroupWriter:         NewGroupWriter(db),
 		TestReader:          NewTestReader(db),
 		TestWriter:          NewTestWriter(db),
 		TestExecutionReader: NewTestExecutionReader(db),
@@ -16,6 +20,10 @@ func NewTestRepository(db *DB) test.Repository {
 }
 
 type testRepository struct {
+	*ContextReader
+	*ContextWriter
+	*GroupReader
+	*GroupWriter
 	*TestReader
 	*TestWriter
 	*TestExecutionReader

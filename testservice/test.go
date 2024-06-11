@@ -3,23 +3,28 @@ package testservice
 import (
 	"context"
 	"fmt"
+	"time"
 
 	testservicev1 "github.com/annexsh/annex-proto/gen/go/rpc/testservice/v1"
+	testv1 "github.com/annexsh/annex-proto/gen/go/type/test/v1"
 	"github.com/google/uuid"
+	"go.temporal.io/api/enums/v1"
 
 	"github.com/annexsh/annex/test"
 )
+
+const runnerActiveExpireDuration = time.Minute
 
 func (s *Service) RegisterTests(ctx context.Context, req *testservicev1.RegisterTestsRequest) (*testservicev1.RegisterTestsResponse, error) {
 	var defs []*test.TestDefinition
 
 	for _, defpb := range req.Definitions {
 		def := &test.TestDefinition{
-			TestID:       uuid.New(),
+			Context:      req.Context,
 			Group:        req.Group,
+			TestID:       uuid.New(),
 			Name:         defpb.Name,
 			DefaultInput: nil,
-			RunnerID:     req.RunnerId,
 		}
 
 		if defpb.DefaultInput != nil {
@@ -89,6 +94,28 @@ func (s *Service) ExecuteTest(ctx context.Context, req *testservicev1.ExecuteTes
 }
 
 func (s *Service) ListTestRunners(ctx context.Context, req *testservicev1.ListTestRunnersRequest) (*testservicev1.ListTestRunnersResponse, error) {
-	//TODO implement me
-	panic("implement me")
+	taskQueue := getTaskQueue(req.Context, req.Group)
+	taskQueueRes, err := s.workflower.DescribeTaskQueue(ctx, taskQueue, enums.TASK_QUEUE_TYPE_WORKFLOW)
+	if err != nil {
+		return nil, err
+	}
+
+	runners := make([]*testv1.Runner, len(taskQueueRes.Pollers))
+	for i, poller := range taskQueueRes.Pollers {
+		runners[i] = &testv1.Runner{
+			Context:        req.Context,
+			Group:          req.Group,
+			Id:             poller.Identity,
+			LastAccessTime: poller.LastAccessTime,
+			Active:         poller.LastAccessTime.AsTime().Sub(time.Now()) < runnerActiveExpireDuration,
+		}
+	}
+
+	return &testservicev1.ListTestRunnersResponse{
+		Runners: runners,
+	}, nil
+}
+
+func getTaskQueue(context string, groupName string) string {
+	return fmt.Sprintf("%s-%s", context, groupName)
 }

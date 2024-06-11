@@ -68,7 +68,7 @@ func (e *LogWriter) CreateLog(_ context.Context, log *test.Log) error {
 	}
 
 	if log.CaseExecutionID != nil {
-		if _, ok := e.db.caseExecs[caseExecKey(log.TestExecutionID, *log.CaseExecutionID)]; !ok {
+		if _, ok := e.db.caseExecs[getCaseExecKey(log.TestExecutionID, *log.CaseExecutionID)]; !ok {
 			return test.ErrorCaseExecutionNotFound
 		}
 	}

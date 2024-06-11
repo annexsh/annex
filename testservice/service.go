@@ -22,6 +22,7 @@ type Workflower interface {
 	GetWorkflowHistory(ctx context.Context, workflowID string, runID string, isLongPoll bool, filterType enums.HistoryEventFilterType) client.HistoryEventIterator
 	ResetWorkflowExecution(ctx context.Context, request *workflowservice.ResetWorkflowExecutionRequest) (*workflowservice.ResetWorkflowExecutionResponse, error)
 	CancelWorkflow(ctx context.Context, workflowID string, runID string) error
+	DescribeTaskQueue(ctx context.Context, taskQueue string, taskQueueType enums.TaskQueueType) (*workflowservice.DescribeTaskQueueResponse, error)
 }
 
 type ServiceOption func(s *Service)
@@ -33,15 +34,17 @@ func WithLogger(logger log.Logger) ServiceOption {
 }
 
 type Service struct {
-	repo     test.Repository
-	executor *executor
-	logger   log.Logger
+	repo       test.Repository
+	workflower Workflower
+	executor   *executor
+	logger     log.Logger
 }
 
 func New(repo test.Repository, workflower Workflower, opts ...ServiceOption) *Service {
 	s := &Service{
-		repo:   repo,
-		logger: log.NewNopLogger(),
+		repo:       repo,
+		workflower: workflower,
+		logger:     log.NewNopLogger(),
 	}
 	for _, opt := range opts {
 		opt(s)

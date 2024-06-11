@@ -19,6 +19,15 @@ type CaseExecution struct {
 	Error           *string              `json:"error"`
 }
 
+type Context struct {
+	ID string `json:"id"`
+}
+
+type Group struct {
+	ContextID string `json:"context_id"`
+	Name      string `json:"name"`
+}
+
 type Log struct {
 	ID              uuid.UUID             `json:"id"`
 	TestExecutionID test.TestExecutionID  `json:"test_execution_id"`
@@ -28,19 +37,13 @@ type Log struct {
 	CreateTime      Timestamp             `json:"create_time"`
 }
 
-type Runner struct {
-	RunnerID string    `json:"runner_id"`
-	TestID   uuid.UUID `json:"test_id"`
-}
-
 type Test struct {
-	ID                uuid.UUID `json:"id"`
-	Group             string    `json:"group"`
-	Name              string    `json:"name"`
-	HasInput          bool      `json:"has_input"`
-	RunnerID          string    `json:"runner_id"`
-	RunnerHeartbeatAt Timestamp `json:"runner_heartbeat_at"`
-	CreateTime        Timestamp `json:"create_time"`
+	Context    string    `json:"context"`
+	Group      string    `json:"group"`
+	ID         uuid.UUID `json:"id"`
+	Name       string    `json:"name"`
+	HasInput   bool      `json:"has_input"`
+	CreateTime Timestamp `json:"create_time"`
 }
 
 type TestDefaultInput struct {

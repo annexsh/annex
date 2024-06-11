@@ -162,7 +162,7 @@ func (t *TestExecutionWriter) ResetTestExecution(_ context.Context, reset *test.
 	}
 
 	for _, caseExecID := range reset.StaleCaseExecutions {
-		delete(t.db.caseExecs, caseExecKey(te.ID, caseExecID))
+		delete(t.db.caseExecs, getCaseExecKey(te.ID, caseExecID))
 	}
 
 	for _, logID := range reset.StaleLogs {

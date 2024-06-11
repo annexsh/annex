@@ -40,23 +40,15 @@ func GenTestDefinition() *test.TestDefinition {
 		Group:        uuid.NewString(),
 		Name:         uuid.NewString(),
 		DefaultInput: GenDefaultInput(),
-		RunnerID:     uuid.NewString(),
 	}
 }
 
 func GenTest() *test.Test {
 	return &test.Test{
-		ID:       uuid.New(),
-		Group:    uuid.NewString(),
-		Name:     uuid.NewString(),
-		HasInput: true,
-		Runners: []*test.Runner{
-			{
-				ID:                uuid.NewString(),
-				LastHeartbeatTime: time.Now(),
-				IsActive:          true,
-			},
-		},
+		ID:         uuid.New(),
+		Group:      uuid.NewString(),
+		Name:       uuid.NewString(),
+		HasInput:   true,
 		CreateTime: time.Now(),
 	}
 }

@@ -19,7 +19,7 @@ func TestCaseExecutionReader_GetCaseExecution(t *testing.T) {
 	r := NewCaseExecutionReader(db)
 
 	want := fake.GenCaseExec(test.NewTestExecutionID())
-	db.caseExecs[caseExecKey(want.TestExecutionID, want.ID)] = want
+	db.caseExecs[getCaseExecKey(want.TestExecutionID, want.ID)] = want
 
 	got, err := r.GetCaseExecution(ctx, want.TestExecutionID, want.ID)
 	require.NoError(t, err)
@@ -38,7 +38,7 @@ func TestCaseExecutionReader_ListCaseExecutions(t *testing.T) {
 	for i := range count {
 		ce := fake.GenCaseExec(testExecID)
 		want[i] = ce
-		db.caseExecs[caseExecKey(ce.TestExecutionID, ce.ID)] = ce
+		db.caseExecs[getCaseExecKey(ce.TestExecutionID, ce.ID)] = ce
 	}
 
 	got, err := r.ListCaseExecutions(ctx, testExecID)
@@ -122,7 +122,7 @@ func TestCaseExecutionWriter_UpdateStartedCaseExecution(t *testing.T) {
 			existing.StartTime = nil
 			existing.FinishTime = nil
 			existing.Error = nil
-			dbKey := caseExecKey(existing.TestExecutionID, existing.ID)
+			dbKey := getCaseExecKey(existing.TestExecutionID, existing.ID)
 
 			if tt.existingCase {
 				db.caseExecs[dbKey] = existing
@@ -173,7 +173,7 @@ func TestCaseExecutionWriter_UpdateFinishedCaseExecution(t *testing.T) {
 			existing := fake.GenCaseExec(test.NewTestExecutionID())
 			existing.FinishTime = nil
 			existing.Error = nil
-			dbKey := caseExecKey(existing.TestExecutionID, existing.ID)
+			dbKey := getCaseExecKey(existing.TestExecutionID, existing.ID)
 
 			if tt.existingCase {
 				db.caseExecs[dbKey] = existing
@@ -204,7 +204,7 @@ func TestCaseExecutionWriter_DeleteCaseExecution(t *testing.T) {
 	w := NewCaseExecutionWriter(db)
 
 	want := fake.GenCaseExec(test.NewTestExecutionID())
-	db.caseExecs[caseExecKey(want.TestExecutionID, want.ID)] = want
+	db.caseExecs[getCaseExecKey(want.TestExecutionID, want.ID)] = want
 	assert.NotEmpty(t, db.caseExecs)
 
 	err := w.DeleteCaseExecution(ctx, want.TestExecutionID, want.ID)

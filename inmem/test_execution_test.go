@@ -287,7 +287,7 @@ func TestTestExecutionWriter_ResetTestExecution(t *testing.T) {
 				// Create valid case executions
 				for range numValidCaseExecs {
 					caseExec := fake.GenCaseExec(existing.ID)
-					db.caseExecs[caseExecKey(existing.ID, caseExec.ID)] = caseExec
+					db.caseExecs[getCaseExecKey(existing.ID, caseExec.ID)] = caseExec
 					// Gen stale case execution logs
 					for range numValidLogsPerExec {
 						validLog := fake.GenCaseExecLog(existing.ID, caseExec.ID)
@@ -299,7 +299,7 @@ func TestTestExecutionWriter_ResetTestExecution(t *testing.T) {
 				for range numStaleCaseExecs {
 					caseExec := fake.GenCaseExec(existing.ID)
 					staleCaseExecIDs = append(staleCaseExecIDs, caseExec.ID)
-					db.caseExecs[caseExecKey(existing.ID, caseExec.ID)] = caseExec
+					db.caseExecs[getCaseExecKey(existing.ID, caseExec.ID)] = caseExec
 					// Gen stale case execution logs
 					for range numStaleLogsPerExec {
 						staleLog := fake.GenCaseExecLog(existing.ID, caseExec.ID)

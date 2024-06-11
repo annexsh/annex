@@ -2,7 +2,6 @@ package postgres
 
 import (
 	"context"
-	"time"
 
 	"github.com/google/uuid"
 
@@ -95,12 +94,11 @@ func (t *TestWriter) CreateTests(ctx context.Context, definitions ...*test.TestD
 
 func createTest(ctx context.Context, querier sqlc.Querier, definition *test.TestDefinition) (*sqlc.Test, error) {
 	created, err := querier.CreateTest(ctx, sqlc.CreateTestParams{
-		ID:                definition.TestID,
-		Group:             definition.Group,
-		Name:              definition.Name,
-		HasInput:          definition.DefaultInput != nil,
-		RunnerID:          definition.RunnerID,
-		RunnerHeartbeatAt: sqlc.NewTimestamp(time.Now()),
+		Context:  definition.Context,
+		Group:    definition.Group,
+		ID:       definition.TestID,
+		Name:     definition.Name,
+		HasInput: definition.DefaultInput != nil,
 	})
 	if err != nil {
 		return nil, err

@@ -99,22 +99,16 @@ func (t *TestWriter) CreateTests(_ context.Context, definitions ...*test.TestDef
 
 func (t *TestWriter) createTestUnsafe(definition *test.TestDefinition) *test.Test {
 	for _, tt := range t.db.tests {
-		if tt.Group == definition.Group && tt.Name == definition.Name {
+		if tt.Context == tt.Context && tt.Group == definition.Group && tt.Name == definition.Name {
 			definition.TestID = tt.ID
 		}
 	}
 	tt := &test.Test{
-		ID:       definition.TestID,
-		Group:    definition.Group,
-		Name:     definition.Name,
-		HasInput: definition.DefaultInput != nil,
-		Runners: []*test.Runner{
-			{
-				ID:                definition.RunnerID,
-				LastHeartbeatTime: time.Now().UTC(),
-				IsActive:          true,
-			},
-		},
+		ID:         definition.TestID,
+		Context:    definition.Context,
+		Group:      definition.Group,
+		Name:       definition.Name,
+		HasInput:   definition.DefaultInput != nil,
 		CreateTime: time.Now().UTC(),
 	}
 	t.db.tests[tt.ID] = tt

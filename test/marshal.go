@@ -9,8 +9,9 @@ import (
 
 func (t *Test) Proto() *testv1.Test {
 	return &testv1.Test{
-		Id:         t.ID.String(),
+		Context:    t.Context,
 		Group:      t.Group,
+		Id:         t.ID.String(),
 		Name:       t.Name,
 		HasInput:   t.HasInput,
 		CreateTime: timestamppb.New(t.CreateTime),

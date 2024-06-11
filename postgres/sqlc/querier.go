@@ -12,7 +12,10 @@ import (
 )
 
 type Querier interface {
+	ContextExists(ctx context.Context, id string) error
 	CreateCaseExecution(ctx context.Context, arg CreateCaseExecutionParams) (*CaseExecution, error)
+	CreateContext(ctx context.Context, id string) error
+	CreateGroup(ctx context.Context, arg CreateGroupParams) error
 	CreateLog(ctx context.Context, arg CreateLogParams) error
 	CreateTest(ctx context.Context, arg CreateTestParams) (*Test, error)
 	CreateTestDefaultInput(ctx context.Context, arg CreateTestDefaultInputParams) error
@@ -27,6 +30,7 @@ type Querier interface {
 	GetTestDefaultInput(ctx context.Context, testID uuid.UUID) (*TestDefaultInput, error)
 	GetTestExecution(ctx context.Context, id test.TestExecutionID) (*TestExecution, error)
 	GetTestExecutionInput(ctx context.Context, testExecutionID test.TestExecutionID) (*TestExecutionInput, error)
+	GroupExists(ctx context.Context, arg GroupExistsParams) error
 	ListCaseExecutions(ctx context.Context, testExecutionID test.TestExecutionID) ([]*CaseExecution, error)
 	ListLogs(ctx context.Context, testExecutionID test.TestExecutionID) ([]*Log, error)
 	ListTestExecutions(ctx context.Context, arg ListTestExecutionsParams) ([]*TestExecution, error)

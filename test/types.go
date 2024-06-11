@@ -6,27 +6,23 @@ import (
 	"github.com/google/uuid"
 )
 
+const runnerActiveExpireDuration = time.Minute
+
 type TestDefinition struct {
-	TestID       uuid.UUID
+	Context      string
 	Group        string
+	TestID       uuid.UUID
 	Name         string
 	DefaultInput *Payload
-	RunnerID     string
 }
 
 type Test struct {
-	ID         uuid.UUID
+	Context    string
 	Group      string
+	ID         uuid.UUID
 	Name       string
 	HasInput   bool
-	Runners    []*Runner
 	CreateTime time.Time
-}
-
-type Runner struct {
-	ID                string
-	LastHeartbeatTime time.Time
-	IsActive          bool
 }
 
 type TestList []*Test
