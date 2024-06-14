@@ -21,6 +21,7 @@ type ContextReadWriter interface {
 }
 
 type ContextReader interface {
+	ListContexts(ctx context.Context) ([]string, error)
 	ContextExists(ctx context.Context, id string) (bool, error)
 }
 
@@ -34,11 +35,12 @@ type GroupReadWriter interface {
 }
 
 type GroupReader interface {
-	GroupExists(ctx context.Context, contextID string, name string) (bool, error)
+	ListGroups(ctx context.Context, contextID string) ([]string, error)
+	GroupExists(ctx context.Context, contextID string, groupID string) (bool, error)
 }
 
 type GroupWriter interface {
-	CreateGroup(ctx context.Context, contextID string, name string) error
+	CreateGroup(ctx context.Context, contextID string, groupID string) error
 }
 
 type TestReadWriter interface {
@@ -48,7 +50,7 @@ type TestReadWriter interface {
 
 type TestReader interface {
 	GetTest(ctx context.Context, id uuid.UUID) (*Test, error)
-	ListTests(ctx context.Context) (TestList, error)
+	ListTests(ctx context.Context, contextID string, groupID string) (TestList, error)
 	GetTestDefaultInput(ctx context.Context, testID uuid.UUID) (*Payload, error)
 }
 

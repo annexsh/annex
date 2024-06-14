@@ -81,7 +81,7 @@ func (e *executor) execute(ctx context.Context, testID uuid.UUID, opts ...execut
 
 	wfOpts := client.StartWorkflowOptions{
 		ID:                       workflowID,
-		TaskQueue:                getTaskQueue(t.Context, t.Group),
+		TaskQueue:                getTaskQueue(t.ContextID, t.GroupID),
 		WorkflowExecutionTimeout: 7 * 24 * time.Hour, // 1 week
 	}
 

@@ -3,7 +3,7 @@ module github.com/annexsh/annex
 go 1.22.0
 
 require (
-	github.com/annexsh/annex-proto v0.0.0-20240611232825-bec6cd17612d
+	github.com/annexsh/annex-proto v0.0.0-20240614041543-e872ee852529
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/cristalhq/aconfig v0.18.5
 	github.com/cristalhq/aconfig/aconfigyaml v0.17.1
@@ -69,6 +69,7 @@ require (
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
 	github.com/iancoleman/strcase v0.3.0 // indirect
+	github.com/jackc/pgerrcode v0.0.0-20240316143900-6e2875d9b438 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20231201235250-de7065d80cb9 // indirect
 	github.com/jackc/puddle/v2 v2.2.1 // indirect

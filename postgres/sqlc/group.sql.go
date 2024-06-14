@@ -10,34 +10,60 @@ import (
 )
 
 const createGroup = `-- name: CreateGroup :exec
-INSERT INTO groups (context_id, name)
+INSERT INTO groups (context_id, id)
 VALUES ($1, $2)
-ON CONFLICT (context_id, name) DO NOTHING
+ON CONFLICT (context_id, id) DO NOTHING
 `
 
 type CreateGroupParams struct {
 	ContextID string `json:"context_id"`
-	Name      string `json:"name"`
+	ID        string `json:"id"`
 }
 
 func (q *Queries) CreateGroup(ctx context.Context, arg CreateGroupParams) error {
-	_, err := q.db.Exec(ctx, createGroup, arg.ContextID, arg.Name)
+	_, err := q.db.Exec(ctx, createGroup, arg.ContextID, arg.ID)
 	return err
 }
 
 const groupExists = `-- name: GroupExists :exec
-SELECT context_id, name
+SELECT context_id, id
 FROM groups
 WHERE context_id = $1
-  AND name = $2
+  AND id = $2
 `
 
 type GroupExistsParams struct {
 	ContextID string `json:"context_id"`
-	Name      string `json:"name"`
+	ID        string `json:"id"`
 }
 
 func (q *Queries) GroupExists(ctx context.Context, arg GroupExistsParams) error {
-	_, err := q.db.Exec(ctx, groupExists, arg.ContextID, arg.Name)
+	_, err := q.db.Exec(ctx, groupExists, arg.ContextID, arg.ID)
 	return err
+}
+
+const listGroups = `-- name: ListGroups :many
+SELECT id
+FROM groups
+WHERE context_id = $1
+`
+
+func (q *Queries) ListGroups(ctx context.Context, contextID string) ([]string, error) {
+	rows, err := q.db.Query(ctx, listGroups, contextID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
 }

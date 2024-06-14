@@ -3,25 +3,24 @@ package testservice
 import (
 	"context"
 	"fmt"
-	"time"
 
 	testservicev1 "github.com/annexsh/annex-proto/gen/go/rpc/testservice/v1"
-	testv1 "github.com/annexsh/annex-proto/gen/go/type/test/v1"
 	"github.com/google/uuid"
-	"go.temporal.io/api/enums/v1"
 
 	"github.com/annexsh/annex/test"
 )
 
-const runnerActiveExpireDuration = time.Minute
-
 func (s *Service) RegisterTests(ctx context.Context, req *testservicev1.RegisterTestsRequest) (*testservicev1.RegisterTestsResponse, error) {
+	if err := s.repo.CreateGroup(ctx, req.Context, req.Group); err != nil {
+		return nil, err
+	}
+
 	var defs []*test.TestDefinition
 
 	for _, defpb := range req.Definitions {
 		def := &test.TestDefinition{
-			Context:      req.Context,
-			Group:        req.Group,
+			ContextID:    req.Context,
+			GroupID:      req.Group,
 			TestID:       uuid.New(),
 			Name:         defpb.Name,
 			DefaultInput: nil,
@@ -61,8 +60,8 @@ func (s *Service) GetTestDefaultInput(ctx context.Context, req *testservicev1.Ge
 	}, nil
 }
 
-func (s *Service) ListTests(ctx context.Context, _ *testservicev1.ListTestsRequest) (*testservicev1.ListTestsResponse, error) {
-	tests, err := s.repo.ListTests(ctx)
+func (s *Service) ListTests(ctx context.Context, req *testservicev1.ListTestsRequest) (*testservicev1.ListTestsResponse, error) {
+	tests, err := s.repo.ListTests(ctx, req.Context, req.Group)
 	if err != nil {
 		return nil, err
 	}
@@ -90,29 +89,6 @@ func (s *Service) ExecuteTest(ctx context.Context, req *testservicev1.ExecuteTes
 
 	return &testservicev1.ExecuteTestResponse{
 		TestExecution: testExec.Proto(),
-	}, nil
-}
-
-func (s *Service) ListTestRunners(ctx context.Context, req *testservicev1.ListTestRunnersRequest) (*testservicev1.ListTestRunnersResponse, error) {
-	taskQueue := getTaskQueue(req.Context, req.Group)
-	taskQueueRes, err := s.workflower.DescribeTaskQueue(ctx, taskQueue, enums.TASK_QUEUE_TYPE_WORKFLOW)
-	if err != nil {
-		return nil, err
-	}
-
-	runners := make([]*testv1.Runner, len(taskQueueRes.Pollers))
-	for i, poller := range taskQueueRes.Pollers {
-		runners[i] = &testv1.Runner{
-			Context:        req.Context,
-			Group:          req.Group,
-			Id:             poller.Identity,
-			LastAccessTime: poller.LastAccessTime,
-			Active:         poller.LastAccessTime.AsTime().Sub(time.Now()) < runnerActiveExpireDuration,
-		}
-	}
-
-	return &testservicev1.ListTestRunnersResponse{
-		Runners: runners,
 	}, nil
 }
 

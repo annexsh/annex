@@ -12,6 +12,20 @@ import (
 	"github.com/annexsh/annex/test"
 )
 
+type TestOptions func(opts *testOptions)
+
+func WithContextID(contextID string) TestOptions {
+	return func(opts *testOptions) {
+		opts.contextID = contextID
+	}
+}
+
+func WithGroupID(groupID string) TestOptions {
+	return func(opts *testOptions) {
+		opts.groupID = groupID
+	}
+}
+
 func GenInput() *test.Payload {
 	p, err := converter.NewJSONPayloadConverter().ToPayload(GenData())
 	if err != nil {
@@ -34,19 +48,23 @@ func GenDefaultInput() *test.Payload {
 	}
 }
 
-func GenTestDefinition() *test.TestDefinition {
+func GenTestDefinition(opts ...TestOptions) *test.TestDefinition {
+	options := newTestOptions(opts...)
 	return &test.TestDefinition{
+		ContextID:    options.contextID,
+		GroupID:      options.groupID,
 		TestID:       uuid.New(),
-		Group:        uuid.NewString(),
 		Name:         uuid.NewString(),
 		DefaultInput: GenDefaultInput(),
 	}
 }
 
-func GenTest() *test.Test {
+func GenTest(opts ...TestOptions) *test.Test {
+	options := newTestOptions(opts...)
 	return &test.Test{
+		ContextID:  options.contextID,
+		GroupID:    options.groupID,
 		ID:         uuid.New(),
-		Group:      uuid.NewString(),
 		Name:       uuid.NewString(),
 		HasInput:   true,
 		CreateTime: time.Now(),
@@ -184,4 +202,20 @@ func GenData() *Data {
 		Foo: rand.Int(),
 		Bar: uuid.NewString(),
 	}
+}
+
+type testOptions struct {
+	contextID string
+	groupID   string
+}
+
+func newTestOptions(opts ...TestOptions) testOptions {
+	options := testOptions{
+		contextID: "default-context",
+		groupID:   "default-group",
+	}
+	for _, opt := range opts {
+		opt(&options)
+	}
+	return options
 }

@@ -8,8 +8,8 @@ import (
 
 func marshalTest(t *sqlc.Test) *test.Test {
 	return &test.Test{
-		Context:    t.Context,
-		Group:      t.Group,
+		ContextID:  t.ContextID,
+		GroupID:    t.GroupID,
 		ID:         t.ID,
 		Name:       t.Name,
 		HasInput:   t.HasInput,

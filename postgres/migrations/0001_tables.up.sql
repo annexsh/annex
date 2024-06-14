@@ -6,20 +6,21 @@ CREATE TABLE contexts
 CREATE TABLE groups
 (
     context_id TEXT NOT NULL REFERENCES contexts (id),
-    name       TEXT NOT NULL,
-    PRIMARY KEY (context_id, name)
+    id         TEXT NOT NULL,
+    PRIMARY KEY (context_id, id)
 );
 
 CREATE TABLE tests
 (
-    context     TEXT                    NOT NULL,
-    "group"     TEXT                    NOT NULL,
-    FOREIGN KEY (context, "group") REFERENCES groups (context_id, name) ON UPDATE CASCADE,
+    context_id  TEXT                    NOT NULL,
+    group_id    TEXT                    NOT NULL,
+    FOREIGN KEY (context_id, group_id) REFERENCES groups (context_id, id) ON UPDATE CASCADE,
     --
     id          UUID                    NOT NULL PRIMARY KEY,
     name        TEXT                    NOT NULL,
     has_input   BOOLEAN                 NOT NULL,
-    create_time TIMESTAMP DEFAULT now() NOT NULL
+    create_time TIMESTAMP DEFAULT now() NOT NULL,
+    UNIQUE (context_id, group_id, name)
 );
 
 CREATE TABLE test_default_inputs

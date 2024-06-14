@@ -19,6 +19,10 @@ func NewContextReader(db *DB) *ContextReader {
 	return &ContextReader{db: db}
 }
 
+func (c *ContextReader) ListContexts(_ context.Context) ([]string, error) {
+	return c.db.contexts.ToSlice(), nil
+}
+
 func (c *ContextReader) ContextExists(_ context.Context, id string) (bool, error) {
 	return c.db.contexts.Contains(id), nil
 }

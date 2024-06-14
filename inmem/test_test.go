@@ -44,16 +44,19 @@ func TestTestReader_ListTests(t *testing.T) {
 	db := NewDB()
 	r := NewTestReader(db)
 
+	contextID := uuid.NewString()
+	groupID := uuid.NewString()
+
 	count := 30
 	want := make(test.TestList, count)
 
 	for i := range count {
-		tt := fake.GenTest()
+		tt := fake.GenTest(fake.WithContextID(contextID), fake.WithGroupID(groupID))
 		want[i] = tt
 		db.tests[tt.ID] = tt
 	}
 
-	got, err := r.ListTests(ctx)
+	got, err := r.ListTests(ctx, contextID, groupID)
 	require.NoError(t, err)
 	assert.Len(t, got, count)
 	require.Equal(t, want, got)
@@ -92,6 +95,6 @@ func TestTestWriter_CreateTests(t *testing.T) {
 func assertCreatedTest(t *testing.T, def *test.TestDefinition, got *test.Test) {
 	assert.Equal(t, def.TestID, got.ID)
 	assert.Equal(t, def.Name, got.Name)
-	assert.Equal(t, def.Group, got.Group)
+	assert.Equal(t, def.GroupID, got.GroupID)
 	assert.Equal(t, def.DefaultInput != nil, got.HasInput)
 }

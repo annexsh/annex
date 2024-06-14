@@ -19,8 +19,18 @@ func NewGroupReader(db *DB) *GroupReader {
 	return &GroupReader{db: db}
 }
 
-func (g *GroupReader) GroupExists(_ context.Context, contextID string, name string) (bool, error) {
-	return g.db.groups.Contains(getGroupKey(contextID, name)), nil
+func (g *GroupReader) ListGroups(_ context.Context, contextID string) ([]string, error) {
+	var groups []string
+	for group := range g.db.groups.Iter() {
+		if group.contextID == contextID {
+			groups = append(groups, group.groupID)
+		}
+	}
+	return groups, nil
+}
+
+func (g *GroupReader) GroupExists(_ context.Context, contextID string, groupID string) (bool, error) {
+	return g.db.groups.Contains(getGroupKey(contextID, groupID)), nil
 }
 
 type GroupWriter struct {
@@ -31,19 +41,19 @@ func NewGroupWriter(db *DB) *GroupWriter {
 	return &GroupWriter{db: db}
 }
 
-func (g *GroupWriter) CreateGroup(_ context.Context, contextID string, name string) error {
-	g.db.groups.Add(getGroupKey(contextID, name))
+func (g *GroupWriter) CreateGroup(_ context.Context, contextID string, groupID string) error {
+	g.db.groups.Add(getGroupKey(contextID, groupID))
 	return nil
 }
 
 type groupKey struct {
 	contextID string
-	name      string
+	groupID   string
 }
 
-func getGroupKey(contextID string, name string) groupKey {
+func getGroupKey(contextID string, groupID string) groupKey {
 	return groupKey{
 		contextID: contextID,
-		name:      name,
+		groupID:   groupID,
 	}
 }

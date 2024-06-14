@@ -1,7 +1,7 @@
 -- name: CreateTest :one
-INSERT INTO tests (context, "group", id, name, has_input)
+INSERT INTO tests (context_id, group_id, id, name, has_input)
 VALUES ($1, $2, $3, $4, $5)
-ON CONFLICT (context, "group", name) DO UPDATE
+ON CONFLICT (context_id, group_id, name) DO UPDATE
     SET has_input   = excluded.has_input,
         create_time = now()
 RETURNING *;
@@ -15,11 +15,12 @@ WHERE id = $1;
 SELECT *
 FROM tests
 WHERE name = $1
-  AND "group" = $2;
+  AND group_id = $2;
 
 -- name: ListTests :many
 SELECT *
-FROM tests;
+FROM tests
+WHERE context_id = $1 AND group_id = $2;
 
 -- name: CreateTestDefaultInput :exec
 INSERT INTO test_default_inputs (test_id, data)

@@ -32,9 +32,11 @@ type Querier interface {
 	GetTestExecutionInput(ctx context.Context, testExecutionID test.TestExecutionID) (*TestExecutionInput, error)
 	GroupExists(ctx context.Context, arg GroupExistsParams) error
 	ListCaseExecutions(ctx context.Context, testExecutionID test.TestExecutionID) ([]*CaseExecution, error)
+	ListContexts(ctx context.Context) ([]string, error)
+	ListGroups(ctx context.Context, contextID string) ([]string, error)
 	ListLogs(ctx context.Context, testExecutionID test.TestExecutionID) ([]*Log, error)
 	ListTestExecutions(ctx context.Context, arg ListTestExecutionsParams) ([]*TestExecution, error)
-	ListTests(ctx context.Context) ([]*Test, error)
+	ListTests(ctx context.Context, arg ListTestsParams) ([]*Test, error)
 	ResetCaseExecution(ctx context.Context, arg ResetCaseExecutionParams) (*CaseExecution, error)
 	UpdateCaseExecutionFinished(ctx context.Context, arg UpdateCaseExecutionFinishedParams) (*CaseExecution, error)
 	UpdateCaseExecutionStarted(ctx context.Context, arg UpdateCaseExecutionStartedParams) (*CaseExecution, error)

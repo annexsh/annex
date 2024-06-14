@@ -25,7 +25,7 @@ type Context struct {
 
 type Group struct {
 	ContextID string `json:"context_id"`
-	Name      string `json:"name"`
+	ID        string `json:"id"`
 }
 
 type Log struct {
@@ -38,8 +38,8 @@ type Log struct {
 }
 
 type Test struct {
-	Context    string    `json:"context"`
-	Group      string    `json:"group"`
+	ContextID  string    `json:"context_id"`
+	GroupID    string    `json:"group_id"`
 	ID         uuid.UUID `json:"id"`
 	Name       string    `json:"name"`
 	HasInput   bool      `json:"has_input"`

@@ -12,34 +12,34 @@ import (
 )
 
 const createTest = `-- name: CreateTest :one
-INSERT INTO tests (context, "group", id, name, has_input)
+INSERT INTO tests (context_id, group_id, id, name, has_input)
 VALUES ($1, $2, $3, $4, $5)
-ON CONFLICT (context, "group", name) DO UPDATE
+ON CONFLICT (context_id, group_id, name) DO UPDATE
     SET has_input   = excluded.has_input,
         create_time = now()
-RETURNING context, "group", id, name, has_input, create_time
+RETURNING context_id, group_id, id, name, has_input, create_time
 `
 
 type CreateTestParams struct {
-	Context  string    `json:"context"`
-	Group    string    `json:"group"`
-	ID       uuid.UUID `json:"id"`
-	Name     string    `json:"name"`
-	HasInput bool      `json:"has_input"`
+	ContextID string    `json:"context_id"`
+	GroupID   string    `json:"group_id"`
+	ID        uuid.UUID `json:"id"`
+	Name      string    `json:"name"`
+	HasInput  bool      `json:"has_input"`
 }
 
 func (q *Queries) CreateTest(ctx context.Context, arg CreateTestParams) (*Test, error) {
 	row := q.db.QueryRow(ctx, createTest,
-		arg.Context,
-		arg.Group,
+		arg.ContextID,
+		arg.GroupID,
 		arg.ID,
 		arg.Name,
 		arg.HasInput,
 	)
 	var i Test
 	err := row.Scan(
-		&i.Context,
-		&i.Group,
+		&i.ContextID,
+		&i.GroupID,
 		&i.ID,
 		&i.Name,
 		&i.HasInput,
@@ -66,7 +66,7 @@ func (q *Queries) CreateTestDefaultInput(ctx context.Context, arg CreateTestDefa
 }
 
 const getTest = `-- name: GetTest :one
-SELECT context, "group", id, name, has_input, create_time
+SELECT context_id, group_id, id, name, has_input, create_time
 FROM tests
 WHERE id = $1
 `
@@ -75,8 +75,8 @@ func (q *Queries) GetTest(ctx context.Context, id uuid.UUID) (*Test, error) {
 	row := q.db.QueryRow(ctx, getTest, id)
 	var i Test
 	err := row.Scan(
-		&i.Context,
-		&i.Group,
+		&i.ContextID,
+		&i.GroupID,
 		&i.ID,
 		&i.Name,
 		&i.HasInput,
@@ -86,23 +86,23 @@ func (q *Queries) GetTest(ctx context.Context, id uuid.UUID) (*Test, error) {
 }
 
 const getTestByName = `-- name: GetTestByName :one
-SELECT context, "group", id, name, has_input, create_time
+SELECT context_id, group_id, id, name, has_input, create_time
 FROM tests
 WHERE name = $1
-  AND "group" = $2
+  AND group_id = $2
 `
 
 type GetTestByNameParams struct {
-	Name  string `json:"name"`
-	Group string `json:"group"`
+	Name    string `json:"name"`
+	GroupID string `json:"group_id"`
 }
 
 func (q *Queries) GetTestByName(ctx context.Context, arg GetTestByNameParams) (*Test, error) {
-	row := q.db.QueryRow(ctx, getTestByName, arg.Name, arg.Group)
+	row := q.db.QueryRow(ctx, getTestByName, arg.Name, arg.GroupID)
 	var i Test
 	err := row.Scan(
-		&i.Context,
-		&i.Group,
+		&i.ContextID,
+		&i.GroupID,
 		&i.ID,
 		&i.Name,
 		&i.HasInput,
@@ -125,12 +125,18 @@ func (q *Queries) GetTestDefaultInput(ctx context.Context, testID uuid.UUID) (*T
 }
 
 const listTests = `-- name: ListTests :many
-SELECT context, "group", id, name, has_input, create_time
+SELECT context_id, group_id, id, name, has_input, create_time
 FROM tests
+WHERE context_id = $1 AND group_id = $2
 `
 
-func (q *Queries) ListTests(ctx context.Context) ([]*Test, error) {
-	rows, err := q.db.Query(ctx, listTests)
+type ListTestsParams struct {
+	ContextID string `json:"context_id"`
+	GroupID   string `json:"group_id"`
+}
+
+func (q *Queries) ListTests(ctx context.Context, arg ListTestsParams) ([]*Test, error) {
+	rows, err := q.db.Query(ctx, listTests, arg.ContextID, arg.GroupID)
 	if err != nil {
 		return nil, err
 	}
@@ -139,8 +145,8 @@ func (q *Queries) ListTests(ctx context.Context) ([]*Test, error) {
 	for rows.Next() {
 		var i Test
 		if err := rows.Scan(
-			&i.Context,
-			&i.Group,
+			&i.ContextID,
+			&i.GroupID,
 			&i.ID,
 			&i.Name,
 			&i.HasInput,

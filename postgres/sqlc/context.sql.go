@@ -29,3 +29,28 @@ func (q *Queries) CreateContext(ctx context.Context, id string) error {
 	_, err := q.db.Exec(ctx, createContext, id)
 	return err
 }
+
+const listContexts = `-- name: ListContexts :many
+SELECT id
+FROM contexts
+`
+
+func (q *Queries) ListContexts(ctx context.Context) ([]string, error) {
+	rows, err := q.db.Query(ctx, listContexts)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		items = append(items, id)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
