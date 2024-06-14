@@ -9,8 +9,8 @@ import (
 
 func (t *Test) Proto() *testv1.Test {
 	return &testv1.Test{
-		Context:    t.Context,
-		Group:      t.Group,
+		Context:    t.ContextID,
+		Group:      t.GroupID,
 		Id:         t.ID.String(),
 		Name:       t.Name,
 		HasInput:   t.HasInput,

@@ -31,9 +31,12 @@ func (t *TestReader) GetTest(ctx context.Context, id uuid.UUID) (*test.Test, err
 	return marshalTest(tt), nil
 }
 
-func (t *TestReader) ListTests(ctx context.Context) (test.TestList, error) {
+func (t *TestReader) ListTests(ctx context.Context, contextID string, groupID string) (test.TestList, error) {
 	// TODO: pagination
-	tests, err := t.db.ListTests(ctx)
+	tests, err := t.db.ListTests(ctx, sqlc.ListTestsParams{
+		ContextID: contextID,
+		GroupID:   groupID,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -94,11 +97,11 @@ func (t *TestWriter) CreateTests(ctx context.Context, definitions ...*test.TestD
 
 func createTest(ctx context.Context, querier sqlc.Querier, definition *test.TestDefinition) (*sqlc.Test, error) {
 	created, err := querier.CreateTest(ctx, sqlc.CreateTestParams{
-		Context:  definition.Context,
-		Group:    definition.Group,
-		ID:       definition.TestID,
-		Name:     definition.Name,
-		HasInput: definition.DefaultInput != nil,
+		ContextID: definition.ContextID,
+		GroupID:   definition.GroupID,
+		ID:        definition.TestID,
+		Name:      definition.Name,
+		HasInput:  definition.DefaultInput != nil,
 	})
 	if err != nil {
 		return nil, err

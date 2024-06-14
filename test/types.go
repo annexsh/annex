@@ -6,19 +6,17 @@ import (
 	"github.com/google/uuid"
 )
 
-const runnerActiveExpireDuration = time.Minute
-
 type TestDefinition struct {
-	Context      string
-	Group        string
+	ContextID    string
+	GroupID      string
 	TestID       uuid.UUID
 	Name         string
 	DefaultInput *Payload
 }
 
 type Test struct {
-	Context    string
-	Group      string
+	ContextID  string
+	GroupID    string
 	ID         uuid.UUID
 	Name       string
 	HasInput   bool

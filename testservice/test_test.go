@@ -87,14 +87,23 @@ func TestService_ListTests(t *testing.T) {
 	wantCount := 30
 	want := make([]*testv1.Test, wantCount)
 
+	contextID := "test-context"
+	groupID := "test-group"
+	err := fakes.repo.CreateContext(ctx, contextID)
+	require.NoError(t, err)
+	err = fakes.repo.CreateGroup(ctx, contextID, groupID)
+	require.NoError(t, err)
+
 	for i := range wantCount {
-		def := fake.GenTestDefinition()
+		def := fake.GenTestDefinition(fake.WithContextID(contextID), fake.WithGroupID(groupID))
 		tt, err := fakes.repo.CreateTest(ctx, def)
 		require.NoError(t, err)
 		want[i] = tt.Proto()
 	}
 
 	res, err := s.ListTests(ctx, &testservicev1.ListTestsRequest{
+		Context:       contextID,
+		Group:         groupID,
 		PageSize:      0, // TODO: pagination
 		NextPageToken: "",
 	})

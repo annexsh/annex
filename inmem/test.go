@@ -36,15 +36,15 @@ func (t *TestReader) GetTest(_ context.Context, id uuid.UUID) (*test.Test, error
 	return ptr.Copy(tt), nil
 }
 
-func (t *TestReader) ListTests(_ context.Context) (test.TestList, error) {
+func (t *TestReader) ListTests(_ context.Context, contextID string, groupID string) (test.TestList, error) {
 	t.db.mu.RLock()
 	defer t.db.mu.RUnlock()
 
-	i := 0
-	tests := make(test.TestList, len(t.db.tests))
+	var tests test.TestList
 	for _, tt := range t.db.tests {
-		tests[i] = ptr.Copy(tt)
-		i++
+		if tt.ContextID == contextID && tt.GroupID == groupID {
+			tests = append(tests, ptr.Copy(tt))
+		}
 	}
 
 	slices.SortFunc(tests, func(a, b *test.Test) int {
@@ -99,14 +99,14 @@ func (t *TestWriter) CreateTests(_ context.Context, definitions ...*test.TestDef
 
 func (t *TestWriter) createTestUnsafe(definition *test.TestDefinition) *test.Test {
 	for _, tt := range t.db.tests {
-		if tt.Context == tt.Context && tt.Group == definition.Group && tt.Name == definition.Name {
+		if tt.ContextID == tt.ContextID && tt.GroupID == definition.GroupID && tt.Name == definition.Name {
 			definition.TestID = tt.ID
 		}
 	}
 	tt := &test.Test{
 		ID:         definition.TestID,
-		Context:    definition.Context,
-		Group:      definition.Group,
+		ContextID:  definition.ContextID,
+		GroupID:    definition.GroupID,
 		Name:       definition.Name,
 		HasInput:   definition.DefaultInput != nil,
 		CreateTime: time.Now().UTC(),

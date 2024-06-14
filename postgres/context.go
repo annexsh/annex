@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 
+	"github.com/jackc/pgerrcode"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/annexsh/annex/test"
 )
@@ -16,6 +18,10 @@ var (
 
 type ContextReader struct {
 	db *DB
+}
+
+func (c *ContextReader) ListContexts(ctx context.Context) ([]string, error) {
+	return c.ListContexts(ctx)
 }
 
 func NewContextReader(db *DB) *ContextReader {
@@ -41,5 +47,14 @@ func NewContextWriter(db *DB) *ContextWriter {
 }
 
 func (c *ContextWriter) CreateContext(ctx context.Context, id string) error {
-	return c.db.CreateContext(ctx, id)
+	err := c.db.CreateContext(ctx, id)
+
+	var pgErr *pgconn.PgError
+	if id == "default" && errors.As(err, &pgErr) {
+		if pgErr.Code == pgerrcode.UniqueViolation {
+			return nil
+		}
+	}
+
+	return err
 }
