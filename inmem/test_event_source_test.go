@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/atomic"
 
-	"github.com/annexsh/annex/event"
+	"github.com/annexsh/annex/eventservice"
 	"github.com/annexsh/annex/internal/conc"
 	"github.com/annexsh/annex/internal/fake"
 	"github.com/annexsh/annex/test"
@@ -35,7 +35,7 @@ func TestTestExecutionEventSource(t *testing.T) {
 		testExecIDs[i] = test.NewTestExecutionID()
 	}
 
-	wantTestExecEvents := map[test.TestExecutionID][]*event.ExecutionEvent{}
+	wantTestExecEvents := map[test.TestExecutionID][]*eventservice.ExecutionEvent{}
 
 	totalReceived := atomic.NewInt64(0)
 	var wg sync.WaitGroup
@@ -62,7 +62,7 @@ func TestTestExecutionEventSource(t *testing.T) {
 			nextEvent := fake.GenExecEvent(id)
 			wantEvents, ok := wantTestExecEvents[id]
 			if !ok {
-				wantTestExecEvents[id] = []*event.ExecutionEvent{nextEvent}
+				wantTestExecEvents[id] = []*eventservice.ExecutionEvent{nextEvent}
 			}
 			wantEvents = append(wantEvents, nextEvent)
 			wantTestExecEvents[id] = wantEvents

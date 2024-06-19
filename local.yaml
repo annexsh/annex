@@ -11,4 +11,4 @@ postgres:
   database: postgres
   user: postgres
   password: password
-inMemory: true # temporary
+inMemory: false # temporary

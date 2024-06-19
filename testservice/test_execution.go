@@ -4,15 +4,19 @@ import (
 	"context"
 	"fmt"
 
-	testservicev1 "github.com/annexsh/annex-proto/gen/go/rpc/testservice/v1"
+	"connectrpc.com/connect"
+	testsv1 "github.com/annexsh/annex-proto/gen/go/annex/tests/v1"
 	"github.com/google/uuid"
 
 	"github.com/annexsh/annex/internal/pagination"
 	"github.com/annexsh/annex/test"
 )
 
-func (s *Service) GetTestExecution(ctx context.Context, req *testservicev1.GetTestExecutionRequest) (*testservicev1.GetTestExecutionResponse, error) {
-	execID, err := test.ParseTestExecutionID(req.TestExecutionId)
+func (s *Service) GetTestExecution(
+	ctx context.Context,
+	req *connect.Request[testsv1.GetTestExecutionRequest],
+) (*connect.Response[testsv1.GetTestExecutionResponse], error) {
+	execID, err := test.ParseTestExecutionID(req.Msg.TestExecutionId)
 	if err != nil {
 		return nil, err
 	}
@@ -22,7 +26,7 @@ func (s *Service) GetTestExecution(ctx context.Context, req *testservicev1.GetTe
 		return nil, err
 	}
 
-	res := &testservicev1.GetTestExecutionResponse{
+	res := &testsv1.GetTestExecutionResponse{
 		TestExecution: exec.Proto(),
 	}
 
@@ -34,27 +38,30 @@ func (s *Service) GetTestExecution(ctx context.Context, req *testservicev1.GetTe
 		res.Input = input.Proto()
 	}
 
-	return res, nil
+	return connect.NewResponse(res), nil
 }
 
-func (s *Service) ListTestExecutions(ctx context.Context, req *testservicev1.ListTestExecutionsRequest) (*testservicev1.ListTestExecutionsResponse, error) {
-	testID, err := uuid.Parse(req.TestId)
+func (s *Service) ListTestExecutions(
+	ctx context.Context,
+	req *connect.Request[testsv1.ListTestExecutionsRequest],
+) (*connect.Response[testsv1.ListTestExecutionsResponse], error) {
+	testID, err := uuid.Parse(req.Msg.TestId)
 	if err != nil {
 		return nil, err
 	}
 
 	queryPageSize := defaultPageSize + 1
 
-	if req.PageSize > 0 {
-		queryPageSize = req.PageSize + 1
+	if req.Msg.PageSize > 0 {
+		queryPageSize = req.Msg.PageSize + 1
 	}
 
 	filter := &test.TestExecutionListFilter{
 		PageSize: uint32(queryPageSize),
 	}
 
-	if req.NextPageToken != "" {
-		lastTimestamp, lastID, err := pagination.DecodeNextPageToken(req)
+	if req.Msg.NextPageToken != "" {
+		lastTimestamp, lastID, err := pagination.DecodeNextPageToken(req.Msg)
 		if err != nil {
 			return nil, err
 		}
@@ -69,61 +76,70 @@ func (s *Service) ListTestExecutions(ctx context.Context, req *testservicev1.Lis
 		return nil, err
 	}
 
-	resp := &testservicev1.ListTestExecutionsResponse{}
+	res := &testsv1.ListTestExecutionsResponse{}
 
 	hasNextPage := len(testExecs) == int(queryPageSize)
 	if hasNextPage {
 		testExecs = testExecs[:len(testExecs)-1] // remove page buffer item
 		lastExec := testExecs[len(testExecs)-1]
-		resp.NextPageToken, err = pagination.EncodeNextPageToken(lastExec.ScheduleTime, lastExec.ID.UUID)
+		res.NextPageToken, err = pagination.EncodeNextPageToken(lastExec.ScheduleTime, lastExec.ID.UUID)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	resp.TestExecutions = testExecs.Proto()
-	return resp, nil
+	res.TestExecutions = testExecs.Proto()
+	return connect.NewResponse(res), nil
 }
 
-func (s *Service) AckTestExecutionStarted(ctx context.Context, req *testservicev1.AckTestExecutionStartedRequest) (*testservicev1.AckTestExecutionStartedResponse, error) {
-	execID, err := test.ParseTestExecutionID(req.TestExecutionId)
+func (s *Service) AckTestExecutionStarted(
+	ctx context.Context,
+	req *connect.Request[testsv1.AckTestExecutionStartedRequest],
+) (*connect.Response[testsv1.AckTestExecutionStartedResponse], error) {
+	execID, err := test.ParseTestExecutionID(req.Msg.TestExecutionId)
 	if err != nil {
 		return nil, err
 	}
 
 	started := &test.StartedTestExecution{
 		ID:        execID,
-		StartTime: req.StartTime.AsTime(),
+		StartTime: req.Msg.StartTime.AsTime(),
 	}
 
 	if _, err = s.repo.UpdateStartedTestExecution(ctx, started); err != nil {
 		return nil, err
 	}
 
-	return &testservicev1.AckTestExecutionStartedResponse{}, nil
+	return connect.NewResponse(&testsv1.AckTestExecutionStartedResponse{}), nil
 }
 
-func (s *Service) AckTestExecutionFinished(ctx context.Context, req *testservicev1.AckTestExecutionFinishedRequest) (*testservicev1.AckTestExecutionFinishedResponse, error) {
-	execID, err := test.ParseTestExecutionID(req.TestExecutionId)
+func (s *Service) AckTestExecutionFinished(
+	ctx context.Context,
+	req *connect.Request[testsv1.AckTestExecutionFinishedRequest],
+) (*connect.Response[testsv1.AckTestExecutionFinishedResponse], error) {
+	execID, err := test.ParseTestExecutionID(req.Msg.TestExecutionId)
 	if err != nil {
 		return nil, err
 	}
 
 	finished := &test.FinishedTestExecution{
 		ID:         execID,
-		FinishTime: req.FinishTime.AsTime(),
-		Error:      req.Error,
+		FinishTime: req.Msg.FinishTime.AsTime(),
+		Error:      req.Msg.Error,
 	}
 
 	if _, err = s.repo.UpdateFinishedTestExecution(ctx, finished); err != nil {
 		return nil, fmt.Errorf("failed to update test execution: %w", err)
 	}
 
-	return &testservicev1.AckTestExecutionFinishedResponse{}, nil
+	return connect.NewResponse(&testsv1.AckTestExecutionFinishedResponse{}), nil
 }
 
-func (s *Service) RetryTestExecution(ctx context.Context, req *testservicev1.RetryTestExecutionRequest) (*testservicev1.RetryTestExecutionResponse, error) {
-	testExecID, err := test.ParseTestExecutionID(req.TestExecutionId)
+func (s *Service) RetryTestExecution(
+	ctx context.Context,
+	req *connect.Request[testsv1.RetryTestExecutionRequest],
+) (*connect.Response[testsv1.RetryTestExecutionResponse], error) {
+	testExecID, err := test.ParseTestExecutionID(req.Msg.TestExecutionId)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +149,7 @@ func (s *Service) RetryTestExecution(ctx context.Context, req *testservicev1.Ret
 		return nil, err
 	}
 
-	return &testservicev1.RetryTestExecutionResponse{
+	return connect.NewResponse(&testsv1.RetryTestExecutionResponse{
 		TestExecution: testExec.Proto(),
-	}, nil
+	}), nil
 }

@@ -21,7 +21,7 @@ type ContextReader struct {
 }
 
 func (c *ContextReader) ListContexts(ctx context.Context) ([]string, error) {
-	return c.ListContexts(ctx)
+	return c.db.ListContexts(ctx)
 }
 
 func NewContextReader(db *DB) *ContextReader {

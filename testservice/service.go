@@ -3,7 +3,7 @@ package testservice
 import (
 	"context"
 
-	testservicev1 "github.com/annexsh/annex-proto/gen/go/rpc/testservice/v1"
+	"github.com/annexsh/annex-proto/gen/go/annex/tests/v1/testsv1connect"
 	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/api/workflowservice/v1"
 	"go.temporal.io/sdk/client"
@@ -14,7 +14,7 @@ import (
 
 const defaultPageSize int32 = 200
 
-var _ testservicev1.TestServiceServer = (*Service)(nil)
+var _ testsv1connect.TestServiceHandler = (*Service)(nil)
 
 type Workflower interface {
 	ExecuteWorkflow(ctx context.Context, options client.StartWorkflowOptions, workflow interface{}, args ...interface{}) (client.WorkflowRun, error)

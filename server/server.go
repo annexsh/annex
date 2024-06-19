@@ -3,19 +3,21 @@ package server
 import (
 	"context"
 	"fmt"
-	"net"
+	"net/http"
+	"time"
 
-	eventservicev1 "github.com/annexsh/annex-proto/gen/go/rpc/eventservice/v1"
-	testservicev1 "github.com/annexsh/annex-proto/gen/go/rpc/testservice/v1"
+	"connectrpc.com/grpcreflect"
+	"github.com/annexsh/annex-proto/gen/go/annex/events/v1/eventsv1connect"
+	"github.com/annexsh/annex-proto/gen/go/annex/tests/v1/testsv1connect"
 	workflowservicev1 "go.temporal.io/api/workflowservice/v1"
 	"go.temporal.io/sdk/client"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	grpchealthv1 "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
 
-	"github.com/annexsh/annex/event"
-	"github.com/annexsh/annex/internal/grpcsrv"
+	"github.com/annexsh/annex/eventservice"
 	"github.com/annexsh/annex/internal/health"
 	"github.com/annexsh/annex/log"
 	"github.com/annexsh/annex/testservice"
@@ -23,6 +25,10 @@ import (
 )
 
 type Option func(opts *serverOptions)
+
+type serverOptions struct {
+	logger log.Logger
+}
 
 func WithLogger(logger log.Logger) Option {
 	return func(opts *serverOptions) {
@@ -51,6 +57,7 @@ func Start(ctx context.Context, cfg Config, opts ...Option) error {
 			return err
 		}
 	}
+
 	defer deps.close()
 
 	if err = deps.repo.CreateContext(ctx, "default"); err != nil {
@@ -66,70 +73,102 @@ func Start(ctx context.Context, cfg Config, opts ...Option) error {
 		cfg.Temporal.HostPort = hostPort
 	}
 
-	tc, err := client.NewLazyClient(client.Options{
+	closer, errs := serve(ctx, cfg, deps, logger)
+	defer closer()
+
+	select {
+	case <-ctx.Done():
+		logger.Info("context cancelled: stopping server")
+		return nil
+	case err = <-deps.errs:
+		return fmt.Errorf("dependency failed: %w", err)
+	case err = <-errs:
+		return fmt.Errorf("server failed: %w", err)
+	}
+}
+
+type serverCloser func()
+
+func serve(ctx context.Context, cfg Config, deps *dependencies, logger log.Logger) (serverCloser, <-chan error) {
+	hostPort := fmt.Sprint(":", cfg.Port)
+	mux := http.NewServeMux()
+	errs := make(chan error, 1)
+
+	// Clients
+
+	testClient := testsv1connect.NewTestServiceClient(
+		&http.Client{Timeout: 30 * time.Second},
+		"http://"+hostPort+"/connect",
+	)
+
+	temporalClient, err := client.NewLazyClient(client.Options{
 		HostPort:  cfg.Temporal.HostPort,
 		Namespace: cfg.Temporal.Namespace,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to create temporal client: %w", err)
+		errs <- fmt.Errorf("failed to create temporal client: %w", err)
+		return nil, errs
 	}
 
-	srv := grpcsrv.New(logger)
-	reflection.Register(srv)
+	// Connect
+
+	testSvc := testservice.New(deps.repo, temporalClient, testservice.WithLogger(logger))
+	testsPath, testsHandler := testsv1connect.NewTestServiceHandler(testSvc)
+	mux.Handle("/connect"+testsPath, http.StripPrefix("/connect", testsHandler))
+
+	eventsPath, eventsHandler := eventsv1connect.NewEventServiceHandler(eventservice.NewService(deps.eventSrc, deps.repo))
+	mux.Handle("/connect"+eventsPath, http.StripPrefix("/connect", eventsHandler))
+
+	reflector := grpcreflect.NewStaticReflector(
+		testsv1connect.TestServiceName,
+		eventsv1connect.EventServiceName,
+	)
+	mux.Handle(grpcreflect.NewHandlerV1(reflector))
+	mux.Handle(grpcreflect.NewHandlerV1Alpha(reflector))
+
+	// gRPC
 
 	healthSvc, err := health.NewGRPCService(ctx, health.Config{
 		ServiceNames: []string{health.ServiceNameTest, health.ServiceNameEvent},
-		Dependencies: append(deps.healthChecks, health.WithTemporal(tc, cfg.Temporal.Namespace)),
+		Dependencies: append(deps.healthChecks, health.WithTemporal(temporalClient, cfg.Temporal.Namespace)),
 		Logger:       logger,
 	})
 	if err != nil {
-		return err
+		errs <- err
+		return nil, errs
 	}
 
-	testConn, err := grpc.NewClient(fmt.Sprintf("0.0.0.0:%d", cfg.Port),
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	)
-	if err != nil {
-		return err
+	grpcSrv := grpc.NewServer()
+	grpchealthv1.RegisterHealthServer(grpcSrv, healthSvc)
+	workflowSvc := workflowservice.NewProxyService(testClient, temporalClient.WorkflowService())
+	workflowservicev1.RegisterWorkflowServiceServer(grpcSrv, workflowSvc)
+	reflection.Register(grpcSrv)
+	mux.Handle("/", grpcSrv)
+
+	// Start server
+
+	srv := &http.Server{
+		Addr:    hostPort,
+		Handler: h2c.NewHandler(mux, &http2.Server{}),
 	}
-	testClient := testservicev1.NewTestServiceClient(testConn)
 
-	grpchealthv1.RegisterHealthServer(srv, healthSvc)
-	testservicev1.RegisterTestServiceServer(srv, testservice.New(deps.repo, tc, testservice.WithLogger(logger)))
-	eventservicev1.RegisterEventServiceServer(srv, event.NewService(deps.eventSrc, deps.repo))
-	workflowservicev1.RegisterWorkflowServiceServer(srv, workflowservice.NewProxyService(testClient, tc.WorkflowService()))
-
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.Port))
-	if err != nil {
-		return fmt.Errorf("failed to listen on port %d: %w", cfg.Port, err)
-	}
-	defer lis.Close()
-
-	sErrs := make(chan error, 1)
 	go func() {
-		if serveErr := srv.Serve(lis); err != nil {
-			sErrs <- serveErr
+		logger.Info("serving connect and grpc apis", "address", hostPort)
+		if serveErr := srv.ListenAndServe(); err != nil {
+			errs <- serveErr
 		}
 	}()
-	logger.Info("serving grpc server", "address", lis.Addr().String())
 
-	defer func() {
-		logger.Info("waiting for all active grpc connections to close")
-		srv.GracefulStop()
-		logger.Info("grpc server stopped")
-	}()
-
-	select {
-	case <-ctx.Done():
-		logger.Info("context cancelled: stopping grpc server")
-		return nil
-	case err = <-deps.errs:
-		return fmt.Errorf("dependency failed: %w", err)
-	case err = <-sErrs:
-		return fmt.Errorf("grpc server failed: %w", err)
+	closer := func() {
+		logger.Info("gracefully stopping grpc server")
+		grpcSrv.GracefulStop()
+		logger.Info("gracefully stopping http server")
+		closeCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		if closeErr := srv.Shutdown(closeCtx); closeErr != nil {
+			logger.Error("failed to gracefully stop http server", "error", closeErr)
+		}
 	}
-}
 
-type serverOptions struct {
-	logger log.Logger
+	return closer, errs
 }

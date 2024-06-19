@@ -6,7 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	testservicev1 "github.com/annexsh/annex-proto/gen/go/rpc/testservice/v1"
+	"connectrpc.com/connect"
+	"github.com/annexsh/annex-proto/gen/go/annex/tests/v1"
 	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/api/workflowservice/v1"
 	"go.temporal.io/server/common"
@@ -54,10 +55,10 @@ func (s *ProxyService) PollWorkflowTaskQueue(ctx context.Context, req *workflows
 		if isWorkflowExecStarted || isWorkflowExecReset {
 			testExecID, err := test.ParseTestWorkflowID(res.WorkflowExecution.WorkflowId)
 			if err == nil {
-				if _, err = s.test.AckTestExecutionStarted(ctx, &testservicev1.AckTestExecutionStartedRequest{
+				if _, err = s.test.AckTestExecutionStarted(ctx, connect.NewRequest(&testsv1.AckTestExecutionStartedRequest{
 					TestExecutionId: testExecID.String(),
 					StartTime:       res.StartedTime,
-				}); err != nil {
+				})); err != nil {
 					return nil, err
 				}
 			} else if !errors.Is(err, test.ErrorNotTestExecution) {
@@ -98,12 +99,12 @@ func (s *ProxyService) RespondWorkflowTaskCompleted(ctx context.Context, req *wo
 				return nil, err
 			}
 
-			if _, err = s.test.AckCaseExecutionScheduled(ctx, &testservicev1.AckCaseExecutionScheduledRequest{
+			if _, err = s.test.AckCaseExecutionScheduled(ctx, connect.NewRequest(&testsv1.AckCaseExecutionScheduledRequest{
 				TestExecutionId: testExecID.String(),
 				CaseExecutionId: caseExecID.Int32(),
 				CaseName:        attrs.ActivityType.Name,
 				ScheduleTime:    timestamppb.New(time.Now().UTC()),
-			}); err != nil {
+			})); err != nil {
 				return nil, fmt.Errorf("failed to acknowledge scheduled case execution: %w", err)
 			}
 		case enums.COMMAND_TYPE_COMPLETE_WORKFLOW_EXECUTION:
@@ -112,10 +113,10 @@ func (s *ProxyService) RespondWorkflowTaskCompleted(ctx context.Context, req *wo
 				continue
 			}
 
-			if _, err = s.test.AckTestExecutionFinished(ctx, &testservicev1.AckTestExecutionFinishedRequest{
+			if _, err = s.test.AckTestExecutionFinished(ctx, connect.NewRequest(&testsv1.AckTestExecutionFinishedRequest{
 				TestExecutionId: testExecID.String(),
 				FinishTime:      timestamppb.New(time.Now().UTC()),
-			}); err != nil {
+			})); err != nil {
 				return nil, err
 			}
 		case enums.COMMAND_TYPE_FAIL_WORKFLOW_EXECUTION:
@@ -129,11 +130,11 @@ func (s *ProxyService) RespondWorkflowTaskCompleted(ctx context.Context, req *wo
 				testExecError = &attrs.Failure.Message
 			}
 
-			if _, err = s.test.AckTestExecutionFinished(ctx, &testservicev1.AckTestExecutionFinishedRequest{
+			if _, err = s.test.AckTestExecutionFinished(ctx, connect.NewRequest(&testsv1.AckTestExecutionFinishedRequest{
 				TestExecutionId: testExecID.String(),
 				FinishTime:      timestamppb.New(time.Now().UTC()),
 				Error:           testExecError,
-			}); err != nil {
+			})); err != nil {
 				return nil, err
 			}
 		}
@@ -168,11 +169,11 @@ func (s *ProxyService) PollActivityTaskQueue(ctx context.Context, req *workflows
 		return nil, err
 	}
 
-	if _, err = s.test.AckCaseExecutionStarted(ctx, &testservicev1.AckCaseExecutionStartedRequest{
+	if _, err = s.test.AckCaseExecutionStarted(ctx, connect.NewRequest(&testsv1.AckCaseExecutionStartedRequest{
 		TestExecutionId: testExecID.String(),
 		CaseExecutionId: caseExecID.Int32(),
 		StartTime:       timestamppb.Now(),
-	}); err != nil {
+	})); err != nil {
 		return nil, err
 	}
 
@@ -205,11 +206,11 @@ func (s *ProxyService) RespondActivityTaskCompleted(ctx context.Context, req *wo
 		return nil, err
 	}
 
-	if _, err = s.test.AckCaseExecutionFinished(ctx, &testservicev1.AckCaseExecutionFinishedRequest{
+	if _, err = s.test.AckCaseExecutionFinished(ctx, connect.NewRequest(&testsv1.AckCaseExecutionFinishedRequest{
 		TestExecutionId: testExecID.String(),
 		CaseExecutionId: caseExecID.Int32(),
 		FinishTime:      timestamppb.Now(),
-	}); err != nil {
+	})); err != nil {
 		return nil, err
 	}
 
@@ -247,12 +248,12 @@ func (s *ProxyService) RespondActivityTaskFailed(ctx context.Context, req *workf
 		execErr = &req.Failure.Message
 	}
 
-	if _, err = s.test.AckCaseExecutionFinished(ctx, &testservicev1.AckCaseExecutionFinishedRequest{
+	if _, err = s.test.AckCaseExecutionFinished(ctx, connect.NewRequest(&testsv1.AckCaseExecutionFinishedRequest{
 		TestExecutionId: testExecID.String(),
 		CaseExecutionId: caseExecID.Int32(),
 		Error:           execErr,
 		FinishTime:      timestamppb.Now(),
-	}); err != nil {
+	})); err != nil {
 		return nil, err
 	}
 
