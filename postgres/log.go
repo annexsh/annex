@@ -28,7 +28,7 @@ func (e *LogReader) GetLog(ctx context.Context, id uuid.UUID) (*test.Log, error)
 	if err != nil {
 		return nil, err
 	}
-	return marshalExecLog(execLog), nil
+	return marshalLog(execLog), nil
 }
 
 func (e *LogReader) ListLogs(ctx context.Context, testExecID test.TestExecutionID) (test.LogList, error) {

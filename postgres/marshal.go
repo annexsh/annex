@@ -87,7 +87,7 @@ func marshalCaseExecs(caseExecs []*sqlc.CaseExecution) []*test.CaseExecution {
 	return ce
 }
 
-func marshalExecLog(log *sqlc.Log) *test.Log {
+func marshalLog(log *sqlc.Log) *test.Log {
 	return &test.Log{
 		ID:              log.ID,
 		TestExecutionID: log.TestExecutionID,
@@ -101,7 +101,7 @@ func marshalExecLog(log *sqlc.Log) *test.Log {
 func marshalExecLogs(logs []*sqlc.Log) []*test.Log {
 	execLogs := make([]*test.Log, len(logs))
 	for i, log := range logs {
-		execLogs[i] = marshalExecLog(log)
+		execLogs[i] = marshalLog(log)
 	}
 	return execLogs
 }

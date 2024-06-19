@@ -5,9 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"time"
 
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -23,6 +21,8 @@ const (
 	testExecsTableName = "test_executions"
 	caseExecsTableName = "case_executions"
 	logsTableName      = "logs"
+	pgInsert           = "INSERT"
+	pgUpdate           = "UPDATE"
 )
 
 type TestExecutionEventSource struct {
@@ -95,63 +95,63 @@ func (t *TestExecutionEventSource) handleNextEvent(ctx context.Context) error {
 		return err
 	}
 
-	execEvent := &eventservice.ExecutionEvent{
-		ID:         uuid.New(),
-		CreateTime: time.Now().UTC(),
-	}
+	var execEvent *eventservice.ExecutionEvent
 
 	switch tableMsg.Table {
 	case testExecsTableName:
-		if tableMsg.Action != "UPDATE" {
-			return nil
-		}
 		var msg eventMessage[*sqlc.TestExecution]
 		if err = json.Unmarshal([]byte(notif.Payload), &msg); err != nil {
 			return err
 		}
-		if !msg.Data.FinishTime.Valid {
-			return nil
-		}
+		testExec := marshalTestExec(msg.Data)
 
-		execEvent.TestExecID = msg.Data.ID
-		execEvent.Data.Type = eventservice.DataTypeTestExecution
-		execEvent.Data.TestExecution = marshalTestExec(msg.Data)
-		execEvent.Type = eventservice.TypeTestExecutionFinished
+		switch tableMsg.Action {
+		case pgInsert:
+			execEvent = eventservice.NewTestExecutionEvent(eventservice.TypeTestExecutionScheduled, testExec)
+		case pgUpdate:
+			if msg.Data.StartTime.Valid && !msg.Data.FinishTime.Valid {
+				execEvent = eventservice.NewTestExecutionEvent(eventservice.TypeTestExecutionStarted, testExec)
+			} else if msg.Data.StartTime.Valid && msg.Data.FinishTime.Valid {
+				execEvent = eventservice.NewTestExecutionEvent(eventservice.TypeTestExecutionFinished, testExec)
+			} else {
+				// TODO: log unexpected state error
+				return nil
+			}
+		}
 	case caseExecsTableName:
 		var msg eventMessage[*sqlc.CaseExecution]
 		if err = json.Unmarshal([]byte(notif.Payload), &msg); err != nil {
 			return err
 		}
 
-		execEvent.TestExecID = msg.Data.TestExecutionID
-		execEvent.Data.Type = eventservice.DataTypeCaseExecution
-		execEvent.Data.CaseExecution = marshalCaseExec(msg.Data)
+		caseExec := marshalCaseExec(msg.Data)
 
 		switch tableMsg.Action {
-		case "INSERT":
-			execEvent.Type = eventservice.TypeCaseExecutionScheduled
-		case "UPDATE":
-			if !msg.Data.StartTime.Valid && !msg.Data.FinishTime.Valid {
+		case pgInsert:
+			execEvent = eventservice.NewCaseExecutionEvent(eventservice.TypeCaseExecutionScheduled, caseExec)
+		case pgUpdate:
+			if msg.Data.StartTime.Valid && !msg.Data.FinishTime.Valid {
+				execEvent = eventservice.NewCaseExecutionEvent(eventservice.TypeCaseExecutionStarted, caseExec)
+			} else if msg.Data.StartTime.Valid && msg.Data.FinishTime.Valid {
+				execEvent = eventservice.NewCaseExecutionEvent(eventservice.TypeCaseExecutionFinished, caseExec)
+			} else {
+				// TODO: log unexpected state error
 				return nil
-			}
-			execEvent.Type = eventservice.TypeCaseExecutionStarted
-			if msg.Data.FinishTime.Valid {
-				execEvent.Type = eventservice.TypeCaseExecutionFinished
 			}
 		}
 	case logsTableName:
+		if tableMsg.Action != pgInsert {
+			return nil
+		}
 		var msg eventMessage[*sqlc.Log]
 		if err = json.Unmarshal([]byte(notif.Payload), &msg); err != nil {
 			return err
 		}
-		if tableMsg.Action != "INSERT" {
-			return nil
-		}
-		execEvent.TestExecID = msg.Data.TestExecutionID
-		execEvent.Data.Type = eventservice.DataTypeLog
-		execEvent.Data.Log = marshalExecLog(msg.Data)
-		execEvent.Type = eventservice.TypeLogPublished
-	default:
+		execLog := marshalLog(msg.Data)
+		execEvent = eventservice.NewLogEvent(eventservice.TypeLogPublished, execLog)
+	}
+
+	if execEvent == nil {
 		return nil
 	}
 

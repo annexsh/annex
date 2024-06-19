@@ -68,8 +68,10 @@ func (s Service) StreamTestExecutionEvents(
 			}); err != nil {
 				return err
 			}
-		case err = <-errs:
-			return err
+		case err, ok := <-errs:
+			if ok {
+				return err
+			}
 		case <-ctx.Done():
 			return ctx.Err()
 		}

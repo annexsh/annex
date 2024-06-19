@@ -2,7 +2,6 @@ package eventservice
 
 import (
 	eventsv1 "github.com/annexsh/annex-proto/gen/go/annex/events/v1"
-	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -69,7 +68,7 @@ func (e *ExecutionEvent) Proto() *eventsv1.Event {
 	}
 
 	return &eventsv1.Event{
-		EventId:         uuid.NewString(),
+		EventId:         e.ID.String(),
 		TestExecutionId: e.TestExecID.String(),
 		Type:            e.Type.Proto(),
 		Data:            data,
