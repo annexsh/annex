@@ -39,6 +39,7 @@ func (s *streamer) streamTestExecutionEvents(ctx context.Context, id test.TestEx
 		testExec, err := s.execReader.GetTestExecution(ctx, id)
 		if err != nil {
 			errs <- fmt.Errorf("failed to get test execution: %w", err)
+			return
 		}
 
 		sub, unsub := s.eventSource.Subscribe(id)

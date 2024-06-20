@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"connectrpc.com/connect"
 	"connectrpc.com/grpcreflect"
 	"github.com/annexsh/annex-proto/gen/go/annex/events/v1/eventsv1connect"
 	"github.com/annexsh/annex-proto/gen/go/annex/tests/v1/testsv1connect"
@@ -18,6 +19,7 @@ import (
 	"google.golang.org/grpc/reflection"
 
 	"github.com/annexsh/annex/eventservice"
+	"github.com/annexsh/annex/internal/grpcsrv"
 	"github.com/annexsh/annex/internal/health"
 	"github.com/annexsh/annex/log"
 	"github.com/annexsh/annex/testservice"
@@ -112,11 +114,16 @@ func serve(ctx context.Context, cfg Config, deps *dependencies, logger log.Logge
 
 	// Connect
 
+	connectOps := []connect.HandlerOption{
+		connect.WithInterceptors(grpcsrv.NewConnectLogInterceptor(logger)),
+	}
+
 	testSvc := testservice.New(deps.repo, temporalClient, testservice.WithLogger(logger))
-	testsPath, testsHandler := testsv1connect.NewTestServiceHandler(testSvc)
+	testsPath, testsHandler := testsv1connect.NewTestServiceHandler(testSvc, connectOps...)
 	mux.Handle("/connect"+testsPath, http.StripPrefix("/connect", testsHandler))
 
-	eventsPath, eventsHandler := eventsv1connect.NewEventServiceHandler(eventservice.NewService(deps.eventSrc, deps.repo))
+	eventSvc := eventservice.NewService(deps.eventSrc, deps.repo)
+	eventsPath, eventsHandler := eventsv1connect.NewEventServiceHandler(eventSvc, connectOps...)
 	mux.Handle("/connect"+eventsPath, http.StripPrefix("/connect", eventsHandler))
 
 	reflector := grpcreflect.NewStaticReflector(
