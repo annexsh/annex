@@ -2,10 +2,8 @@ module github.com/annexsh/annex
 
 go 1.22.0
 
-replace github.com/annexsh/annex-proto => ../annex-proto // TODO: delete
-
 require (
-	github.com/annexsh/annex-proto v0.0.0-20240614041543-e872ee852529
+	github.com/annexsh/annex-proto v0.0.0-20240623024904-02c7160f793e
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/cristalhq/aconfig v0.18.5
 	github.com/cristalhq/aconfig/aconfigyaml v0.17.1
