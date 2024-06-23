@@ -1,14 +1,14 @@
 package test
 
 import (
-	testv1 "github.com/annexsh/annex-proto/gen/go/type/test/v1"
+	testsv1 "github.com/annexsh/annex-proto/gen/go/annex/tests/v1"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/annexsh/annex/internal/ptr"
 )
 
-func (t *Test) Proto() *testv1.Test {
-	return &testv1.Test{
+func (t *Test) Proto() *testsv1.Test {
+	return &testsv1.Test{
 		Context:    t.ContextID,
 		Group:      t.GroupID,
 		Id:         t.ID.String(),
@@ -18,23 +18,23 @@ func (t *Test) Proto() *testv1.Test {
 	}
 }
 
-func (t TestList) Proto() []*testv1.Test {
-	testspb := make([]*testv1.Test, len(t))
+func (t TestList) Proto() []*testsv1.Test {
+	testspb := make([]*testsv1.Test, len(t))
 	for i, test := range t {
 		testspb[i] = test.Proto()
 	}
 	return testspb
 }
 
-func (p *Payload) Proto() *testv1.Payload {
-	return &testv1.Payload{
+func (p *Payload) Proto() *testsv1.Payload {
+	return &testsv1.Payload{
 		Metadata: p.Metadata,
 		Data:     p.Data,
 	}
 }
 
-func (t *TestExecution) Proto() *testv1.TestExecution {
-	exec := &testv1.TestExecution{
+func (t *TestExecution) Proto() *testsv1.TestExecution {
+	exec := &testsv1.TestExecution{
 		Id:           t.ID.String(),
 		TestId:       t.TestID.String(),
 		Error:        t.Error,
@@ -51,16 +51,16 @@ func (t *TestExecution) Proto() *testv1.TestExecution {
 	return exec
 }
 
-func (t TestExecutionList) Proto() []*testv1.TestExecution {
-	fe := make([]*testv1.TestExecution, len(t))
+func (t TestExecutionList) Proto() []*testsv1.TestExecution {
+	fe := make([]*testsv1.TestExecution, len(t))
 	for i, testExec := range t {
 		fe[i] = testExec.Proto()
 	}
 	return fe
 }
 
-func (c *CaseExecution) Proto() *testv1.CaseExecution {
-	exec := &testv1.CaseExecution{
+func (c *CaseExecution) Proto() *testsv1.CaseExecution {
+	exec := &testsv1.CaseExecution{
 		Id:              c.ID.Int32(),
 		CaseName:        c.CaseName,
 		TestExecutionId: c.TestExecutionID.String(),
@@ -77,21 +77,21 @@ func (c *CaseExecution) Proto() *testv1.CaseExecution {
 	return exec
 }
 
-func (c CaseExecutionList) Proto() []*testv1.CaseExecution {
-	ce := make([]*testv1.CaseExecution, len(c))
+func (c CaseExecutionList) Proto() []*testsv1.CaseExecution {
+	ce := make([]*testsv1.CaseExecution, len(c))
 	for i, caseExec := range c {
 		ce[i] = caseExec.Proto()
 	}
 	return ce
 }
 
-func (l *Log) Proto() *testv1.Log {
+func (l *Log) Proto() *testsv1.Log {
 	var caseExecID *int32
 	if l.CaseExecutionID != nil {
 		caseExecID = ptr.Get(l.CaseExecutionID.Int32())
 	}
 
-	return &testv1.Log{
+	return &testsv1.Log{
 		Id:              l.ID.String(),
 		TestExecutionId: l.TestExecutionID.String(),
 		CaseExecutionId: caseExecID,
@@ -101,8 +101,8 @@ func (l *Log) Proto() *testv1.Log {
 	}
 }
 
-func (l LogList) Proto() []*testv1.Log {
-	execLogs := make([]*testv1.Log, len(l))
+func (l LogList) Proto() []*testsv1.Log {
+	execLogs := make([]*testsv1.Log, len(l))
 	for i, log := range l {
 		execLogs[i] = log.Proto()
 	}

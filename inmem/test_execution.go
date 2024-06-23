@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/annexsh/annex/event"
+	"github.com/annexsh/annex/eventservice"
 	"github.com/annexsh/annex/internal/ptr"
 	"github.com/annexsh/annex/test"
 )
@@ -119,7 +119,7 @@ func (t *TestExecutionWriter) CreateScheduledTestExecution(_ context.Context, sc
 	}
 	t.db.testExecs[te.ID] = te
 	t.db.testExecPayloads[te.ID] = scheduled.Payload
-	t.db.events.Publish(event.NewTestExecutionEvent(event.TypeTestExecutionScheduled, te))
+	t.db.events.Publish(eventservice.NewTestExecutionEvent(eventservice.TypeTestExecutionScheduled, te))
 	return ptr.Copy(te), nil
 }
 
@@ -133,7 +133,7 @@ func (t *TestExecutionWriter) UpdateStartedTestExecution(_ context.Context, star
 	}
 	te.StartTime = &started.StartTime
 	t.db.testExecs[te.ID] = te
-	t.db.events.Publish(event.NewTestExecutionEvent(event.TypeTestExecutionStarted, te))
+	t.db.events.Publish(eventservice.NewTestExecutionEvent(eventservice.TypeTestExecutionStarted, te))
 	return ptr.Copy(te), nil
 }
 
@@ -148,7 +148,7 @@ func (t *TestExecutionWriter) UpdateFinishedTestExecution(_ context.Context, fin
 	te.FinishTime = &finished.FinishTime
 	te.Error = finished.Error
 	t.db.testExecs[te.ID] = te
-	t.db.events.Publish(event.NewTestExecutionEvent(event.TypeTestExecutionFinished, te))
+	t.db.events.Publish(eventservice.NewTestExecutionEvent(eventservice.TypeTestExecutionFinished, te))
 	return ptr.Copy(te), nil
 }
 
@@ -175,7 +175,7 @@ func (t *TestExecutionWriter) ResetTestExecution(_ context.Context, reset *test.
 	te.Error = nil
 
 	t.db.testExecs[te.ID] = te
-	t.db.events.Publish(event.NewTestExecutionEvent(event.TypeTestExecutionScheduled, te))
+	t.db.events.Publish(eventservice.NewTestExecutionEvent(eventservice.TypeTestExecutionScheduled, te))
 
 	rollback := func(ctx context.Context) error {
 		// no-op since in-mem is not intended for prod use anyway

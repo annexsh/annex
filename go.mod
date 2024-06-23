@@ -3,7 +3,7 @@ module github.com/annexsh/annex
 go 1.22.0
 
 require (
-	github.com/annexsh/annex-proto v0.0.0-20240614041543-e872ee852529
+	github.com/annexsh/annex-proto v0.0.0-20240623024904-02c7160f793e
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/cristalhq/aconfig v0.18.5
 	github.com/cristalhq/aconfig/aconfigyaml v0.17.1
@@ -31,6 +31,8 @@ require (
 	cloud.google.com/go/compute/metadata v0.3.0 // indirect
 	cloud.google.com/go/iam v1.1.8 // indirect
 	cloud.google.com/go/storage v1.41.0 // indirect
+	connectrpc.com/connect v1.16.2 // indirect
+	connectrpc.com/grpcreflect v1.2.0 // indirect
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/apache/thrift v0.20.0 // indirect
 	github.com/aws/aws-sdk-go v1.53.12 // indirect

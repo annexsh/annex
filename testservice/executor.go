@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	testv1 "github.com/annexsh/annex-proto/gen/go/type/test/v1"
+	testsv1 "github.com/annexsh/annex-proto/gen/go/annex/tests/v1"
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/google/uuid"
 	"go.temporal.io/api/common/v1"
@@ -13,6 +13,7 @@ import (
 	"go.temporal.io/api/workflowservice/v1"
 	"go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/converter"
+	"go.temporal.io/sdk/temporal"
 
 	"github.com/annexsh/annex/test"
 
@@ -36,12 +37,12 @@ func newExecutor(repo test.Repository, workflower Workflower, logger log.Logger)
 }
 
 type executeOptions struct {
-	payload *testv1.Payload
+	payload *testsv1.Payload
 }
 
 type executeOption func(opts *executeOptions)
 
-func withInput(input *testv1.Payload) executeOption {
+func withInput(input *testsv1.Payload) executeOption {
 	return func(opts *executeOptions) {
 		opts.payload = input
 	}
@@ -83,6 +84,9 @@ func (e *executor) execute(ctx context.Context, testID uuid.UUID, opts ...execut
 		ID:                       workflowID,
 		TaskQueue:                getTaskQueue(t.ContextID, t.GroupID),
 		WorkflowExecutionTimeout: 7 * 24 * time.Hour, // 1 week
+		RetryPolicy: &temporal.RetryPolicy{
+			MaximumAttempts: 1,
+		},
 	}
 
 	if options.payload == nil {

@@ -4,23 +4,26 @@ import (
 	"context"
 	"time"
 
-	testservicev1 "github.com/annexsh/annex-proto/gen/go/rpc/testservice/v1"
-	testv1 "github.com/annexsh/annex-proto/gen/go/type/test/v1"
+	"connectrpc.com/connect"
+	testsv1 "github.com/annexsh/annex-proto/gen/go/annex/tests/v1"
 	"go.temporal.io/api/enums/v1"
 	"golang.org/x/sync/errgroup"
 )
 
 const runnerActiveExpireDuration = time.Minute
 
-func (s *Service) RegisterGroup(ctx context.Context, req *testservicev1.RegisterGroupRequest) (*testservicev1.RegisterGroupResponse, error) {
-	if err := s.repo.CreateGroup(ctx, req.Context, req.Name); err != nil {
+func (s *Service) RegisterGroup(
+	ctx context.Context,
+	req *connect.Request[testsv1.RegisterGroupRequest],
+) (*connect.Response[testsv1.RegisterGroupResponse], error) {
+	if err := s.repo.CreateGroup(ctx, req.Msg.Context, req.Msg.Name); err != nil {
 		return nil, err
 	}
-	return &testservicev1.RegisterGroupResponse{}, nil
+	return &connect.Response[testsv1.RegisterGroupResponse]{}, nil
 }
 
-func (s *Service) ListGroups(ctx context.Context, req *testservicev1.ListGroupsRequest) (*testservicev1.ListGroupsResponse, error) {
-	contextID := req.Context
+func (s *Service) ListGroups(ctx context.Context, req *connect.Request[testsv1.ListGroupsRequest]) (*connect.Response[testsv1.ListGroupsResponse], error) {
+	contextID := req.Msg.Context
 
 	groupIDs, err := s.repo.ListGroups(ctx, contextID)
 	if err != nil {
@@ -29,11 +32,11 @@ func (s *Service) ListGroups(ctx context.Context, req *testservicev1.ListGroupsR
 
 	type processedGroup struct {
 		orderID int
-		group   *testv1.Group
+		group   *testsv1.Group
 	}
 
 	processedCh := make(chan processedGroup, len(groupIDs))
-	groups := make([]*testv1.Group, len(groupIDs))
+	groups := make([]*testsv1.Group, len(groupIDs))
 
 	const maxConc = 10
 	sem := make(chan struct{}, maxConc)
@@ -48,7 +51,7 @@ func (s *Service) ListGroups(ctx context.Context, req *testservicev1.ListGroupsR
 			}
 			processedCh <- processedGroup{
 				orderID: i,
-				group: &testv1.Group{
+				group: &testsv1.Group{
 					Context:   contextID,
 					Name:      groupID,
 					Runners:   runners,
@@ -69,13 +72,12 @@ func (s *Service) ListGroups(ctx context.Context, req *testservicev1.ListGroupsR
 	for p := range processedCh {
 		groups[p.orderID] = p.group
 	}
-
-	return &testservicev1.ListGroupsResponse{
+	return connect.NewResponse(&testsv1.ListGroupsResponse{
 		Groups: groups,
-	}, nil
+	}), nil
 }
 
-func getGroupRunners(ctx context.Context, contextID string, groupID string, workflower Workflower) ([]*testv1.Group_Runner, bool, error) {
+func getGroupRunners(ctx context.Context, contextID string, groupID string, workflower Workflower) ([]*testsv1.Group_Runner, bool, error) {
 	taskQueue := getTaskQueue(contextID, groupID)
 	taskQueueRes, err := workflower.DescribeTaskQueue(ctx, taskQueue, enums.TASK_QUEUE_TYPE_WORKFLOW)
 	if err != nil {
@@ -83,10 +85,10 @@ func getGroupRunners(ctx context.Context, contextID string, groupID string, work
 	}
 
 	isGroupAvail := false
-	runners := make([]*testv1.Group_Runner, len(taskQueueRes.Pollers))
+	runners := make([]*testsv1.Group_Runner, len(taskQueueRes.Pollers))
 
 	for j, poller := range taskQueueRes.Pollers {
-		runners[j] = &testv1.Group_Runner{
+		runners[j] = &testsv1.Group_Runner{
 			Id:             poller.Identity,
 			LastAccessTime: poller.LastAccessTime,
 		}

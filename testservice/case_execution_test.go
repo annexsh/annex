@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	testservicev1 "github.com/annexsh/annex-proto/gen/go/rpc/testservice/v1"
-	testv1 "github.com/annexsh/annex-proto/gen/go/type/test/v1"
+	"connectrpc.com/connect"
+	testsv1 "github.com/annexsh/annex-proto/gen/go/annex/tests/v1"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -27,13 +27,13 @@ func TestService_AckCaseExecutionScheduled(t *testing.T) {
 	require.NoError(t, err)
 
 	caseID := fake.GenCaseID()
-	req := &testservicev1.AckCaseExecutionScheduledRequest{
+	req := &testsv1.AckCaseExecutionScheduledRequest{
 		TestExecutionId: te.ID.String(),
 		CaseExecutionId: caseID.Int32(),
 		CaseName:        uuid.NewString(),
 		ScheduleTime:    timestamppb.New(time.Now().UTC()),
 	}
-	res, err := s.AckCaseExecutionScheduled(ctx, req)
+	res, err := s.AckCaseExecutionScheduled(ctx, connect.NewRequest(req))
 	require.NoError(t, err)
 	assert.NotNil(t, res)
 
@@ -57,12 +57,12 @@ func TestService_AckCaseExecutionStarted(t *testing.T) {
 	caseExec, err := fakes.repo.CreateScheduledCaseExecution(ctx, scheduled)
 	require.NoError(t, err)
 
-	req := &testservicev1.AckCaseExecutionStartedRequest{
+	req := &testsv1.AckCaseExecutionStartedRequest{
 		TestExecutionId: caseExec.TestExecutionID.String(),
 		CaseExecutionId: caseExec.ID.Int32(),
 		StartTime:       timestamppb.New(time.Now().UTC()),
 	}
-	res, err := s.AckCaseExecutionStarted(ctx, req)
+	res, err := s.AckCaseExecutionStarted(ctx, connect.NewRequest(req))
 	require.NoError(t, err)
 	assert.NotNil(t, res)
 
@@ -86,13 +86,13 @@ func TestService_AckCaseExecutionFinished(t *testing.T) {
 	caseExec, err := fakes.repo.CreateScheduledCaseExecution(ctx, scheduled)
 	require.NoError(t, err)
 
-	req := &testservicev1.AckCaseExecutionFinishedRequest{
+	req := &testsv1.AckCaseExecutionFinishedRequest{
 		TestExecutionId: caseExec.TestExecutionID.String(),
 		CaseExecutionId: caseExec.ID.Int32(),
 		FinishTime:      timestamppb.New(time.Now().UTC()),
 		Error:           ptr.Get("bang"),
 	}
-	res, err := s.AckCaseExecutionFinished(ctx, req)
+	res, err := s.AckCaseExecutionFinished(ctx, connect.NewRequest(req))
 	require.NoError(t, err)
 	assert.NotNil(t, res)
 
@@ -113,7 +113,7 @@ func TestService_ListTestCaseExecutions(t *testing.T) {
 	require.NoError(t, err)
 
 	wantCount := 30
-	want := make([]*testv1.CaseExecution, wantCount)
+	want := make([]*testsv1.CaseExecution, wantCount)
 
 	for i := range wantCount {
 		scheduled := fake.GenScheduledCaseExec(te.ID)
@@ -122,12 +122,13 @@ func TestService_ListTestCaseExecutions(t *testing.T) {
 		want[i] = ce.Proto()
 	}
 
-	res, err := s.ListTestCaseExecutions(ctx, &testservicev1.ListTestCaseExecutionsRequest{
+	req := &testsv1.ListTestCaseExecutionsRequest{
 		TestExecutionId: te.ID.String(),
-	})
+	}
+	res, err := s.ListTestCaseExecutions(ctx, connect.NewRequest(req))
 	require.NoError(t, err)
 
-	got := res.CaseExecutions
+	got := res.Msg.CaseExecutions
 	assert.Len(t, got, wantCount)
 	assert.Equal(t, want, got)
 }

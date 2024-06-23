@@ -10,7 +10,7 @@ import (
 	"github.com/lmittmann/tint"
 	"github.com/temporalio/cli/temporalcli/devserver"
 
-	"github.com/annexsh/annex/event"
+	"github.com/annexsh/annex/eventservice"
 	"github.com/annexsh/annex/inmem"
 	"github.com/annexsh/annex/test"
 
@@ -20,7 +20,7 @@ import (
 
 type dependencies struct {
 	repo         test.Repository
-	eventSrc     event.EventSource
+	eventSrc     eventservice.EventSource
 	healthChecks []health.DependencyChecker
 	errs         <-chan error
 	close        func()

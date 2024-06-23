@@ -1,7 +1,7 @@
 package workflowservice
 
 import (
-	testservicev1 "github.com/annexsh/annex-proto/gen/go/rpc/testservice/v1"
+	"github.com/annexsh/annex-proto/gen/go/annex/tests/v1/testsv1connect"
 	"go.temporal.io/api/workflowservice/v1"
 )
 
@@ -10,11 +10,11 @@ var _ workflowservice.WorkflowServiceServer = (*ProxyService)(nil)
 type ProxyService struct {
 	workflowservice.UnimplementedWorkflowServiceServer
 	workflow workflowservice.WorkflowServiceClient
-	test     testservicev1.TestServiceClient
+	test     testsv1connect.TestServiceClient
 }
 
 func NewProxyService(
-	testClient testservicev1.TestServiceClient,
+	testClient testsv1connect.TestServiceClient,
 	workflowClient workflowservice.WorkflowServiceClient,
 ) *ProxyService {
 	return &ProxyService{

@@ -4,23 +4,27 @@ import (
 	"context"
 	"fmt"
 
-	testservicev1 "github.com/annexsh/annex-proto/gen/go/rpc/testservice/v1"
+	"connectrpc.com/connect"
+	testsv1 "github.com/annexsh/annex-proto/gen/go/annex/tests/v1"
 	"github.com/google/uuid"
 
 	"github.com/annexsh/annex/test"
 )
 
-func (s *Service) RegisterTests(ctx context.Context, req *testservicev1.RegisterTestsRequest) (*testservicev1.RegisterTestsResponse, error) {
-	if err := s.repo.CreateGroup(ctx, req.Context, req.Group); err != nil {
+func (s *Service) RegisterTests(
+	ctx context.Context,
+	req *connect.Request[testsv1.RegisterTestsRequest],
+) (*connect.Response[testsv1.RegisterTestsResponse], error) {
+	if err := s.repo.CreateGroup(ctx, req.Msg.Context, req.Msg.Group); err != nil {
 		return nil, err
 	}
 
 	var defs []*test.TestDefinition
 
-	for _, defpb := range req.Definitions {
+	for _, defpb := range req.Msg.Definitions {
 		def := &test.TestDefinition{
-			ContextID:    req.Context,
-			GroupID:      req.Group,
+			ContextID:    req.Msg.Context,
+			GroupID:      req.Msg.Group,
 			TestID:       uuid.New(),
 			Name:         defpb.Name,
 			DefaultInput: nil,
@@ -40,13 +44,16 @@ func (s *Service) RegisterTests(ctx context.Context, req *testservicev1.Register
 		return nil, err
 	}
 
-	return &testservicev1.RegisterTestsResponse{
+	return connect.NewResponse(&testsv1.RegisterTestsResponse{
 		Tests: created.Proto(),
-	}, nil
+	}), nil
 }
 
-func (s *Service) GetTestDefaultInput(ctx context.Context, req *testservicev1.GetTestDefaultInputRequest) (*testservicev1.GetTestDefaultInputResponse, error) {
-	testID, err := uuid.Parse(req.TestId)
+func (s *Service) GetTestDefaultInput(
+	ctx context.Context,
+	req *connect.Request[testsv1.GetTestDefaultInputRequest],
+) (*connect.Response[testsv1.GetTestDefaultInputResponse], error) {
+	testID, err := uuid.Parse(req.Msg.TestId)
 	if err != nil {
 		return nil, err
 	}
@@ -55,31 +62,38 @@ func (s *Service) GetTestDefaultInput(ctx context.Context, req *testservicev1.Ge
 	if err != nil {
 		return nil, err
 	}
-	return &testservicev1.GetTestDefaultInputResponse{
+
+	return connect.NewResponse(&testsv1.GetTestDefaultInputResponse{
 		DefaultInput: string(payload.Data),
-	}, nil
+	}), nil
 }
 
-func (s *Service) ListTests(ctx context.Context, req *testservicev1.ListTestsRequest) (*testservicev1.ListTestsResponse, error) {
-	tests, err := s.repo.ListTests(ctx, req.Context, req.Group)
+func (s *Service) ListTests(
+	ctx context.Context,
+	req *connect.Request[testsv1.ListTestsRequest],
+) (*connect.Response[testsv1.ListTestsResponse], error) {
+	tests, err := s.repo.ListTests(ctx, req.Msg.Context, req.Msg.Group)
 	if err != nil {
 		return nil, err
 	}
 
-	return &testservicev1.ListTestsResponse{
+	return connect.NewResponse(&testsv1.ListTestsResponse{
 		Tests: tests.Proto(),
-	}, nil
+	}), nil
 }
 
-func (s *Service) ExecuteTest(ctx context.Context, req *testservicev1.ExecuteTestRequest) (*testservicev1.ExecuteTestResponse, error) {
-	testID, err := uuid.Parse(req.TestId)
+func (s *Service) ExecuteTest(
+	ctx context.Context,
+	req *connect.Request[testsv1.ExecuteTestRequest],
+) (*connect.Response[testsv1.ExecuteTestResponse], error) {
+	testID, err := uuid.Parse(req.Msg.TestId)
 	if err != nil {
 		return nil, err
 	}
 
 	var opts []executeOption
-	if req.Input != nil {
-		opts = append(opts, withInput(req.Input))
+	if req.Msg.Input != nil {
+		opts = append(opts, withInput(req.Msg.Input))
 	}
 
 	testExec, err := s.executor.execute(ctx, testID, opts...)
@@ -87,9 +101,9 @@ func (s *Service) ExecuteTest(ctx context.Context, req *testservicev1.ExecuteTes
 		return nil, fmt.Errorf("failed to execute test: %w", err)
 	}
 
-	return &testservicev1.ExecuteTestResponse{
+	return connect.NewResponse(&testsv1.ExecuteTestResponse{
 		TestExecution: testExec.Proto(),
-	}, nil
+	}), nil
 }
 
 func getTaskQueue(context string, groupName string) string {

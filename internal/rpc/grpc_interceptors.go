@@ -1,4 +1,4 @@
-package grpcsrv
+package rpc
 
 import (
 	"context"
@@ -16,8 +16,8 @@ import (
 	"github.com/annexsh/annex/log"
 )
 
-func New(logger log.Logger) *grpc.Server {
-	grpcLogger := logger.GRPCLogger()
+func WithGRPCInterceptors(logger log.Logger) []grpc.ServerOption {
+	grpcLogger := toGRPCLogger(logger)
 
 	logOpts := []grpclog.Option{
 		grpclog.WithLogOnEvents(grpclog.StartCall, grpclog.FinishCall),
@@ -30,7 +30,7 @@ func New(logger log.Logger) *grpc.Server {
 		grpcrecovery.WithRecoveryHandler(recoveryHandler()),
 	}
 
-	return grpc.NewServer(
+	return []grpc.ServerOption{
 		grpc.ChainUnaryInterceptor(
 			grpcselector.UnaryServerInterceptor(
 				grpclog.UnaryServerInterceptor(grpcLogger, logOpts...),
@@ -47,7 +47,7 @@ func New(logger log.Logger) *grpc.Server {
 			grpclog.StreamServerInterceptor(grpcLogger, logOpts...),
 			grpcrecovery.StreamServerInterceptor(recoveryOpts...),
 		),
-	)
+	}
 }
 
 func recoveryHandler() grpcrecovery.RecoveryHandlerFunc {

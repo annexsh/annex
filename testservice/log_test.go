@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	testservicev1 "github.com/annexsh/annex-proto/gen/go/rpc/testservice/v1"
-	testv1 "github.com/annexsh/annex-proto/gen/go/type/test/v1"
+	"connectrpc.com/connect"
+	testsv1 "github.com/annexsh/annex-proto/gen/go/annex/tests/v1"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -51,18 +51,18 @@ func TestService_PublishTestExecutionLog(t *testing.T) {
 				reqCaseExecID = ptr.Get(wantCaseExecID.Int32())
 			}
 
-			req := &testservicev1.PublishTestExecutionLogRequest{
+			req := &testsv1.PublishTestExecutionLogRequest{
 				TestExecutionId: te.ID.String(),
 				CaseExecutionId: reqCaseExecID,
 				Level:           "INFO",
 				Message:         "lorem ipsum",
 				CreateTime:      timestamppb.Now(),
 			}
-			res, err := s.PublishTestExecutionLog(ctx, req)
+			res, err := s.PublishTestExecutionLog(ctx, connect.NewRequest(req))
 			require.NoError(t, err)
 			assert.NotNil(t, res)
 
-			execLogID, err := uuid.Parse(res.LogId)
+			execLogID, err := uuid.Parse(res.Msg.LogId)
 			require.NoError(t, err)
 
 			got, err := fakes.repo.GetLog(ctx, execLogID)
@@ -98,7 +98,7 @@ func TestService_ListTestExecutionLogs(t *testing.T) {
 	ce, err := fakes.repo.CreateScheduledCaseExecution(ctx, fake.GenScheduledCaseExec(te.ID))
 	require.NoError(t, err)
 
-	var want []*testv1.Log
+	var want []*testsv1.Log
 
 	for range wantNumTestLogs {
 		l := fake.GenTestExecLog(te.ID)
@@ -114,12 +114,13 @@ func TestService_ListTestExecutionLogs(t *testing.T) {
 		want = append(want, l.Proto())
 	}
 
-	res, err := s.ListTestExecutionLogs(ctx, &testservicev1.ListTestExecutionLogsRequest{
+	req := &testsv1.ListTestExecutionLogsRequest{
 		TestExecutionId: te.ID.String(),
-	})
+	}
+	res, err := s.ListTestExecutionLogs(ctx, connect.NewRequest(req))
 	require.NoError(t, err)
 
-	got := res.Logs
+	got := res.Msg.Logs
 	assert.Len(t, got, wantNumTestLogs+wantNumCaseLogs)
 	assert.Equal(t, want, got)
 }

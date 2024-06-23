@@ -1,4 +1,4 @@
-package event
+package eventservice
 
 import (
 	"errors"
@@ -70,7 +70,7 @@ type ExecutionEvent struct {
 
 func NewTestExecutionEvent(eventType Type, testExec *test.TestExecution) *ExecutionEvent {
 	return &ExecutionEvent{
-		ID:         uuid.New(),
+		ID:         getTestExecEventID(testExec, eventType),
 		TestExecID: testExec.ID,
 		Type:       eventType,
 		Data: Data{
@@ -83,7 +83,7 @@ func NewTestExecutionEvent(eventType Type, testExec *test.TestExecution) *Execut
 
 func NewCaseExecutionEvent(eventType Type, caseExec *test.CaseExecution) *ExecutionEvent {
 	return &ExecutionEvent{
-		ID:         uuid.New(),
+		ID:         getCaseExecEventID(caseExec, eventType),
 		TestExecID: caseExec.TestExecutionID,
 		Type:       eventType,
 		Data: Data{
@@ -94,15 +94,31 @@ func NewCaseExecutionEvent(eventType Type, caseExec *test.CaseExecution) *Execut
 	}
 }
 
-func NewLogEvent(eventType Type, execLog *test.Log) *ExecutionEvent {
+func NewLogEvent(eventType Type, log *test.Log) *ExecutionEvent {
 	return &ExecutionEvent{
-		ID:         uuid.New(),
-		TestExecID: execLog.TestExecutionID,
+		ID:         getGetLogEventID(log.ID),
+		TestExecID: log.TestExecutionID,
 		Type:       eventType,
 		Data: Data{
 			Type: DataTypeLog,
-			Log:  execLog,
+			Log:  log,
 		},
 		CreateTime: time.Now().UTC(),
 	}
+}
+
+var uuidNameSpaceEvent = uuid.MustParse("4a4da572-d093-4fe4-a60b-d1ddae369894")
+
+func getTestExecEventID(testExec *test.TestExecution, eventType Type) uuid.UUID {
+	raw := testExec.ID.String() + "." + eventType.Proto().String()
+	return uuid.NewSHA1(uuidNameSpaceEvent, []byte(raw))
+}
+
+func getCaseExecEventID(caseExec *test.CaseExecution, eventType Type) uuid.UUID {
+	raw := caseExec.TestExecutionID.String() + "." + caseExec.ID.String() + "." + eventType.Proto().String()
+	return uuid.NewSHA1(uuidNameSpaceEvent, []byte(raw))
+}
+
+func getGetLogEventID(logID uuid.UUID) uuid.UUID {
+	return logID
 }

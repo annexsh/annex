@@ -10,25 +10,27 @@ import (
 )
 
 type Logger interface {
+	Log(ctx context.Context, level slog.Level, msg string, args ...any)
 	Info(msg string, args ...any)
 	Debug(msg string, args ...any)
 	Warn(msg string, args ...any)
 	Error(msg string, args ...any)
 	With(args ...any) Logger
-	// GRPCLogger adapts the logger to a gRPC interceptor logger.
-	GRPCLogger() grpclog.Logger
 }
 
 func DefaultLogger() Logger {
-	return &logger{slog.New(slog.NewJSONHandler(os.Stdout, nil))}
+	return NewLogger()
+}
+func NewLogger(args ...any) Logger {
+	return &logger{slog.New(slog.NewJSONHandler(os.Stdout, nil)).With(args...)}
 }
 
 func NewDevLogger(args ...any) Logger {
 	return &logger{slog.New(tint.NewHandler(os.Stdout, nil)).With(args...)}
 }
 
-func NewLogger(args ...any) Logger {
-	return &logger{slog.New(slog.NewJSONHandler(os.Stdout, nil)).With(args...)}
+type logger struct {
+	*slog.Logger
 }
 
 func (l *logger) With(args ...any) Logger {
@@ -45,17 +47,14 @@ func NewNopLogger() Logger {
 	return &nopLogger{}
 }
 
-type logger struct {
-	*slog.Logger
-}
-
 type nopLogger struct{}
 
-func (nopLogger) Info(_ string, _ ...any)  {}
-func (nopLogger) Debug(_ string, _ ...any) {}
-func (nopLogger) Warn(_ string, _ ...any)  {}
-func (nopLogger) Error(_ string, _ ...any) {}
-func (nopLogger) With(...any) Logger       { return &nopLogger{} }
-func (nopLogger) GRPCLogger() grpclog.Logger {
+func (*nopLogger) Log(_ context.Context, _ slog.Level, _ string, _ ...any) {}
+func (*nopLogger) Info(_ string, _ ...any)                                 {}
+func (*nopLogger) Debug(_ string, _ ...any)                                {}
+func (*nopLogger) Warn(_ string, _ ...any)                                 {}
+func (*nopLogger) Error(_ string, _ ...any)                                {}
+func (*nopLogger) With(...any) Logger                                      { return &nopLogger{} }
+func (*nopLogger) GRPCLogger() grpclog.Logger {
 	return grpclog.LoggerFunc(func(_ context.Context, _ grpclog.Level, _ string, _ ...any) {})
 }

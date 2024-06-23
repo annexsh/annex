@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	testservicev1 "github.com/annexsh/annex-proto/gen/go/rpc/testservice/v1"
-	testv1 "github.com/annexsh/annex-proto/gen/go/type/test/v1"
+	"connectrpc.com/connect"
+	testsv1 "github.com/annexsh/annex-proto/gen/go/annex/tests/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -28,13 +28,14 @@ func TestService_GetTestExecution(t *testing.T) {
 	te, err := fakes.repo.CreateScheduledTestExecution(ctx, scheduled)
 	require.NoError(t, err)
 
-	res, err := s.GetTestExecution(ctx, &testservicev1.GetTestExecutionRequest{
+	req := &testsv1.GetTestExecutionRequest{
 		TestExecutionId: te.ID.String(),
-	})
+	}
+	res, err := s.GetTestExecution(ctx, connect.NewRequest(req))
 	require.NoError(t, err)
 
-	assert.Equal(t, te.Proto(), res.TestExecution)
-	assert.Equal(t, scheduled.Payload, res.Input.Data)
+	assert.Equal(t, te.Proto(), res.Msg.TestExecution)
+	assert.Equal(t, scheduled.Payload, res.Msg.Input.Data)
 }
 
 func TestService_ListTestExecutions(t *testing.T) {
@@ -45,7 +46,7 @@ func TestService_ListTestExecutions(t *testing.T) {
 	require.NoError(t, err)
 
 	wantCount := 30
-	want := make([]*testv1.TestExecution, wantCount)
+	want := make([]*testsv1.TestExecution, wantCount)
 
 	for i := range wantCount {
 		scheduled := fake.GenScheduledTestExec(tt.ID)
@@ -57,24 +58,25 @@ func TestService_ListTestExecutions(t *testing.T) {
 	pageSize := 10
 	numReqs := wantCount / pageSize
 
-	var got []*testv1.TestExecution
+	var got []*testsv1.TestExecution
 
 	var nextPageTkn string
 
 	for i := range numReqs {
-		res, err := s.ListTestExecutions(ctx, &testservicev1.ListTestExecutionsRequest{
+		req := &testsv1.ListTestExecutionsRequest{
 			TestId:        tt.ID.String(),
 			PageSize:      int32(pageSize),
 			NextPageToken: nextPageTkn,
-		})
+		}
+		res, err := s.ListTestExecutions(ctx, connect.NewRequest(req))
 		require.NoError(t, err)
 		if i == numReqs-1 {
-			require.Empty(t, res.NextPageToken)
+			require.Empty(t, res.Msg.NextPageToken)
 		} else {
-			require.NotEmpty(t, res.NextPageToken)
-			nextPageTkn = res.NextPageToken
+			require.NotEmpty(t, res.Msg.NextPageToken)
+			nextPageTkn = res.Msg.NextPageToken
 		}
-		got = append(got, res.TestExecutions...)
+		got = append(got, res.Msg.TestExecutions...)
 	}
 
 	assert.Len(t, got, wantCount)
@@ -92,11 +94,11 @@ func TestService_AckTestExecutionStarted(t *testing.T) {
 	te, err := fakes.repo.CreateScheduledTestExecution(ctx, scheduled)
 	require.NoError(t, err)
 
-	req := &testservicev1.AckTestExecutionStartedRequest{
+	req := &testsv1.AckTestExecutionStartedRequest{
 		TestExecutionId: te.ID.String(),
 		StartTime:       timestamppb.New(time.Now().UTC()),
 	}
-	res, err := s.AckTestExecutionStarted(ctx, req)
+	res, err := s.AckTestExecutionStarted(ctx, connect.NewRequest(req))
 	require.NoError(t, err)
 	assert.NotNil(t, res)
 
@@ -116,12 +118,12 @@ func TestService_AckTestExecutionFinished(t *testing.T) {
 	te, err := fakes.repo.CreateScheduledTestExecution(ctx, scheduled)
 	require.NoError(t, err)
 
-	req := &testservicev1.AckTestExecutionFinishedRequest{
+	req := &testsv1.AckTestExecutionFinishedRequest{
 		TestExecutionId: te.ID.String(),
 		FinishTime:      timestamppb.New(time.Now().UTC()),
 		Error:           ptr.Get("bang"),
 	}
-	res, err := s.AckTestExecutionFinished(ctx, req)
+	res, err := s.AckTestExecutionFinished(ctx, connect.NewRequest(req))
 	require.NoError(t, err)
 	assert.NotNil(t, res)
 
@@ -166,13 +168,14 @@ func TestService_RetryTestExecution(t *testing.T) {
 	))
 
 	// Retry test execution
-	res, err := svc.RetryTestExecution(ctx, &testservicev1.RetryTestExecutionRequest{
+	req := &testsv1.RetryTestExecutionRequest{
 		TestExecutionId: testExec.ID.String(),
-	})
+	}
+	res, err := svc.RetryTestExecution(ctx, connect.NewRequest(req))
 	require.NoError(t, err)
 
 	// Assert test execution record reset
-	gotTestExec := res.TestExecution
+	gotTestExec := res.Msg.TestExecution
 	assert.Equal(t, testExec.ID.String(), gotTestExec.Id)
 	assert.Equal(t, testExec.TestID.String(), gotTestExec.TestId)
 	assert.True(t, gotTestExec.ScheduleTime.AsTime().After(testExec.ScheduleTime))
