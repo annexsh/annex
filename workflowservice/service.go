@@ -5,6 +5,8 @@ import (
 	"go.temporal.io/api/workflowservice/v1"
 )
 
+const Namespace = "default"
+
 var _ workflowservice.WorkflowServiceServer = (*ProxyService)(nil)
 
 type ProxyService struct {

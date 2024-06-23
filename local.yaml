@@ -1,14 +1,24 @@
-env: local
 port: 50051
+repository:
+  postgres:
+    schemaVersion: 2
+    host: 0.0.0.0
+    port: 5432
+    database: postgres
+    user: postgres
+    password: password
+eventSource:
+  postgres:
+    schemaVersion: 2
+    host: 0.0.0.0
+    port: 5432
+    database: postgres
+    user: postgres
+    password: password
 temporal:
-  localDev: true # temporary
   hostPort: 0.0.0.0:7233
   namespace: default
-postgres:
-  schemaVersion: 2
-  host: 0.0.0.0
-  port: 5432
-  database: postgres
-  user: postgres
-  password: password
-inMemory: false # temporary
+development:
+  inMemory: false
+  temporal: true
+  logger: true

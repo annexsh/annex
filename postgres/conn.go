@@ -16,7 +16,24 @@ const (
 	pgMaxRetries    = 5
 )
 
-func OpenPool(ctx context.Context, url string, schemaVersion uint) (*pgxpool.Pool, error) {
+type PoolOption func(opts *poolOptions)
+
+func WithMigration(schemaVersion uint) PoolOption {
+	return func(opts *poolOptions) {
+		opts.migrateToVersion = &schemaVersion
+	}
+}
+
+type poolOptions struct {
+	migrateToVersion *uint
+}
+
+func OpenPool(ctx context.Context, url string, opts ...PoolOption) (*pgxpool.Pool, error) {
+	var options poolOptions
+	for _, opt := range opts {
+		opt(&options)
+	}
+
 	db, err := pgxpool.New(ctx, url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create pgx pool: %w", err)
@@ -31,9 +48,11 @@ func OpenPool(ctx context.Context, url string, schemaVersion uint) (*pgxpool.Poo
 		return nil, fmt.Errorf("database connection unhealthy: %w", err)
 	}
 
-	if err = migrations.MigrateDatabase(db, schemaVersion); err != nil {
-		db.Close()
-		return nil, fmt.Errorf("failed to migrate database: %w", err)
+	if options.migrateToVersion != nil {
+		if err = migrations.MigrateDatabase(db, *options.migrateToVersion); err != nil {
+			db.Close()
+			return nil, fmt.Errorf("failed to migrate database: %w", err)
+		}
 	}
 
 	return db, nil

@@ -1,4 +1,4 @@
-package eventservice
+package event
 
 import (
 	"errors"
