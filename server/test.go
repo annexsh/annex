@@ -8,7 +8,6 @@ import (
 	"github.com/annexsh/annex-proto/gen/go/annex/tests/v1/testsv1connect"
 	"go.temporal.io/sdk/client"
 
-	"github.com/annexsh/annex/config"
 	"github.com/annexsh/annex/internal/rpc"
 	"github.com/annexsh/annex/log"
 	"github.com/annexsh/annex/postgres"
@@ -17,7 +16,7 @@ import (
 	"github.com/annexsh/annex/workflowservice"
 )
 
-func ServeTestService(ctx context.Context, cfg config.TestService) error {
+func ServeTestService(ctx context.Context, cfg TestServiceConfig) error {
 	logger := log.NewLogger("app", "annex-test-service")
 
 	srv := rpc.NewServer(fmt.Sprint(":", cfg.Port))

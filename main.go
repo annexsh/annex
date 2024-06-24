@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/annexsh/annex/config"
 	"github.com/annexsh/annex/server"
 )
 
@@ -27,21 +26,21 @@ func run(ctx context.Context) error {
 	os.Args = append(os.Args[:1], os.Args[2:]...)
 
 	switch srvType {
-	case config.TypeAll:
-		var cfg config.AllServices
-		if err := config.Load(&cfg); err != nil {
+	case "all":
+		var cfg server.AllInOneConfig
+		if err := server.LoadConfig(&cfg); err != nil {
 			return err
 		}
 		return server.ServeAllInOne(ctx, cfg)
-	case config.TypeTest:
-		var cfg config.TestService
-		if err := config.Load(&cfg); err != nil {
+	case "test":
+		var cfg server.TestServiceConfig
+		if err := server.LoadConfig(&cfg); err != nil {
 			return err
 		}
 		return server.ServeTestService(ctx, cfg)
-	case config.TypeWorkflowProxy:
-		var cfg config.WorkflowProxyService
-		if err := config.Load(&cfg); err != nil {
+	case "workflow-proxy":
+		var cfg server.WorkflowProxyServiceConfig
+		if err := server.LoadConfig(&cfg); err != nil {
 			return err
 		}
 		return server.ServeWorkflowProxyService(ctx, cfg)

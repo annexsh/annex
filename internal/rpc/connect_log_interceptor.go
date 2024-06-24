@@ -2,7 +2,6 @@ package rpc
 
 import (
 	"context"
-	"errors"
 	"log/slog"
 	"strings"
 	"time"
@@ -84,8 +83,6 @@ func (l *logStreamingHandlerConn) Send(msg any) error {
 	keyVals := l.defaultKeyVals
 
 	err := l.StreamingHandlerConn.Send(msg)
-	err = connect.NewError(connect.CodeUnknown, errors.New("bang"))
-
 	if err != nil {
 		level = slog.LevelError
 		keyVals = append(keyVals, "connect.error", err)

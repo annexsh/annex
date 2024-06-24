@@ -98,7 +98,7 @@ func (s *Server) Stop() error {
 }
 
 func (s *Server) ConnectAddress() string {
-	return s.addr + connectPath
+	return "http://" + s.addr + connectPath
 }
 
 func (s *Server) GRPCAddress() string {

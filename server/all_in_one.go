@@ -12,8 +12,9 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	workflowservicev1 "go.temporal.io/api/workflowservice/v1"
 	"go.temporal.io/sdk/client"
+	"google.golang.org/grpc/health"
+	grpchealthv1 "google.golang.org/grpc/health/grpc_health_v1"
 
-	"github.com/annexsh/annex/config"
 	"github.com/annexsh/annex/event"
 	"github.com/annexsh/annex/eventservice"
 	"github.com/annexsh/annex/inmem"
@@ -25,7 +26,7 @@ import (
 	"github.com/annexsh/annex/workflowservice"
 )
 
-func ServeAllInOne(ctx context.Context, cfg config.AllServices) error {
+func ServeAllInOne(ctx context.Context, cfg AllInOneConfig) error {
 	var logger log.Logger
 	if cfg.Development.Logger {
 		logger = log.NewDevLogger("app", "annex")
@@ -80,6 +81,7 @@ func ServeAllInOne(ctx context.Context, cfg config.AllServices) error {
 			}
 			go pgES.Start(ctx, pgEventSrcErrCallback(logger))
 			defer pgES.Stop()
+			eventSrc = pgES
 		} else {
 			return errors.New("event source config required")
 		}
@@ -124,6 +126,9 @@ func ServeAllInOne(ctx context.Context, cfg config.AllServices) error {
 	// Workflow Proxy service
 	workflowSvc := workflowservice.NewProxyService(testClient, temporalClient.WorkflowService())
 	srv.RegisterGRPC(&workflowservicev1.WorkflowService_ServiceDesc, workflowSvc)
+	healthSvc := health.NewServer()
+	healthSvc.SetServingStatus(workflowservicev1.WorkflowService_ServiceDesc.ServiceName, grpchealthv1.HealthCheckResponse_SERVING)
+	srv.RegisterGRPC(&grpchealthv1.Health_ServiceDesc, healthSvc)
 	srv.WithGRPCOptions(rpc.WithGRPCInterceptors(logger)...)
 
 	return serve(ctx, srv, logger)
