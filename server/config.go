@@ -9,32 +9,26 @@ import (
 
 type AllInOneConfig struct {
 	Port        int               `yaml:"port" required:"true"`
-	Repository  RepositoryConfig  `yaml:"repository"`
-	EventSource EventSource       `yaml:"eventSource"`
+	Postgres    PostgresConfig    `yaml:"postgres"`
 	Temporal    TemporalConfig    `yaml:"temporal"`
 	Development DevelopmentConfig `yaml:"development"`
 }
 
 type TestServiceConfig struct {
-	Port                int              `yaml:"port" required:"true"`
-	Repository          RepositoryConfig `yaml:"repository"`
-	WorkflowServicePort int              `yaml:"workflowHostPort" required:"true"`
+	Port                int            `yaml:"port" required:"true"`
+	Postgres            PostgresConfig `yaml:"postgres"`
+	WorkflowServicePort int            `yaml:"workflowHostPort" required:"true"`
 }
 
 type EventServiceConfig struct {
-	Port            int         `yaml:"port" required:"true"`
-	EventSource     EventSource `yaml:"eventSource"`
-	TestServicePort string      `yaml:"testServiceHostPort" required:"true"`
+	Port     int            `yaml:"port" required:"true"`
+	Postgres PostgresConfig `yaml:"postgres"`
 }
 
 type WorkflowProxyServiceConfig struct {
 	Port            int            `yaml:"port" required:"true"`
 	Temporal        TemporalConfig `yaml:"temporal"`
 	TestServicePort int            `yaml:"testServiceHostPort" required:"true"`
-}
-
-type RepositoryConfig struct {
-	Postgres *PostgresConfig `yaml:"postgres"`
 }
 
 type EventSource struct {

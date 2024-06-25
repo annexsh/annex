@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -39,52 +38,33 @@ func ServeAllInOne(ctx context.Context, cfg AllInOneConfig) error {
 	var eventSrc event.Source
 	var err error
 
-	// Repository
+	// Repository / Event Source
 
 	if cfg.Development.InMemory {
 		db := inmem.NewDB()
 		eventSrc = db.TestExecutionEventSource()
 		repo = inmem.NewTestRepository(db)
-	} else if cfg.Repository.Postgres != nil {
-		pgPool, err = postgres.OpenPool(ctx, cfg.Repository.Postgres.URL(),
-			postgres.WithMigration(cfg.Repository.Postgres.SchemaVersion),
+	} else {
+		pgPool, err = postgres.OpenPool(ctx, cfg.Postgres.URL(),
+			postgres.WithMigration(cfg.Postgres.SchemaVersion),
 		)
 		if err != nil {
 			return err
 		}
 		defer pgPool.Close()
+		pgES, err := postgres.NewTestExecutionEventSource(ctx, pgPool)
+		if err != nil {
+			return err
+		}
+		go pgES.Start(ctx, pgEventSrcErrCallback(logger))
+		defer pgES.Stop()
+		eventSrc = pgES
 
-		db := postgres.NewDB(pgPool)
-		repo = postgres.NewTestRepository(db)
-	} else {
-		return errors.New("repository config required")
+		repo = postgres.NewTestRepository(postgres.NewDB(pgPool))
 	}
 
 	if err := repo.CreateContext(ctx, "default"); err != nil {
 		return err
-	}
-
-	// Event source
-
-	if eventSrc == nil {
-		if cfg.EventSource.Postgres != nil {
-			if pgPool == nil {
-				pgPool, err = postgres.OpenPool(ctx, cfg.Repository.Postgres.URL())
-				if err != nil {
-					return err
-				}
-				defer pgPool.Close()
-			}
-			pgES, err := postgres.NewTestExecutionEventSource(ctx, pgPool)
-			if err != nil {
-				return err
-			}
-			go pgES.Start(ctx, pgEventSrcErrCallback(logger))
-			defer pgES.Stop()
-			eventSrc = pgES
-		} else {
-			return errors.New("event source config required")
-		}
 	}
 
 	// Temporal

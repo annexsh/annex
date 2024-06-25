@@ -38,6 +38,12 @@ func run(ctx context.Context) error {
 			return err
 		}
 		return server.ServeTestService(ctx, cfg)
+	case "event":
+		var cfg server.EventServiceConfig
+		if err := server.LoadConfig(&cfg); err != nil {
+			return err
+		}
+		return server.ServeEventService(ctx, cfg)
 	case "workflow-proxy":
 		var cfg server.WorkflowProxyServiceConfig
 		if err := server.LoadConfig(&cfg); err != nil {
