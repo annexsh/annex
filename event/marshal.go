@@ -1,4 +1,4 @@
-package eventservice
+package event
 
 import (
 	eventsv1 "github.com/annexsh/annex-proto/gen/go/annex/events/v1"

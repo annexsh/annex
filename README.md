@@ -5,7 +5,7 @@ Annex is a testing platform for managing remote execution of integration tests w
 ## Running
 
 ```shell
-go run main.go -config-file=local.yaml
+go run main.go all -config-file=local.yaml
 ```
 
 ## Disclaimer

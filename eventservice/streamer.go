@@ -7,6 +7,7 @@ import (
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/google/uuid"
 
+	"github.com/annexsh/annex/event"
 	"github.com/annexsh/annex/test"
 
 	"github.com/annexsh/annex/log"
@@ -15,21 +16,21 @@ import (
 const eventStreamBufferSize = 50
 
 type streamer struct {
-	eventSource EventSource
-	execReader  ExecutionReader
-	logger      log.Logger
+	eventSrc   event.Source
+	execReader ExecutionReader
+	logger     log.Logger
 }
 
-func newStreamer(eventSource EventSource, execReader ExecutionReader, logger log.Logger) *streamer {
+func newStreamer(eventSrc event.Source, execReader ExecutionReader, logger log.Logger) *streamer {
 	return &streamer{
-		eventSource: eventSource,
-		execReader:  execReader,
-		logger:      logger,
+		eventSrc:   eventSrc,
+		execReader: execReader,
+		logger:     logger,
 	}
 }
 
-func (s *streamer) streamTestExecutionEvents(ctx context.Context, id test.TestExecutionID) (<-chan *ExecutionEvent, <-chan error) {
-	out := make(chan *ExecutionEvent, eventStreamBufferSize)
+func (s *streamer) streamTestExecutionEvents(ctx context.Context, id test.TestExecutionID) (<-chan *event.ExecutionEvent, <-chan error) {
+	out := make(chan *event.ExecutionEvent, eventStreamBufferSize)
 	errs := make(chan error, 1)
 
 	go func() {
@@ -42,7 +43,7 @@ func (s *streamer) streamTestExecutionEvents(ctx context.Context, id test.TestEx
 			return
 		}
 
-		sub, unsub := s.eventSource.Subscribe(id)
+		sub, unsub := s.eventSrc.Subscribe(id)
 		defer unsub()
 
 		// Produce events for cases that existed prior to stream
@@ -52,10 +53,10 @@ func (s *streamer) streamTestExecutionEvents(ctx context.Context, id test.TestEx
 			return
 		}
 		seenEventIDs := mapset.NewSet[uuid.UUID]()
-		for _, event := range existingEvents {
-			out <- event
-			seenEventIDs.Add(event.ID)
-			if event.Type == TypeTestExecutionFinished {
+		for _, existing := range existingEvents {
+			out <- existing
+			seenEventIDs.Add(existing.ID)
+			if existing.Type == event.TypeTestExecutionFinished {
 				return
 			}
 		}
@@ -64,14 +65,14 @@ func (s *streamer) streamTestExecutionEvents(ctx context.Context, id test.TestEx
 			select {
 			case <-ctx.Done():
 				return
-			case event, ok := <-sub:
+			case e, ok := <-sub:
 				if !ok {
 					return
 				}
-				if !seenEventIDs.Contains(event.ID) {
-					out <- event
+				if !seenEventIDs.Contains(e.ID) {
+					out <- e
 				}
-				if event.Type == TypeTestExecutionFinished {
+				if e.Type == event.TypeTestExecutionFinished {
 					return
 				}
 			}
@@ -84,13 +85,13 @@ func (s *streamer) streamTestExecutionEvents(ctx context.Context, id test.TestEx
 func (s *streamer) getExistingEvents(
 	ctx context.Context,
 	testExec *test.TestExecution,
-) ([]*ExecutionEvent, error) {
-	events := []*ExecutionEvent{NewTestExecutionEvent(TypeTestExecutionScheduled, testExec)}
+) ([]*event.ExecutionEvent, error) {
+	events := []*event.ExecutionEvent{event.NewTestExecutionEvent(event.TypeTestExecutionScheduled, testExec)}
 
 	if testExec.StartTime == nil {
 		return events, nil
 	}
-	events = append(events, NewTestExecutionEvent(TypeTestExecutionStarted, testExec))
+	events = append(events, event.NewTestExecutionEvent(event.TypeTestExecutionStarted, testExec))
 
 	currCaseExecs, err := s.execReader.ListCaseExecutions(ctx, testExec.ID)
 	if err != nil {
@@ -123,10 +124,10 @@ func (s *streamer) getExistingEvents(
 			testLogEvents = testLogEvents[1:]
 		}
 
-		events = append(events, NewCaseExecutionEvent(TypeCaseExecutionScheduled, caseExec))
+		events = append(events, event.NewCaseExecutionEvent(event.TypeCaseExecutionScheduled, caseExec))
 
 		if caseExec.StartTime != nil {
-			events = append(events, NewCaseExecutionEvent(TypeCaseExecutionStarted, caseExec))
+			events = append(events, event.NewCaseExecutionEvent(event.TypeCaseExecutionStarted, caseExec))
 		}
 
 		caseLogEvents, ok := caseLogEventsMap[caseExec.ID]
@@ -137,7 +138,7 @@ func (s *streamer) getExistingEvents(
 		}
 
 		if caseExec.FinishTime != nil {
-			events = append(events, NewCaseExecutionEvent(TypeCaseExecutionFinished, caseExec))
+			events = append(events, event.NewCaseExecutionEvent(event.TypeCaseExecutionFinished, caseExec))
 		}
 	}
 
@@ -149,15 +150,15 @@ func (s *streamer) getExistingEvents(
 	}
 
 	if testExec.FinishTime != nil {
-		events = append(events, NewTestExecutionEvent(TypeTestExecutionFinished, testExec))
+		events = append(events, event.NewTestExecutionEvent(event.TypeTestExecutionFinished, testExec))
 	}
 
 	return events, nil
 }
 
 func (s *streamer) getLogEvents(ctx context.Context, testExecID test.TestExecutionID) (
-	[]*ExecutionEvent,
-	map[test.CaseExecutionID][]*ExecutionEvent,
+	[]*event.ExecutionEvent,
+	map[test.CaseExecutionID][]*event.ExecutionEvent,
 	error,
 ) {
 	currLogs, err := s.execReader.ListLogs(ctx, testExecID)
@@ -165,21 +166,21 @@ func (s *streamer) getLogEvents(ctx context.Context, testExecID test.TestExecuti
 		return nil, nil, err
 	}
 
-	var testLogEvents []*ExecutionEvent
-	caseLogEvents := map[test.CaseExecutionID][]*ExecutionEvent{}
+	var testLogEvents []*event.ExecutionEvent
+	caseLogEvents := map[test.CaseExecutionID][]*event.ExecutionEvent{}
 
 	for _, log := range currLogs {
-		event := NewLogEvent(TypeLogPublished, log)
+		logEvent := event.NewLogEvent(event.TypeLogPublished, log)
 
 		if log.CaseExecutionID == nil {
-			testLogEvents = append(testLogEvents, event)
+			testLogEvents = append(testLogEvents, logEvent)
 		} else {
-			caseLogEvent := event
+			caseLogEvent := logEvent
 			if got, ok := caseLogEvents[*log.CaseExecutionID]; ok {
 				got = append(got, caseLogEvent)
 				caseLogEvents[*log.CaseExecutionID] = got
 			} else {
-				caseLogEvents[*log.CaseExecutionID] = []*ExecutionEvent{caseLogEvent}
+				caseLogEvents[*log.CaseExecutionID] = []*event.ExecutionEvent{caseLogEvent}
 			}
 		}
 	}

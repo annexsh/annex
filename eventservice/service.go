@@ -7,16 +7,12 @@ import (
 	eventsv1 "github.com/annexsh/annex-proto/gen/go/annex/events/v1"
 	"github.com/annexsh/annex-proto/gen/go/annex/events/v1/eventsv1connect"
 
-	"github.com/annexsh/annex/internal/conc"
+	"github.com/annexsh/annex/event"
 	"github.com/annexsh/annex/log"
 	"github.com/annexsh/annex/test"
 )
 
 var _ eventsv1connect.EventServiceHandler = (*Service)(nil)
-
-type EventSource interface {
-	Subscribe(testExecID test.TestExecutionID) (sub <-chan *ExecutionEvent, unsub conc.Unsubscribe)
-}
 
 type ExecutionReader interface {
 	GetTestExecution(ctx context.Context, id test.TestExecutionID) (*test.TestExecution, error)
@@ -37,9 +33,9 @@ type Service struct {
 	logger   log.Logger
 }
 
-func NewService(eventSource EventSource, execReader ExecutionReader, opts ...ServiceOption) *Service {
+func New(eventSrc event.Source, execReader ExecutionReader, opts ...ServiceOption) *Service {
 	s := &Service{logger: log.DefaultLogger()}
-	s.streamer = newStreamer(eventSource, execReader, s.logger)
+	s.streamer = newStreamer(eventSrc, execReader, s.logger)
 	for _, opt := range opts {
 		opt(s)
 	}
@@ -59,12 +55,12 @@ func (s Service) StreamTestExecutionEvents(
 	events, errs := s.streamer.streamTestExecutionEvents(ctx, testExecID)
 	for {
 		select {
-		case event, ok := <-events:
+		case e, ok := <-events:
 			if !ok {
 				return nil
 			}
 			if err = stream.Send(&eventsv1.StreamTestExecutionEventsResponse{
-				Event: event.Proto(),
+				Event: e.Proto(),
 			}); err != nil {
 				return err
 			}

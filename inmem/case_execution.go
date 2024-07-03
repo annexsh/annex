@@ -4,7 +4,7 @@ import (
 	"context"
 	"slices"
 
-	"github.com/annexsh/annex/eventservice"
+	"github.com/annexsh/annex/event"
 	"github.com/annexsh/annex/internal/ptr"
 	"github.com/annexsh/annex/test"
 )
@@ -75,7 +75,7 @@ func (c *CaseExecutionWriter) CreateScheduledCaseExecution(_ context.Context, sc
 		ScheduleTime:    scheduled.ScheduleTime,
 	}
 	c.db.caseExecs[getCaseExecKey(ce.TestExecutionID, ce.ID)] = ce
-	c.db.events.Publish(eventservice.NewCaseExecutionEvent(eventservice.TypeCaseExecutionScheduled, ce))
+	c.db.events.Publish(event.NewCaseExecutionEvent(event.TypeCaseExecutionScheduled, ce))
 	return ptr.Copy(ce), nil
 }
 
@@ -90,7 +90,7 @@ func (c *CaseExecutionWriter) UpdateStartedCaseExecution(_ context.Context, star
 	}
 	ce.StartTime = &started.StartTime
 	c.db.caseExecs[key] = ce
-	c.db.events.Publish(eventservice.NewCaseExecutionEvent(eventservice.TypeCaseExecutionStarted, ce))
+	c.db.events.Publish(event.NewCaseExecutionEvent(event.TypeCaseExecutionStarted, ce))
 	return ptr.Copy(ce), nil
 }
 
@@ -106,7 +106,7 @@ func (c *CaseExecutionWriter) UpdateFinishedCaseExecution(_ context.Context, fin
 	ce.FinishTime = &finished.FinishTime
 	ce.Error = finished.Error
 	c.db.caseExecs[key] = ce
-	c.db.events.Publish(eventservice.NewCaseExecutionEvent(eventservice.TypeCaseExecutionFinished, ce))
+	c.db.events.Publish(event.NewCaseExecutionEvent(event.TypeCaseExecutionFinished, ce))
 	return ptr.Copy(ce), nil
 }
 

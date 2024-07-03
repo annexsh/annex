@@ -7,42 +7,40 @@ import (
 	"github.com/cristalhq/aconfig/aconfigyaml"
 )
 
-type Env string
-
-const (
-	EnvLocal   = "local"
-	EnvNonProd = "nonprod"
-	EnvProd    = "prod"
-)
-
-func (e Env) validate() error {
-	switch e {
-	case EnvLocal, EnvNonProd, EnvProd:
-		return nil
-	default:
-		return fmt.Errorf("invalid env '%s'", e)
-	}
+type AllInOneConfig struct {
+	Port        int               `yaml:"port" required:"true"`
+	Postgres    PostgresConfig    `yaml:"postgres"`
+	Temporal    TemporalConfig    `yaml:"temporal"`
+	Development DevelopmentConfig `yaml:"development"`
 }
 
-type Config struct {
-	Env      Env      `yaml:"env"`
-	Port     int      `yaml:"port" required:"true"`
-	Temporal Temporal `yaml:"temporal"`
-	Postgres Postgres `yaml:"postgres"`
-	InMemory bool     `yaml:"inMemory"` // temporary option during initial development phase (overrides Postgres when set)
+type TestServiceConfig struct {
+	Port                int            `yaml:"port" required:"true"`
+	Postgres            PostgresConfig `yaml:"postgres"`
+	WorkflowServicePort int            `yaml:"workflowHostPort" required:"true"`
 }
 
-func (c Config) Validate() error {
-	return c.Env.validate()
+type EventServiceConfig struct {
+	Port     int            `yaml:"port" required:"true"`
+	Postgres PostgresConfig `yaml:"postgres"`
 }
 
-type Temporal struct {
-	LocalDev  bool   `yaml:"localDev"` // temporary option during initial development phase
+type WorkflowProxyServiceConfig struct {
+	Port            int            `yaml:"port" required:"true"`
+	Temporal        TemporalConfig `yaml:"temporal"`
+	TestServicePort int            `yaml:"testServiceHostPort" required:"true"`
+}
+
+type EventSource struct {
+	Postgres *PostgresConfig `yaml:"postgres"`
+}
+
+type TemporalConfig struct {
 	HostPort  string `yaml:"hostPort" required:"true"`
 	Namespace string `yaml:"namespace" required:"true"`
 }
 
-type Postgres struct {
+type PostgresConfig struct {
 	SchemaVersion uint   `yaml:"schemaVersion" required:"true"`
 	Host          string `required:"true"`
 	Port          string `required:"true"`
@@ -51,34 +49,28 @@ type Postgres struct {
 	Password      string `required:"true"`
 }
 
-func (p Postgres) URL() string {
+func (p PostgresConfig) URL() string {
 	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s", p.User, p.Password, p.Host, p.Port, p.Database)
 }
 
-func LoadConfig(opts ...ConfigOption) (Config, error) {
-	loaderCfg := aconfig.Config{
-		FileDecoders: map[string]aconfig.FileDecoder{},
-	}
-
-	for _, opt := range opts {
-		opt(&loaderCfg)
-	}
-
-	var cfg Config
-	loader := aconfig.LoaderFor(&cfg, loaderCfg)
-	if err := loader.Load(); err != nil {
-		return cfg, err
-	}
-
-	return cfg, cfg.Validate()
+type DevelopmentConfig struct {
+	InMemory bool `yaml:"inMemory"`
+	Temporal bool `yaml:"temporal"`
+	Logger   bool `yaml:"logger"`
 }
 
-type ConfigOption func(loadCfg *aconfig.Config)
+type Config interface {
+	*AllInOneConfig | *TestServiceConfig | *EventServiceConfig | *WorkflowProxyServiceConfig
+}
 
-func WithYAML() ConfigOption {
-	return func(loaderCfg *aconfig.Config) {
-		loaderCfg.FileFlag = "config-file"
-		loaderCfg.FailOnFileNotFound = true
-		loaderCfg.FileDecoders[".yaml"] = aconfigyaml.New()
+func LoadConfig[C Config](dst C) error {
+	loaderCfg := aconfig.Config{
+		FileDecoders: map[string]aconfig.FileDecoder{
+			".yaml": aconfigyaml.New(),
+		},
+		FileFlag:           "config-file",
+		FailOnFileNotFound: true,
 	}
+	loader := aconfig.LoaderFor(dst, loaderCfg)
+	return loader.Load()
 }

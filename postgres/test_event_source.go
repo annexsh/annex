@@ -9,9 +9,9 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/annexsh/annex/event"
 	"github.com/annexsh/annex/postgres/sqlc"
 
-	"github.com/annexsh/annex/eventservice"
 	"github.com/annexsh/annex/internal/conc"
 	"github.com/annexsh/annex/test"
 )
@@ -25,8 +25,10 @@ const (
 	pgUpdate           = "UPDATE"
 )
 
+type ErrorCallback func(err error)
+
 type TestExecutionEventSource struct {
-	broker      *conc.Broker[*eventservice.ExecutionEvent]
+	broker      *conc.Broker[*event.ExecutionEvent]
 	pgConn      *pgx.Conn
 	connRelease func()
 	ctxCancel   context.CancelFunc
@@ -44,34 +46,28 @@ func NewTestExecutionEventSource(ctx context.Context, pgPool *pgxpool.Pool, opts
 	}
 
 	return &TestExecutionEventSource{
-		broker:      conc.NewBroker[*eventservice.ExecutionEvent](opts...),
+		broker:      conc.NewBroker[*event.ExecutionEvent](opts...),
 		pgConn:      pgConn,
 		connRelease: conn.Release,
 	}, nil
 }
 
-func (t *TestExecutionEventSource) Start(ctx context.Context) <-chan error {
-	errCh := make(chan error, 1)
-	go func() {
-		defer close(errCh)
-		ctx, cancel := context.WithCancel(ctx)
-		t.ctxCancel = cancel
-		t.broker.Start(ctx)
+func (t *TestExecutionEventSource) Start(ctx context.Context, errCallback ErrorCallback) {
+	ctx, cancel := context.WithCancel(ctx)
+	t.ctxCancel = cancel
+	t.broker.Start(ctx)
 
-		for {
-			if err := t.handleNextEvent(ctx); err != nil {
-				if errors.Is(err, context.Canceled) {
-					return
-				}
-				errCh <- err
+	for {
+		if err := t.handleNextEvent(ctx); err != nil {
+			if errors.Is(err, context.Canceled) {
+				return
 			}
+			errCallback(err)
 		}
-	}()
-
-	return errCh
+	}
 }
 
-func (t *TestExecutionEventSource) Subscribe(testExecID test.TestExecutionID) (<-chan *eventservice.ExecutionEvent, conc.Unsubscribe) {
+func (t *TestExecutionEventSource) Subscribe(testExecID test.TestExecutionID) (<-chan *event.ExecutionEvent, conc.Unsubscribe) {
 	return t.broker.Subscribe(testExecID)
 }
 
@@ -95,7 +91,7 @@ func (t *TestExecutionEventSource) handleNextEvent(ctx context.Context) error {
 		return err
 	}
 
-	var execEvent *eventservice.ExecutionEvent
+	var execEvent *event.ExecutionEvent
 
 	switch tableMsg.Table {
 	case testExecsTableName:
@@ -107,12 +103,12 @@ func (t *TestExecutionEventSource) handleNextEvent(ctx context.Context) error {
 
 		switch tableMsg.Action {
 		case pgInsert:
-			execEvent = eventservice.NewTestExecutionEvent(eventservice.TypeTestExecutionScheduled, testExec)
+			execEvent = event.NewTestExecutionEvent(event.TypeTestExecutionScheduled, testExec)
 		case pgUpdate:
 			if msg.Data.StartTime.Valid && !msg.Data.FinishTime.Valid {
-				execEvent = eventservice.NewTestExecutionEvent(eventservice.TypeTestExecutionStarted, testExec)
+				execEvent = event.NewTestExecutionEvent(event.TypeTestExecutionStarted, testExec)
 			} else if msg.Data.StartTime.Valid && msg.Data.FinishTime.Valid {
-				execEvent = eventservice.NewTestExecutionEvent(eventservice.TypeTestExecutionFinished, testExec)
+				execEvent = event.NewTestExecutionEvent(event.TypeTestExecutionFinished, testExec)
 			} else {
 				// TODO: log unexpected state error
 				return nil
@@ -128,12 +124,12 @@ func (t *TestExecutionEventSource) handleNextEvent(ctx context.Context) error {
 
 		switch tableMsg.Action {
 		case pgInsert:
-			execEvent = eventservice.NewCaseExecutionEvent(eventservice.TypeCaseExecutionScheduled, caseExec)
+			execEvent = event.NewCaseExecutionEvent(event.TypeCaseExecutionScheduled, caseExec)
 		case pgUpdate:
 			if msg.Data.StartTime.Valid && !msg.Data.FinishTime.Valid {
-				execEvent = eventservice.NewCaseExecutionEvent(eventservice.TypeCaseExecutionStarted, caseExec)
+				execEvent = event.NewCaseExecutionEvent(event.TypeCaseExecutionStarted, caseExec)
 			} else if msg.Data.StartTime.Valid && msg.Data.FinishTime.Valid {
-				execEvent = eventservice.NewCaseExecutionEvent(eventservice.TypeCaseExecutionFinished, caseExec)
+				execEvent = event.NewCaseExecutionEvent(event.TypeCaseExecutionFinished, caseExec)
 			} else {
 				// TODO: log unexpected state error
 				return nil
@@ -148,7 +144,7 @@ func (t *TestExecutionEventSource) handleNextEvent(ctx context.Context) error {
 			return err
 		}
 		execLog := marshalLog(msg.Data)
-		execEvent = eventservice.NewLogEvent(eventservice.TypeLogPublished, execLog)
+		execEvent = event.NewLogEvent(event.TypeLogPublished, execLog)
 	}
 
 	if execEvent == nil {

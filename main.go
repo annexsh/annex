@@ -2,33 +2,55 @@ package main
 
 import (
 	"context"
+	"errors"
 	"os"
 	"os/signal"
 
 	"github.com/annexsh/annex/server"
-
-	"github.com/annexsh/annex/log"
 )
 
-const appName = "annex"
-
 func main() {
-	cfg, err := server.LoadConfig(server.WithYAML())
-	if err != nil {
-		log.DefaultLogger().Error("unable to load config", "component", "main", "error", err)
-		os.Exit(1)
-	}
-
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
 	defer cancel()
+	if err := run(ctx); err != nil {
+		panic(err)
+	}
+}
 
-	logger := log.NewLogger(cfg.Env, "app", appName)
-	if cfg.Env == server.EnvLocal {
-		logger = log.NewDevLogger()
+func run(ctx context.Context) error {
+	if len(os.Args) < 2 {
+		return errors.New("server type argument required")
 	}
 
-	if err = server.Start(ctx, cfg, server.WithLogger(logger)); err != nil {
-		logger.Error("annex fatal error", "error", err)
-		os.Exit(1)
+	srvType := os.Args[1]
+	os.Args = append(os.Args[:1], os.Args[2:]...)
+
+	switch srvType {
+	case "all":
+		var cfg server.AllInOneConfig
+		if err := server.LoadConfig(&cfg); err != nil {
+			return err
+		}
+		return server.ServeAllInOne(ctx, cfg)
+	case "test":
+		var cfg server.TestServiceConfig
+		if err := server.LoadConfig(&cfg); err != nil {
+			return err
+		}
+		return server.ServeTestService(ctx, cfg)
+	case "event":
+		var cfg server.EventServiceConfig
+		if err := server.LoadConfig(&cfg); err != nil {
+			return err
+		}
+		return server.ServeEventService(ctx, cfg)
+	case "workflow-proxy":
+		var cfg server.WorkflowProxyServiceConfig
+		if err := server.LoadConfig(&cfg); err != nil {
+			return err
+		}
+		return server.ServeWorkflowProxyService(ctx, cfg)
 	}
+
+	return errors.New("invalid server type")
 }
