@@ -8,6 +8,7 @@ import (
 	"go.temporal.io/api/workflowservice/v1"
 	"go.temporal.io/sdk/client"
 
+	"github.com/annexsh/annex/event"
 	"github.com/annexsh/annex/log"
 	"github.com/annexsh/annex/test"
 )
@@ -35,20 +36,22 @@ func WithLogger(logger log.Logger) ServiceOption {
 
 type Service struct {
 	repo       test.Repository
+	eventPub   event.Publisher
 	workflower Workflower
 	executor   *executor
 	logger     log.Logger
 }
 
-func New(repo test.Repository, workflower Workflower, opts ...ServiceOption) *Service {
+func New(repo test.Repository, eventPub event.Publisher, workflower Workflower, opts ...ServiceOption) *Service {
 	s := &Service{
 		repo:       repo,
+		eventPub:   eventPub,
 		workflower: workflower,
 		logger:     log.NewNopLogger(),
 	}
 	for _, opt := range opts {
 		opt(s)
 	}
-	s.executor = newExecutor(repo, workflower, s.logger)
+	s.executor = newExecutor(repo, eventPub, workflower, s.logger)
 	return s
 }

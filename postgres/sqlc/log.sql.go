@@ -7,6 +7,7 @@ package sqlc
 
 import (
 	"context"
+	"time"
 
 	"github.com/annexsh/annex/test"
 	"github.com/google/uuid"
@@ -23,7 +24,7 @@ type CreateLogParams struct {
 	CaseExecutionID *test.CaseExecutionID `json:"case_execution_id"`
 	Level           string                `json:"level"`
 	Message         string                `json:"message"`
-	CreateTime      Timestamp             `json:"create_time"`
+	CreateTime      time.Time             `json:"create_time"`
 }
 
 func (q *Queries) CreateLog(ctx context.Context, arg CreateLogParams) error {

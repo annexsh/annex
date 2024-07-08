@@ -10,47 +10,52 @@ import (
 type AllInOneConfig struct {
 	Port        int               `yaml:"port" required:"true"`
 	Postgres    PostgresConfig    `yaml:"postgres"`
+	Nats        NatsConfig        `yaml:"nats"`
 	Temporal    TemporalConfig    `yaml:"temporal"`
 	Development DevelopmentConfig `yaml:"development"`
 }
 
 type TestServiceConfig struct {
-	Port                int            `yaml:"port" required:"true"`
-	Postgres            PostgresConfig `yaml:"postgres"`
-	WorkflowServicePort int            `yaml:"workflowHostPort" required:"true"`
+	Port               int            `yaml:"port" required:"true"`
+	Postgres           PostgresConfig `yaml:"postgres"`
+	NatsConfig         NatsConfig     `yaml:"nats" required:"true"`
+	WorkflowServiceURL string         `yaml:"workflowServiceURL" required:"true"`
 }
 
 type EventServiceConfig struct {
-	Port     int            `yaml:"port" required:"true"`
-	Postgres PostgresConfig `yaml:"postgres"`
+	Port           int        `yaml:"port" required:"true"`
+	Nats           NatsConfig `yaml:"nats"`
+	TestServiceURL string     `yaml:"testServiceURL" required:"true"`
 }
 
 type WorkflowProxyServiceConfig struct {
-	Port            int            `yaml:"port" required:"true"`
-	Temporal        TemporalConfig `yaml:"temporal"`
-	TestServicePort int            `yaml:"testServiceHostPort" required:"true"`
+	Port           int            `yaml:"port" required:"true"`
+	Temporal       TemporalConfig `yaml:"temporal"`
+	TestServiceURL string         `yaml:"testServiceURL" required:"true"`
 }
 
-type EventSource struct {
-	Postgres *PostgresConfig `yaml:"postgres"`
+type PostgresConfig struct {
+	SchemaVersion uint   `yaml:"schemaVersion" required:"true"`
+	HostPort      string `yaml:"hostPort" required:"true"`
+	Database      string `yaml:"database" required:"true"`
+	User          string `yaml:"user" required:"true"`
+	Password      string `yaml:"password" required:"true"`
+}
+
+func (p PostgresConfig) URL() string {
+	return fmt.Sprintf("postgres://%s:%s@%s/%s", p.User, p.Password, p.HostPort, p.Database)
+}
+
+type NatsConfig struct {
+	HostPort string `yaml:"hostPort" required:"true"`
+	// EmbeddedNats embeds a NATs server into the running service. This option
+	// only applies to EventServiceConfig and AllInOneConfig.
+	EmbeddedNats bool `yaml:"embeddedNats"`
 }
 
 type TemporalConfig struct {
 	HostPort  string `yaml:"hostPort" required:"true"`
 	Namespace string `yaml:"namespace" required:"true"`
-}
-
-type PostgresConfig struct {
-	SchemaVersion uint   `yaml:"schemaVersion" required:"true"`
-	Host          string `required:"true"`
-	Port          string `required:"true"`
-	Database      string `required:"true"`
-	User          string `required:"true"`
-	Password      string `required:"true"`
-}
-
-func (p PostgresConfig) URL() string {
-	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s", p.User, p.Password, p.Host, p.Port, p.Database)
 }
 
 type DevelopmentConfig struct {

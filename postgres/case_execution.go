@@ -54,7 +54,7 @@ func (c *CaseExecutionWriter) CreateScheduledCaseExecution(ctx context.Context, 
 		ID:              scheduled.ID,
 		TestExecutionID: scheduled.TestExecID,
 		CaseName:        scheduled.CaseName,
-		ScheduleTime:    sqlc.NewTimestamp(scheduled.ScheduleTime),
+		ScheduleTime:    scheduled.ScheduleTime,
 	})
 	if err != nil {
 		return nil, err
@@ -66,7 +66,7 @@ func (c *CaseExecutionWriter) UpdateStartedCaseExecution(ctx context.Context, st
 	exec, err := c.db.UpdateCaseExecutionStarted(ctx, sqlc.UpdateCaseExecutionStartedParams{
 		ID:              started.ID,
 		TestExecutionID: started.TestExecutionID,
-		StartTime:       sqlc.NewTimestamp(started.StartTime),
+		StartTime:       &started.StartTime,
 	})
 	if err != nil {
 		return nil, err
@@ -78,7 +78,7 @@ func (c *CaseExecutionWriter) UpdateFinishedCaseExecution(ctx context.Context, f
 	exec, err := c.db.UpdateCaseExecutionFinished(ctx, sqlc.UpdateCaseExecutionFinishedParams{
 		ID:              finished.ID,
 		TestExecutionID: finished.TestExecutionID,
-		FinishTime:      sqlc.NewTimestamp(finished.FinishTime),
+		FinishTime:      &finished.FinishTime,
 		Error:           finished.Error,
 	})
 	if err != nil {

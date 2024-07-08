@@ -55,7 +55,7 @@ func (e *LogWriter) CreateLog(ctx context.Context, log *test.Log) error {
 		CaseExecutionID: log.CaseExecutionID,
 		Level:           log.Level,
 		Message:         log.Message,
-		CreateTime:      sqlc.NewTimestamp(log.CreateTime),
+		CreateTime:      log.CreateTime,
 	})
 }
 

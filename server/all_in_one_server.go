@@ -9,16 +9,17 @@ import (
 	"github.com/annexsh/annex-proto/gen/go/annex/events/v1/eventsv1connect"
 	"github.com/annexsh/annex-proto/gen/go/annex/tests/v1/testsv1connect"
 	"github.com/jackc/pgx/v5/pgxpool"
+	corenats "github.com/nats-io/nats.go"
 	workflowservicev1 "go.temporal.io/api/workflowservice/v1"
 	"go.temporal.io/sdk/client"
 	"google.golang.org/grpc/health"
 	grpchealthv1 "google.golang.org/grpc/health/grpc_health_v1"
 
-	"github.com/annexsh/annex/event"
 	"github.com/annexsh/annex/eventservice"
 	"github.com/annexsh/annex/inmem"
 	"github.com/annexsh/annex/internal/rpc"
 	"github.com/annexsh/annex/log"
+	"github.com/annexsh/annex/nats"
 	"github.com/annexsh/annex/postgres"
 	"github.com/annexsh/annex/test"
 	"github.com/annexsh/annex/testservice"
@@ -35,14 +36,12 @@ func ServeAllInOne(ctx context.Context, cfg AllInOneConfig) error {
 
 	var pgPool *pgxpool.Pool
 	var repo test.Repository
-	var eventSrc event.Source
 	var err error
 
-	// Repository / Event Source
+	// Repository
 
 	if cfg.Development.InMemory {
 		db := inmem.NewDB()
-		eventSrc = db.TestExecutionEventSource()
 		repo = inmem.NewTestRepository(db)
 	} else {
 		pgPool, err = postgres.OpenPool(ctx, cfg.Postgres.URL(),
@@ -52,14 +51,6 @@ func ServeAllInOne(ctx context.Context, cfg AllInOneConfig) error {
 			return err
 		}
 		defer pgPool.Close()
-		pgES, err := postgres.NewTestExecutionEventSource(ctx, pgPool)
-		if err != nil {
-			return err
-		}
-		go pgES.Start(ctx, pgEventSrcErrCallback(logger))
-		defer pgES.Stop()
-		eventSrc = pgES
-
 		repo = postgres.NewTestRepository(postgres.NewDB(pgPool))
 	}
 
@@ -67,7 +58,29 @@ func ServeAllInOne(ctx context.Context, cfg AllInOneConfig) error {
 		return err
 	}
 
-	// Temporal
+	// Pub/Sub
+
+	var nc *corenats.Conn
+	if cfg.Nats.EmbeddedNats {
+		ns, err := runEmbeddedNats(cfg.Nats.HostPort)
+		if err != nil {
+			return err
+		}
+		defer ns.Shutdown()
+		nc, err = corenats.Connect("", corenats.InProcessServer(ns))
+		if err != nil {
+			return err
+		}
+	} else {
+		nc, err = corenats.Connect(cfg.Nats.HostPort)
+		if err != nil {
+			return err
+		}
+	}
+	defer nc.Close()
+	pubSub := nats.NewPubSub(nc, nats.WithLogger(logger))
+
+	// Temporal dev server
 
 	if cfg.Development.Temporal {
 		temporalDevSrv, temporalAddr, err := setupTemporalDevServer()
@@ -78,13 +91,7 @@ func ServeAllInOne(ctx context.Context, cfg AllInOneConfig) error {
 		defer temporalDevSrv.Stop()
 	}
 
-	temporalClient, err := client.NewLazyClient(client.Options{
-		HostPort:  cfg.Temporal.HostPort,
-		Namespace: workflowservice.Namespace,
-	})
-	if err != nil {
-		return err
-	}
+	// Test service
 
 	workflowProxyClient, err := client.NewLazyClient(client.Options{
 		HostPort:  srv.GRPCAddress(),
@@ -94,18 +101,32 @@ func ServeAllInOne(ctx context.Context, cfg AllInOneConfig) error {
 		return err
 	}
 
+	testSvc := testservice.New(repo, pubSub, workflowProxyClient, testservice.WithLogger(logger))
+	srv.RegisterConnect(testsv1connect.NewTestServiceHandler(testSvc, rpc.WithConnectInterceptors(logger)))
+
 	httpClient := &http.Client{Timeout: 30 * time.Second}
 	testClient := testsv1connect.NewTestServiceClient(httpClient, srv.ConnectAddress())
 
-	// Test service
-	testSvc := testservice.New(repo, workflowProxyClient, testservice.WithLogger(logger))
-	srv.RegisterConnect(testsv1connect.NewTestServiceHandler(testSvc, rpc.WithConnectInterceptors(logger)))
 	// Event service
-	eventSvc := eventservice.New(eventSrc, repo, eventservice.WithLogger(logger))
+
+	eventSvc := eventservice.New(pubSub, testClient, eventservice.WithLogger(logger))
 	srv.RegisterConnect(eventsv1connect.NewEventServiceHandler(eventSvc, rpc.WithConnectInterceptors(logger)))
+
 	// Workflow Proxy service
+
+	temporalClient, err := client.NewLazyClient(client.Options{
+		HostPort:  cfg.Temporal.HostPort,
+		Namespace: workflowservice.Namespace,
+	})
+	if err != nil {
+		return err
+	}
+
 	workflowSvc := workflowservice.NewProxyService(testClient, temporalClient.WorkflowService())
 	srv.RegisterGRPC(&workflowservicev1.WorkflowService_ServiceDesc, workflowSvc)
+
+	// Misc
+
 	healthSvc := health.NewServer()
 	healthSvc.SetServingStatus(workflowservicev1.WorkflowService_ServiceDesc.ServiceName, grpchealthv1.HealthCheckResponse_SERVING)
 	srv.RegisterGRPC(&grpchealthv1.Health_ServiceDesc, healthSvc)

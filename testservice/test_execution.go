@@ -5,9 +5,11 @@ import (
 	"fmt"
 
 	"connectrpc.com/connect"
+	eventsv1 "github.com/annexsh/annex-proto/gen/go/annex/events/v1"
 	testsv1 "github.com/annexsh/annex-proto/gen/go/annex/tests/v1"
 	"github.com/google/uuid"
 
+	"github.com/annexsh/annex/event"
 	"github.com/annexsh/annex/internal/pagination"
 	"github.com/annexsh/annex/test"
 )
@@ -106,8 +108,14 @@ func (s *Service) AckTestExecutionStarted(
 		StartTime: req.Msg.StartTime.AsTime(),
 	}
 
-	if _, err = s.repo.UpdateStartedTestExecution(ctx, started); err != nil {
+	testExec, err := s.repo.UpdateStartedTestExecution(ctx, started)
+	if err != nil {
 		return nil, err
+	}
+
+	execEvent := event.NewTestExecutionEvent(eventsv1.Event_TYPE_TEST_EXECUTION_STARTED, testExec.Proto())
+	if err = s.eventPub.Publish(testExec.ID.String(), execEvent); err != nil {
+		return nil, fmt.Errorf("failed to publish test execution event: %w", err)
 	}
 
 	return connect.NewResponse(&testsv1.AckTestExecutionStartedResponse{}), nil
@@ -128,8 +136,14 @@ func (s *Service) AckTestExecutionFinished(
 		Error:      req.Msg.Error,
 	}
 
-	if _, err = s.repo.UpdateFinishedTestExecution(ctx, finished); err != nil {
+	testExec, err := s.repo.UpdateFinishedTestExecution(ctx, finished)
+	if err != nil {
 		return nil, fmt.Errorf("failed to update test execution: %w", err)
+	}
+
+	execEvent := event.NewTestExecutionEvent(eventsv1.Event_TYPE_TEST_EXECUTION_FINISHED, testExec.Proto())
+	if err = s.eventPub.Publish(testExec.ID.String(), execEvent); err != nil {
+		return nil, fmt.Errorf("failed to publish test execution event: %w", err)
 	}
 
 	return connect.NewResponse(&testsv1.AckTestExecutionFinishedResponse{}), nil

@@ -27,11 +27,13 @@ overrides:
           pointer: true
       - db_type: "pg_catalog.timestamp"
         go_type:
-          type: "Timestamp"
+          type: "time.Time"
       - db_type: "pg_catalog.timestamp"
         nullable: true
         go_type:
-          type: "Timestamp"
+          import: "time"
+          type: "Time"
+          pointer: true
       - column: "test_executions.id"
         go_type:
           import: "github.com/annexsh/annex/test"

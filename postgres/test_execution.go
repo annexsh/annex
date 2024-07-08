@@ -44,7 +44,7 @@ func (t *TestExecutionReader) GetTestExecutionInput(ctx context.Context, id test
 func (t *TestExecutionReader) ListTestExecutions(ctx context.Context, testID uuid.UUID, filter *test.TestExecutionListFilter) (test.TestExecutionList, error) {
 	params := sqlc.ListTestExecutionsParams{
 		TestID:           testID,
-		LastScheduleTime: sqlc.NewNullableTimestamp(filter.LastScheduleTime),
+		LastScheduleTime: filter.LastScheduleTime,
 		LastExecID:       filter.LastTestExecutionID,
 	}
 	if filter.PageSize > 0 {
@@ -73,7 +73,7 @@ func (t *TestExecutionWriter) CreateScheduledTestExecution(ctx context.Context, 
 			ID:           scheduled.ID,
 			TestID:       scheduled.TestID,
 			HasInput:     scheduled.Payload != nil,
-			ScheduleTime: sqlc.NewTimestamp(scheduled.ScheduleTime),
+			ScheduleTime: scheduled.ScheduleTime,
 		})
 		if err != nil {
 			return err
@@ -99,7 +99,7 @@ func (t *TestExecutionWriter) CreateScheduledTestExecution(ctx context.Context, 
 func (t *TestExecutionWriter) UpdateStartedTestExecution(ctx context.Context, started *test.StartedTestExecution) (*test.TestExecution, error) {
 	exec, err := t.db.UpdateTestExecutionStarted(ctx, sqlc.UpdateTestExecutionStartedParams{
 		ID:        started.ID,
-		StartTime: sqlc.NewTimestamp(started.StartTime),
+		StartTime: &started.StartTime,
 	})
 	if err != nil {
 		return nil, err
@@ -110,7 +110,7 @@ func (t *TestExecutionWriter) UpdateStartedTestExecution(ctx context.Context, st
 func (t *TestExecutionWriter) UpdateFinishedTestExecution(ctx context.Context, finished *test.FinishedTestExecution) (*test.TestExecution, error) {
 	exec, err := t.db.UpdateTestExecutionFinished(ctx, sqlc.UpdateTestExecutionFinishedParams{
 		ID:         finished.ID,
-		FinishTime: sqlc.NewTimestamp(finished.FinishTime),
+		FinishTime: &finished.FinishTime,
 		Error:      finished.Error,
 	})
 	if err != nil {
@@ -159,7 +159,7 @@ func (t *TestExecutionWriter) ResetTestExecution(ctx context.Context, reset *tes
 		ID:           reset.ID,
 		TestID:       existing.TestID,
 		HasInput:     existing.HasInput,
-		ScheduleTime: sqlc.NewTimestamp(reset.ResetTime),
+		ScheduleTime: reset.ResetTime,
 	})
 	if err != nil {
 		return nil, nil, err

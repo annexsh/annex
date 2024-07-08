@@ -3,8 +3,10 @@ package testservice
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
+	eventsv1 "github.com/annexsh/annex-proto/gen/go/annex/events/v1"
 	testsv1 "github.com/annexsh/annex-proto/gen/go/annex/tests/v1"
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/google/uuid"
@@ -15,6 +17,7 @@ import (
 	"go.temporal.io/sdk/converter"
 	"go.temporal.io/sdk/temporal"
 
+	"github.com/annexsh/annex/event"
 	"github.com/annexsh/annex/test"
 
 	"github.com/annexsh/annex/log"
@@ -24,13 +27,15 @@ const retryReason = "retry failed test execution"
 
 type executor struct {
 	repo     test.Repository
+	eventPub event.Publisher
 	temporal Workflower
 	logger   log.Logger
 }
 
-func newExecutor(repo test.Repository, workflower Workflower, logger log.Logger) *executor {
+func newExecutor(repo test.Repository, eventPub event.Publisher, workflower Workflower, logger log.Logger) *executor {
 	return &executor{
 		repo:     repo,
+		eventPub: eventPub,
 		temporal: workflower,
 		logger:   logger,
 	}
@@ -80,6 +85,11 @@ func (e *executor) execute(ctx context.Context, testID uuid.UUID, opts ...execut
 		return nil, err
 	}
 
+	execEvent := event.NewTestExecutionEvent(eventsv1.Event_TYPE_TEST_EXECUTION_SCHEDULED, testExec.Proto())
+	if err = e.eventPub.Publish(testExec.ID.String(), execEvent); err != nil {
+		return nil, fmt.Errorf("failed to publish test execution event: %w", err)
+	}
+
 	wfOpts := client.StartWorkflowOptions{
 		ID:                       workflowID,
 		TaskQueue:                getTaskQueue(t.ContextID, t.GroupID),
@@ -102,7 +112,7 @@ func (e *executor) execute(ctx context.Context, testID uuid.UUID, opts ...execut
 	return testExec, nil
 }
 
-// TODO: add safeguard to ensure reset point it after the start test execution signal
+// TODO: add safeguard to ensure reset point is after the start test execution signal
 func (e *executor) retry(ctx context.Context, execID test.TestExecutionID) (*test.TestExecution, error) {
 	testExec, err := e.repo.GetTestExecution(ctx, execID)
 	if err != nil {

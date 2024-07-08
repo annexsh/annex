@@ -2,19 +2,22 @@ package testservice
 
 import (
 	"context"
+	"fmt"
 
 	"connectrpc.com/connect"
+	eventsv1 "github.com/annexsh/annex-proto/gen/go/annex/events/v1"
 	testsv1 "github.com/annexsh/annex-proto/gen/go/annex/tests/v1"
 	"github.com/google/uuid"
 
+	"github.com/annexsh/annex/event"
 	"github.com/annexsh/annex/internal/ptr"
 	"github.com/annexsh/annex/test"
 )
 
-func (s *Service) PublishTestExecutionLog(
+func (s *Service) PublishLog(
 	ctx context.Context,
-	req *connect.Request[testsv1.PublishTestExecutionLogRequest],
-) (*connect.Response[testsv1.PublishTestExecutionLogResponse], error) {
+	req *connect.Request[testsv1.PublishLogRequest],
+) (*connect.Response[testsv1.PublishLogResponse], error) {
 	testExecID, err := test.ParseTestExecutionID(req.Msg.TestExecutionId)
 	if err != nil {
 		return nil, err
@@ -38,7 +41,12 @@ func (s *Service) PublishTestExecutionLog(
 		return nil, err
 	}
 
-	return connect.NewResponse(&testsv1.PublishTestExecutionLogResponse{
+	execEvent := event.NewLogEvent(eventsv1.Event_TYPE_LOG_PUBLISHED, execLog.Proto())
+	if err = s.eventPub.Publish(execLog.TestExecutionID.String(), execEvent); err != nil {
+		return nil, fmt.Errorf("failed to publish log event: %w", err)
+	}
+
+	return connect.NewResponse(&testsv1.PublishLogResponse{
 		LogId: execLog.ID.String(),
 	}), nil
 }
