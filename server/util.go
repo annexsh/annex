@@ -12,7 +12,6 @@ import (
 
 	"github.com/annexsh/annex/internal/rpc"
 	"github.com/annexsh/annex/log"
-	"github.com/annexsh/annex/postgres"
 	"github.com/annexsh/annex/workflowservice"
 )
 
@@ -53,10 +52,4 @@ func setupTemporalDevServer() (*devserver.Server, string, error) {
 		LogLevel:               slog.LevelWarn,
 	})
 	return srv, address, err
-}
-
-func pgEventSrcErrCallback(logger log.Logger) postgres.ErrorCallback {
-	return func(err error) {
-		logger.Error("event source message error", "error", err)
-	}
 }

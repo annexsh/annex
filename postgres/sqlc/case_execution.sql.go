@@ -7,6 +7,7 @@ package sqlc
 
 import (
 	"context"
+	"time"
 
 	"github.com/annexsh/annex/test"
 )
@@ -27,7 +28,7 @@ type CreateCaseExecutionParams struct {
 	ID              test.CaseExecutionID `json:"id"`
 	TestExecutionID test.TestExecutionID `json:"test_execution_id"`
 	CaseName        string               `json:"case_name"`
-	ScheduleTime    Timestamp            `json:"schedule_time"`
+	ScheduleTime    time.Time            `json:"schedule_time"`
 }
 
 func (q *Queries) CreateCaseExecution(ctx context.Context, arg CreateCaseExecutionParams) (*CaseExecution, error) {
@@ -171,7 +172,7 @@ RETURNING id, test_execution_id, case_name, schedule_time, start_time, finish_ti
 type UpdateCaseExecutionFinishedParams struct {
 	ID              test.CaseExecutionID `json:"id"`
 	TestExecutionID test.TestExecutionID `json:"test_execution_id"`
-	FinishTime      Timestamp            `json:"finish_time"`
+	FinishTime      *time.Time           `json:"finish_time"`
 	Error           *string              `json:"error"`
 }
 
@@ -206,7 +207,7 @@ RETURNING id, test_execution_id, case_name, schedule_time, start_time, finish_ti
 type UpdateCaseExecutionStartedParams struct {
 	ID              test.CaseExecutionID `json:"id"`
 	TestExecutionID test.TestExecutionID `json:"test_execution_id"`
-	StartTime       Timestamp            `json:"start_time"`
+	StartTime       *time.Time           `json:"start_time"`
 }
 
 func (q *Queries) UpdateCaseExecutionStarted(ctx context.Context, arg UpdateCaseExecutionStartedParams) (*CaseExecution, error) {

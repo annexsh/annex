@@ -31,7 +31,7 @@ func ServeWorkflowProxyService(ctx context.Context, cfg WorkflowProxyServiceConf
 	}
 
 	httpClient := &http.Client{Timeout: 30 * time.Second}
-	testClient := testsv1connect.NewTestServiceClient(httpClient, srv.ConnectAddress())
+	testClient := testsv1connect.NewTestServiceClient(httpClient, cfg.TestServiceURL)
 
 	workflowSvc := workflowservice.NewProxyService(testClient, temporalClient.WorkflowService())
 	srv.RegisterGRPC(&workflowservicev1.WorkflowService_ServiceDesc, workflowSvc)

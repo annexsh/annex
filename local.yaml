@@ -1,20 +1,13 @@
 port: 50051
-repository:
-  postgres:
-    schemaVersion: 2
-    host: 0.0.0.0
-    port: 5432
-    database: postgres
-    user: postgres
-    password: password
-eventSource:
-  postgres:
-    schemaVersion: 2
-    host: 0.0.0.0
-    port: 5432
-    database: postgres
-    user: postgres
-    password: password
+postgres:
+  schemaVersion: 1
+  hostPort: 0.0.0.0:5432
+  database: postgres
+  user: postgres
+  password: password
+nats:
+  hostPort: 0.0.0.0:4222
+  embeddedNats: true
 temporal:
   hostPort: 0.0.0.0:7233
   namespace: default

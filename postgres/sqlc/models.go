@@ -5,6 +5,8 @@
 package sqlc
 
 import (
+	"time"
+
 	"github.com/annexsh/annex/test"
 	"github.com/google/uuid"
 )
@@ -13,9 +15,9 @@ type CaseExecution struct {
 	ID              test.CaseExecutionID `json:"id"`
 	TestExecutionID test.TestExecutionID `json:"test_execution_id"`
 	CaseName        string               `json:"case_name"`
-	ScheduleTime    Timestamp            `json:"schedule_time"`
-	StartTime       Timestamp            `json:"start_time"`
-	FinishTime      Timestamp            `json:"finish_time"`
+	ScheduleTime    time.Time            `json:"schedule_time"`
+	StartTime       *time.Time           `json:"start_time"`
+	FinishTime      *time.Time           `json:"finish_time"`
 	Error           *string              `json:"error"`
 }
 
@@ -34,7 +36,7 @@ type Log struct {
 	CaseExecutionID *test.CaseExecutionID `json:"case_execution_id"`
 	Level           string                `json:"level"`
 	Message         string                `json:"message"`
-	CreateTime      Timestamp             `json:"create_time"`
+	CreateTime      time.Time             `json:"create_time"`
 }
 
 type Test struct {
@@ -43,7 +45,7 @@ type Test struct {
 	ID         uuid.UUID `json:"id"`
 	Name       string    `json:"name"`
 	HasInput   bool      `json:"has_input"`
-	CreateTime Timestamp `json:"create_time"`
+	CreateTime time.Time `json:"create_time"`
 }
 
 type TestDefaultInput struct {
@@ -55,9 +57,9 @@ type TestExecution struct {
 	ID           test.TestExecutionID `json:"id"`
 	TestID       uuid.UUID            `json:"test_id"`
 	HasInput     bool                 `json:"has_input"`
-	ScheduleTime Timestamp            `json:"schedule_time"`
-	StartTime    Timestamp            `json:"start_time"`
-	FinishTime   Timestamp            `json:"finish_time"`
+	ScheduleTime time.Time            `json:"schedule_time"`
+	StartTime    *time.Time           `json:"start_time"`
+	FinishTime   *time.Time           `json:"finish_time"`
 	Error        *string              `json:"error"`
 }
 

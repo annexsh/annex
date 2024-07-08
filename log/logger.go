@@ -21,6 +21,7 @@ type Logger interface {
 func DefaultLogger() Logger {
 	return NewLogger()
 }
+
 func NewLogger(args ...any) Logger {
 	return &logger{slog.New(slog.NewJSONHandler(os.Stdout, nil)).With(args...)}
 }

@@ -6,7 +6,6 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/annexsh/annex/event"
 	"github.com/annexsh/annex/internal/ptr"
 	"github.com/annexsh/annex/test"
 )
@@ -74,7 +73,6 @@ func (e *LogWriter) CreateLog(_ context.Context, log *test.Log) error {
 	}
 
 	e.db.execLogs[log.ID] = log
-	e.db.events.Publish(event.NewLogEvent(event.TypeLogPublished, log))
 	return nil
 }
 

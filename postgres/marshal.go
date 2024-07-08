@@ -13,7 +13,7 @@ func marshalTest(t *sqlc.Test) *test.Test {
 		ID:         t.ID,
 		Name:       t.Name,
 		HasInput:   t.HasInput,
-		CreateTime: t.CreateTime.Time,
+		CreateTime: t.CreateTime,
 	}
 }
 
@@ -38,20 +38,15 @@ func marshalTestExecPayload(input *sqlc.TestExecutionInput) *test.Payload {
 }
 
 func marshalTestExec(testExec *sqlc.TestExecution) *test.TestExecution {
-	t := &test.TestExecution{
+	return &test.TestExecution{
 		ID:           testExec.ID,
 		TestID:       testExec.TestID,
 		HasInput:     testExec.HasInput,
-		ScheduleTime: testExec.ScheduleTime.Time,
+		ScheduleTime: testExec.ScheduleTime,
+		StartTime:    testExec.StartTime,
+		FinishTime:   testExec.FinishTime,
 		Error:        testExec.Error,
 	}
-	if testExec.StartTime.Valid {
-		t.StartTime = &testExec.StartTime.Time
-	}
-	if testExec.FinishTime.Valid {
-		t.FinishTime = &testExec.FinishTime.Time
-	}
-	return t
 }
 
 func marshalTestExecs(testExecs []*sqlc.TestExecution) []*test.TestExecution {
@@ -63,20 +58,15 @@ func marshalTestExecs(testExecs []*sqlc.TestExecution) []*test.TestExecution {
 }
 
 func marshalCaseExec(caseExec *sqlc.CaseExecution) *test.CaseExecution {
-	c := &test.CaseExecution{
+	return &test.CaseExecution{
 		ID:              caseExec.ID,
 		TestExecutionID: caseExec.TestExecutionID,
 		CaseName:        caseExec.CaseName,
-		ScheduleTime:    caseExec.ScheduleTime.Time,
+		ScheduleTime:    caseExec.ScheduleTime,
+		StartTime:       caseExec.StartTime,
+		FinishTime:      caseExec.FinishTime,
 		Error:           caseExec.Error,
 	}
-	if caseExec.StartTime.Valid {
-		c.StartTime = &caseExec.StartTime.Time
-	}
-	if caseExec.FinishTime.Valid {
-		c.FinishTime = &caseExec.FinishTime.Time
-	}
-	return c
 }
 
 func marshalCaseExecs(caseExecs []*sqlc.CaseExecution) []*test.CaseExecution {
@@ -94,7 +84,7 @@ func marshalLog(log *sqlc.Log) *test.Log {
 		CaseExecutionID: log.CaseExecutionID,
 		Level:           log.Level,
 		Message:         log.Message,
-		CreateTime:      log.CreateTime.Time,
+		CreateTime:      log.CreateTime,
 	}
 }
 

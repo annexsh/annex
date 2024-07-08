@@ -7,6 +7,7 @@ package sqlc
 
 import (
 	"context"
+	"time"
 
 	"github.com/annexsh/annex/test"
 	"github.com/google/uuid"
@@ -29,7 +30,7 @@ type CreateTestExecutionParams struct {
 	ID           test.TestExecutionID `json:"id"`
 	TestID       uuid.UUID            `json:"test_id"`
 	HasInput     bool                 `json:"has_input"`
-	ScheduleTime Timestamp            `json:"schedule_time"`
+	ScheduleTime time.Time            `json:"schedule_time"`
 }
 
 func (q *Queries) CreateTestExecution(ctx context.Context, arg CreateTestExecutionParams) (*TestExecution, error) {
@@ -117,7 +118,7 @@ LIMIT ($5::integer)
 
 type ListTestExecutionsParams struct {
 	TestID              uuid.UUID  `json:"test_id"`
-	LastScheduleTime    Timestamp  `json:"last_schedule_time"`
+	LastScheduleTime    *time.Time `json:"last_schedule_time"`
 	LastExecID          *uuid.UUID `json:"last_exec_id"`
 	LastTestExecutionID uuid.UUID  `json:"last_test_execution_id"`
 	PageSize            *int32     `json:"page_size"`
@@ -167,7 +168,7 @@ RETURNING id, test_id, has_input, schedule_time, start_time, finish_time, error
 
 type UpdateTestExecutionFinishedParams struct {
 	ID         test.TestExecutionID `json:"id"`
-	FinishTime Timestamp            `json:"finish_time"`
+	FinishTime *time.Time           `json:"finish_time"`
 	Error      *string              `json:"error"`
 }
 
@@ -197,7 +198,7 @@ RETURNING id, test_id, has_input, schedule_time, start_time, finish_time, error
 
 type UpdateTestExecutionStartedParams struct {
 	ID        test.TestExecutionID `json:"id"`
-	StartTime Timestamp            `json:"start_time"`
+	StartTime *time.Time           `json:"start_time"`
 }
 
 func (q *Queries) UpdateTestExecutionStarted(ctx context.Context, arg UpdateTestExecutionStartedParams) (*TestExecution, error) {

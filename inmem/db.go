@@ -19,7 +19,6 @@ type DB struct {
 	testExecPayloads map[test.TestExecutionID][]byte
 	caseExecs        map[caseExecKey]*test.CaseExecution
 	execLogs         map[uuid.UUID]*test.Log
-	events           *TestExecutionEventSource
 }
 
 func NewDB() *DB {
@@ -33,10 +32,5 @@ func NewDB() *DB {
 		testExecPayloads: map[test.TestExecutionID][]byte{},
 		caseExecs:        map[caseExecKey]*test.CaseExecution{},
 		execLogs:         map[uuid.UUID]*test.Log{},
-		events:           NewTestExecutionEventSource(),
 	}
-}
-
-func (d *DB) TestExecutionEventSource() *TestExecutionEventSource {
-	return d.events
 }

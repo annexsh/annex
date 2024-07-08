@@ -2,6 +2,7 @@ package migrations
 
 import (
 	"embed"
+	"errors"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
@@ -35,7 +36,7 @@ func MigrateDatabase(pool *pgxpool.Pool, version uint) error {
 		return err
 	}
 
-	if err = m.Migrate(version); err != nil && err != migrate.ErrNoChange {
+	if err = m.Migrate(version); err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		return err
 	}
 
