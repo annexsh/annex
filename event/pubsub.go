@@ -1,6 +1,6 @@
 package event
 
-import eventsv1 "github.com/annexsh/annex-proto/gen/go/annex/events/v1"
+import eventsv1 "github.com/annexsh/annex-proto/go/gen/annex/events/v1"
 
 type Publisher interface {
 	Publish(testExecID string, event *eventsv1.Event) error

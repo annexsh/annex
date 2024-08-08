@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
-	testsv1 "github.com/annexsh/annex-proto/gen/go/annex/tests/v1"
+	testsv1 "github.com/annexsh/annex-proto/go/gen/annex/tests/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -156,7 +156,7 @@ func TestService_RetryTestExecution(t *testing.T) {
 	successCaseLogs := createCaseLogs(t, ctx, repo, testExec.ID, successCaseExec.ID, numCaseLogs)
 	failureCaseLogs := createCaseLogs(t, ctx, repo, testExec.ID, failureCaseExec.ID, numCaseLogs)
 
-	svc := New(repo, fake.NewWorkflower(
+	svc := New(repo, fake.NewPubSub(), fake.NewWorkflower(
 		fake.WithHistory(
 			fake.GenCaseFailureHistory(
 				testExec.ID,

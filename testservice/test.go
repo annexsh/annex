@@ -2,10 +2,11 @@ package testservice
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"connectrpc.com/connect"
-	testsv1 "github.com/annexsh/annex-proto/gen/go/annex/tests/v1"
+	testsv1 "github.com/annexsh/annex-proto/go/gen/annex/tests/v1"
 	"github.com/google/uuid"
 
 	"github.com/annexsh/annex/test"
@@ -49,6 +50,25 @@ func (s *Service) RegisterTests(
 	}), nil
 }
 
+func (s *Service) GetTest(
+	ctx context.Context,
+	req *connect.Request[testsv1.GetTestRequest],
+) (*connect.Response[testsv1.GetTestResponse], error) {
+	testID, err := uuid.Parse(req.Msg.TestId)
+	if err != nil {
+		return nil, err
+	}
+
+	t, err := s.repo.GetTest(ctx, testID)
+	if err != nil {
+		return nil, err
+	}
+
+	return connect.NewResponse(&testsv1.GetTestResponse{
+		Test: t.Proto(),
+	}), nil
+}
+
 func (s *Service) GetTestDefaultInput(
 	ctx context.Context,
 	req *connect.Request[testsv1.GetTestDefaultInputRequest],
@@ -60,6 +80,11 @@ func (s *Service) GetTestDefaultInput(
 
 	payload, err := s.repo.GetTestDefaultInput(ctx, testID)
 	if err != nil {
+		if errors.Is(err, test.ErrorTestPayloadNotFound) {
+			return connect.NewResponse(&testsv1.GetTestDefaultInputResponse{
+				DefaultInput: "",
+			}), nil
+		}
 		return nil, err
 	}
 

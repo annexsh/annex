@@ -7,6 +7,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
+	"github.com/annexsh/annex/event"
 	"github.com/annexsh/annex/inmem"
 	"github.com/annexsh/annex/internal/fake"
 	"github.com/annexsh/annex/test"
@@ -14,13 +15,15 @@ import (
 
 type fakeDeps struct {
 	repo       test.Repository
+	pubSub     event.PubSub
 	workflower Workflower
 }
 
 func newService() (*Service, *fakeDeps) {
 	repo := inmem.NewTestRepository(inmem.NewDB())
+	pubSub := fake.NewPubSub()
 	workflower := fake.NewWorkflower()
-	return New(repo, workflower), &fakeDeps{
+	return New(repo, pubSub, workflower), &fakeDeps{
 		repo:       repo,
 		workflower: workflower,
 	}

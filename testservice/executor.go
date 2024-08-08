@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	eventsv1 "github.com/annexsh/annex-proto/gen/go/annex/events/v1"
-	testsv1 "github.com/annexsh/annex-proto/gen/go/annex/tests/v1"
+	eventsv1 "github.com/annexsh/annex-proto/go/gen/annex/events/v1"
+	testsv1 "github.com/annexsh/annex-proto/go/gen/annex/tests/v1"
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/google/uuid"
 	"go.temporal.io/api/common/v1"

@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/annexsh/annex-proto/gen/go/annex/events/v1/eventsv1connect"
-	"github.com/annexsh/annex-proto/gen/go/annex/tests/v1/testsv1connect"
+	"github.com/annexsh/annex-proto/go/gen/annex/events/v1/eventsv1connect"
+	"github.com/annexsh/annex-proto/go/gen/annex/tests/v1/testsv1connect"
 	"github.com/jackc/pgx/v5/pgxpool"
 	corenats "github.com/nats-io/nats.go"
 	workflowservicev1 "go.temporal.io/api/workflowservice/v1"

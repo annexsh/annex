@@ -2,8 +2,10 @@ package postgres
 
 import (
 	"context"
+	"errors"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 
 	"github.com/annexsh/annex/postgres/sqlc"
 
@@ -46,6 +48,9 @@ func (t *TestReader) ListTests(ctx context.Context, contextID string, groupID st
 func (t *TestReader) GetTestDefaultInput(ctx context.Context, testID uuid.UUID) (*test.Payload, error) {
 	payload, err := t.db.GetTestDefaultInput(ctx, testID)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, test.ErrorTestPayloadNotFound
+		}
 		return nil, err
 	}
 	return marshalTestDefaultInput(payload), nil

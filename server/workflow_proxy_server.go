@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/annexsh/annex-proto/gen/go/annex/tests/v1/testsv1connect"
+	"github.com/annexsh/annex-proto/go/gen/annex/tests/v1/testsv1connect"
 	workflowservicev1 "go.temporal.io/api/workflowservice/v1"
 	"go.temporal.io/sdk/client"
 	"google.golang.org/grpc/health"

@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
-	"github.com/annexsh/annex-proto/gen/go/annex/tests/v1"
+	"github.com/annexsh/annex-proto/go/gen/annex/tests/v1"
 	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/api/workflowservice/v1"
 	"go.temporal.io/server/common"

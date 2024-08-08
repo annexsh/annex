@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"connectrpc.com/connect"
-	testsv1 "github.com/annexsh/annex-proto/gen/go/annex/tests/v1"
+	testsv1 "github.com/annexsh/annex-proto/go/gen/annex/tests/v1"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -51,14 +51,14 @@ func TestService_PublishTestExecutionLog(t *testing.T) {
 				reqCaseExecID = ptr.Get(wantCaseExecID.Int32())
 			}
 
-			req := &testsv1.PublishTestExecutionLogRequest{
+			req := &testsv1.PublishLogRequest{
 				TestExecutionId: te.ID.String(),
 				CaseExecutionId: reqCaseExecID,
 				Level:           "INFO",
 				Message:         "lorem ipsum",
 				CreateTime:      timestamppb.Now(),
 			}
-			res, err := s.PublishTestExecutionLog(ctx, connect.NewRequest(req))
+			res, err := s.PublishLog(ctx, connect.NewRequest(req))
 			require.NoError(t, err)
 			assert.NotNil(t, res)
 

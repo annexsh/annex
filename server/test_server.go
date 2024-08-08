@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/annexsh/annex-proto/gen/go/annex/tests/v1/testsv1connect"
+	"github.com/annexsh/annex-proto/go/gen/annex/tests/v1/testsv1connect"
 	"github.com/nats-io/nats-server/v2/server"
 	corenats "github.com/nats-io/nats.go"
 	"go.temporal.io/sdk/client"
