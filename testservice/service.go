@@ -3,7 +3,7 @@ package testservice
 import (
 	"context"
 
-	"github.com/annexsh/annex-proto/gen/go/annex/tests/v1/testsv1connect"
+	"github.com/annexsh/annex-proto/go/gen/annex/tests/v1/testsv1connect"
 	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/api/workflowservice/v1"
 	"go.temporal.io/sdk/client"

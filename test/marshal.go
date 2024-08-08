@@ -1,7 +1,7 @@
 package test
 
 import (
-	testsv1 "github.com/annexsh/annex-proto/gen/go/annex/tests/v1"
+	testsv1 "github.com/annexsh/annex-proto/go/gen/annex/tests/v1"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/annexsh/annex/internal/ptr"

@@ -3,7 +3,7 @@ package nats
 import (
 	"fmt"
 
-	eventsv1 "github.com/annexsh/annex-proto/gen/go/annex/events/v1"
+	eventsv1 "github.com/annexsh/annex-proto/go/gen/annex/events/v1"
 	"github.com/nats-io/nats.go"
 	"google.golang.org/protobuf/proto"
 

@@ -63,7 +63,7 @@ func (t *TestReader) GetTestDefaultInput(_ context.Context, testID uuid.UUID) (*
 
 	p, ok := t.db.defaultInputs[testID]
 	if !ok {
-		return nil, errors.New("not found")
+		return nil, test.ErrorTestPayloadNotFound
 	}
 	return ptr.Copy(p), nil
 }

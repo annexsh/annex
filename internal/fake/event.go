@@ -1,23 +1,24 @@
 package fake
 
 import (
-	"time"
-
+	eventsv1 "github.com/annexsh/annex-proto/go/gen/annex/events/v1"
 	"github.com/google/uuid"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/annexsh/annex/eventservice"
 	"github.com/annexsh/annex/test"
 )
 
-func GenExecEvent(testExecID test.TestExecutionID) *eventservice.ExecutionEvent {
-	return &eventservice.ExecutionEvent{
-		ID:         uuid.New(),
-		TestExecID: testExecID,
-		Type:       eventservice.TypeTestExecutionStarted,
-		Data: eventservice.Data{
-			Type:          eventservice.DataTypeTestExecution,
-			TestExecution: GenTestExec(uuid.New()),
+func GenExecEvent(testExecID test.TestExecutionID) *eventsv1.Event {
+	return &eventsv1.Event{
+		EventId:         uuid.New().String(),
+		TestExecutionId: testExecID.String(),
+		Type:            eventsv1.Event_TYPE_CASE_EXECUTION_STARTED,
+		Data: &eventsv1.Event_Data{
+			Type: eventsv1.Event_Data_TYPE_TEST_EXECUTION,
+			Data: &eventsv1.Event_Data_TestExecution{
+				TestExecution: GenTestExec(uuid.New()).Proto(),
+			},
 		},
-		CreateTime: time.Now(),
+		CreateTime: timestamppb.Now(),
 	}
 }
