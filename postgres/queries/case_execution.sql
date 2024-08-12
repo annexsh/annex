@@ -49,5 +49,5 @@ WHERE id = $1
 -- name: ListCaseExecutions :many
 SELECT *
 FROM case_executions
-WHERE test_execution_id = $1;
-
+WHERE test_execution_id = $1
+ORDER BY schedule_time;

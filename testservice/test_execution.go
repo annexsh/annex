@@ -84,7 +84,7 @@ func (s *Service) ListTestExecutions(
 	if hasNextPage {
 		testExecs = testExecs[:len(testExecs)-1] // remove page buffer item
 		lastExec := testExecs[len(testExecs)-1]
-		res.NextPageToken, err = pagination.EncodeNextPageToken(lastExec.ScheduleTime, lastExec.ID.UUID)
+		res.NextPageToken, err = pagination.EncodeNextPageToken(lastExec.ScheduleTime.UTC(), lastExec.ID.UUID)
 		if err != nil {
 			return nil, err
 		}

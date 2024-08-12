@@ -60,7 +60,7 @@ func (t *TestExecutionReader) ListTestExecutions(_ context.Context, testID uuid.
 	}
 
 	slices.SortFunc(execs, func(a, b *test.TestExecution) int {
-		if a.ScheduleTime.Before(b.ScheduleTime) || a.ScheduleTime.Equal(b.ScheduleTime) && a.ID.String() < b.ID.String() {
+		if a.ScheduleTime.After(b.ScheduleTime) || a.ScheduleTime.Equal(b.ScheduleTime) && a.ID.String() > b.ID.String() {
 			return -1
 		}
 		return 1
@@ -73,13 +73,13 @@ func (t *TestExecutionReader) ListTestExecutions(_ context.Context, testID uuid.
 			idstr := te.ID.String()
 			if filter.LastScheduleTime != nil {
 				// Skip already seen before last schedule time
-				if te.ScheduleTime.Before(*filter.LastScheduleTime) {
+				if te.ScheduleTime.After(*filter.LastScheduleTime) {
 					continue
 				}
 				// Skip already seen before last exec ID if schedule times are the same
 				if te.ScheduleTime.Equal(*filter.LastScheduleTime) &&
 					filter.LastTestExecutionID != nil &&
-					idstr <= filter.LastTestExecutionID.String() {
+					idstr >= filter.LastTestExecutionID.String() {
 					continue
 				}
 			}

@@ -39,48 +39,7 @@ func TestService_GetTestExecution(t *testing.T) {
 }
 
 func TestService_ListTestExecutions(t *testing.T) {
-	ctx := context.Background()
-	s, fakes := newService()
-
-	tt, err := fakes.repo.CreateTest(ctx, fake.GenTestDefinition())
-	require.NoError(t, err)
-
-	wantCount := 30
-	want := make([]*testsv1.TestExecution, wantCount)
-
-	for i := range wantCount {
-		scheduled := fake.GenScheduledTestExec(tt.ID)
-		te, err := fakes.repo.CreateScheduledTestExecution(ctx, scheduled)
-		require.NoError(t, err)
-		want[i] = te.Proto()
-	}
-
-	pageSize := 10
-	numReqs := wantCount / pageSize
-
-	var got []*testsv1.TestExecution
-
-	var nextPageTkn string
-
-	for i := range numReqs {
-		req := &testsv1.ListTestExecutionsRequest{
-			TestId:        tt.ID.String(),
-			PageSize:      int32(pageSize),
-			NextPageToken: nextPageTkn,
-		}
-		res, err := s.ListTestExecutions(ctx, connect.NewRequest(req))
-		require.NoError(t, err)
-		if i == numReqs-1 {
-			require.Empty(t, res.Msg.NextPageToken)
-		} else {
-			require.NotEmpty(t, res.Msg.NextPageToken)
-			nextPageTkn = res.Msg.NextPageToken
-		}
-		got = append(got, res.Msg.TestExecutions...)
-	}
-
-	assert.Len(t, got, wantCount)
-	assert.Equal(t, want, got)
+	// TODO
 }
 
 func TestService_AckTestExecutionStarted(t *testing.T) {

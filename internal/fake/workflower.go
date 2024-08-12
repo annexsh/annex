@@ -130,7 +130,7 @@ func (w *Workflower) DescribeTaskQueue(_ context.Context, _ string, _ enums.Task
 	return &workflowservice.DescribeTaskQueueResponse{
 		Pollers: []*taskqueue.PollerInfo{
 			{
-				LastAccessTime: timestamppb.New(time.Now()),
+				LastAccessTime: timestamppb.New(time.Now().UTC()),
 				Identity:       uuid.NewString(),
 				RatePerSecond:  30,
 			},
