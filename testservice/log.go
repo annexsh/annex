@@ -34,7 +34,7 @@ func (s *Service) PublishLog(
 		CaseExecutionID: caseExecID,
 		Level:           req.Msg.Level,
 		Message:         req.Msg.Message,
-		CreateTime:      req.Msg.CreateTime.AsTime(),
+		CreateTime:      req.Msg.CreateTime.AsTime().UTC(),
 	}
 
 	if err = s.repo.CreateLog(ctx, execLog); err != nil {

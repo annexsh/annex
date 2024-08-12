@@ -99,6 +99,7 @@ const listCaseExecutions = `-- name: ListCaseExecutions :many
 SELECT id, test_execution_id, case_name, schedule_time, start_time, finish_time, error
 FROM case_executions
 WHERE test_execution_id = $1
+ORDER BY schedule_time
 `
 
 func (q *Queries) ListCaseExecutions(ctx context.Context, testExecutionID test.TestExecutionID) ([]*CaseExecution, error) {

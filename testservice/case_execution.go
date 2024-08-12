@@ -100,7 +100,7 @@ func (s *Service) AckCaseExecutionFinished(
 	finished := &test.FinishedCaseExecution{
 		ID:              test.CaseExecutionID(req.Msg.CaseExecutionId),
 		TestExecutionID: testExecID,
-		FinishTime:      req.Msg.FinishTime.AsTime(),
+		FinishTime:      req.Msg.FinishTime.AsTime().UTC(),
 		Error:           req.Msg.Error,
 	}
 

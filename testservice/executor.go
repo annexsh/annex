@@ -71,7 +71,7 @@ func (e *executor) execute(ctx context.Context, testID uuid.UUID, opts ...execut
 		ID:           execID,
 		TestID:       t.ID,
 		Payload:      nil, // TODO: payload metadata isn't saved: double check if it is needed
-		ScheduleTime: time.Now(),
+		ScheduleTime: time.Now().UTC(),
 	}
 	if options.payload != nil {
 		if options.payload.Metadata == nil {
@@ -226,7 +226,7 @@ func (e *executor) retry(ctx context.Context, execID test.TestExecutionID) (*tes
 
 	reset, rollback, err := e.repo.ResetTestExecution(ctx, &test.ResetTestExecution{
 		ID:                  testExec.ID,
-		ResetTime:           time.Now().UTC().Add(25 * time.Hour),
+		ResetTime:           time.Now().UTC(),
 		StaleCaseExecutions: keys(caseExecsToDelete),
 		StaleLogs:           logsToDelete,
 	})

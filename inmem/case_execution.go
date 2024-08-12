@@ -71,7 +71,7 @@ func (c *CaseExecutionWriter) CreateScheduledCaseExecution(_ context.Context, sc
 		ID:              scheduled.ID,
 		TestExecutionID: scheduled.TestExecID,
 		CaseName:        scheduled.CaseName,
-		ScheduleTime:    scheduled.ScheduleTime,
+		ScheduleTime:    scheduled.ScheduleTime.UTC(),
 	}
 	c.db.caseExecs[getCaseExecKey(ce.TestExecutionID, ce.ID)] = ce
 	return ptr.Copy(ce), nil
@@ -86,7 +86,7 @@ func (c *CaseExecutionWriter) UpdateStartedCaseExecution(_ context.Context, star
 	if !ok {
 		return nil, test.ErrorCaseExecutionNotFound
 	}
-	ce.StartTime = &started.StartTime
+	ce.StartTime = ptr.Get(started.StartTime.UTC())
 	c.db.caseExecs[key] = ce
 	return ptr.Copy(ce), nil
 }

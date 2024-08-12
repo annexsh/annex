@@ -67,7 +67,7 @@ func GenTest(opts ...TestOptions) *test.Test {
 		ID:         uuid.New(),
 		Name:       uuid.NewString(),
 		HasInput:   true,
-		CreateTime: time.Now(),
+		CreateTime: time.Now().UTC(),
 	}
 }
 
@@ -76,21 +76,21 @@ func GenScheduledTestExec(testID uuid.UUID) *test.ScheduledTestExecution {
 		ID:           test.NewTestExecutionID(),
 		TestID:       testID,
 		Payload:      GenInput().Data,
-		ScheduleTime: time.Now(),
+		ScheduleTime: time.Now().UTC(),
 	}
 }
 
 func GenStartedTestExec(testExecID test.TestExecutionID) *test.StartedTestExecution {
 	return &test.StartedTestExecution{
 		ID:        testExecID,
-		StartTime: time.Now(),
+		StartTime: time.Now().UTC(),
 	}
 }
 
 func GenFinishedTestExec(testExecID test.TestExecutionID, err *string) *test.FinishedTestExecution {
 	return &test.FinishedTestExecution{
 		ID:         testExecID,
-		FinishTime: time.Now(),
+		FinishTime: time.Now().UTC(),
 		Error:      err,
 	}
 }
@@ -100,9 +100,9 @@ func GenTestExec(testID uuid.UUID) *test.TestExecution {
 		ID:           test.NewTestExecutionID(),
 		TestID:       testID,
 		HasInput:     false,
-		ScheduleTime: time.Now().Add(-2 * time.Millisecond),
-		StartTime:    ptr.Get(time.Now().Add(-time.Millisecond)),
-		FinishTime:   ptr.Get(time.Now()),
+		ScheduleTime: time.Now().UTC().Add(-2 * time.Millisecond),
+		StartTime:    ptr.Get(time.Now().UTC().Add(-time.Millisecond)),
+		FinishTime:   ptr.Get(time.Now().UTC()),
 		Error:        nil,
 	}
 }
@@ -127,7 +127,7 @@ func GenStartedCaseExec(testExecID test.TestExecutionID, caseExecID test.CaseExe
 	return &test.StartedCaseExecution{
 		ID:              caseExecID,
 		TestExecutionID: testExecID,
-		StartTime:       time.Now(),
+		StartTime:       time.Now().UTC(),
 	}
 }
 
@@ -135,7 +135,7 @@ func GenFinishedCaseExec(testExecID test.TestExecutionID, caseExecID test.CaseEx
 	return &test.FinishedCaseExecution{
 		ID:              caseExecID,
 		TestExecutionID: testExecID,
-		FinishTime:      time.Now(),
+		FinishTime:      time.Now().UTC(),
 		Error:           err,
 	}
 }
@@ -145,9 +145,9 @@ func GenCaseExec(testExecID test.TestExecutionID) *test.CaseExecution {
 		ID:              GenCaseID(),
 		TestExecutionID: testExecID,
 		CaseName:        uuid.NewString(),
-		ScheduleTime:    time.Now().Add(-2 * time.Millisecond),
-		StartTime:       ptr.Get(time.Now().Add(-time.Millisecond)),
-		FinishTime:      ptr.Get(time.Now()),
+		ScheduleTime:    time.Now().UTC().Add(-2 * time.Millisecond),
+		StartTime:       ptr.Get(time.Now().UTC().Add(-time.Millisecond)),
+		FinishTime:      ptr.Get(time.Now().UTC()),
 		Error:           nil,
 	}
 }
@@ -183,7 +183,7 @@ func genExecLog(testExecID test.TestExecutionID, caseExecID *test.CaseExecutionI
 		CaseExecutionID: caseExecID,
 		Level:           "INFO",
 		Message:         uuid.NewString(),
-		CreateTime:      time.Now(),
+		CreateTime:      time.Now().UTC(),
 	}
 }
 

@@ -73,7 +73,7 @@ func (t *TestExecutionWriter) CreateScheduledTestExecution(ctx context.Context, 
 			ID:           scheduled.ID,
 			TestID:       scheduled.TestID,
 			HasInput:     scheduled.Payload != nil,
-			ScheduleTime: scheduled.ScheduleTime,
+			ScheduleTime: scheduled.ScheduleTime.UTC(),
 		})
 		if err != nil {
 			return err
@@ -99,7 +99,7 @@ func (t *TestExecutionWriter) CreateScheduledTestExecution(ctx context.Context, 
 func (t *TestExecutionWriter) UpdateStartedTestExecution(ctx context.Context, started *test.StartedTestExecution) (*test.TestExecution, error) {
 	exec, err := t.db.UpdateTestExecutionStarted(ctx, sqlc.UpdateTestExecutionStartedParams{
 		ID:        started.ID,
-		StartTime: &started.StartTime,
+		StartTime: ptr.Get(started.StartTime.UTC()),
 	})
 	if err != nil {
 		return nil, err
@@ -110,7 +110,7 @@ func (t *TestExecutionWriter) UpdateStartedTestExecution(ctx context.Context, st
 func (t *TestExecutionWriter) UpdateFinishedTestExecution(ctx context.Context, finished *test.FinishedTestExecution) (*test.TestExecution, error) {
 	exec, err := t.db.UpdateTestExecutionFinished(ctx, sqlc.UpdateTestExecutionFinishedParams{
 		ID:         finished.ID,
-		FinishTime: &finished.FinishTime,
+		FinishTime: ptr.Get(finished.FinishTime.UTC()),
 		Error:      finished.Error,
 	})
 	if err != nil {
@@ -159,7 +159,7 @@ func (t *TestExecutionWriter) ResetTestExecution(ctx context.Context, reset *tes
 		ID:           reset.ID,
 		TestID:       existing.TestID,
 		HasInput:     existing.HasInput,
-		ScheduleTime: reset.ResetTime,
+		ScheduleTime: reset.ResetTime.UTC(),
 	})
 	if err != nil {
 		return nil, nil, err

@@ -3,6 +3,7 @@ package postgres
 import (
 	"context"
 
+	"github.com/annexsh/annex/internal/ptr"
 	"github.com/annexsh/annex/postgres/sqlc"
 
 	"github.com/annexsh/annex/test"
@@ -54,7 +55,7 @@ func (c *CaseExecutionWriter) CreateScheduledCaseExecution(ctx context.Context, 
 		ID:              scheduled.ID,
 		TestExecutionID: scheduled.TestExecID,
 		CaseName:        scheduled.CaseName,
-		ScheduleTime:    scheduled.ScheduleTime,
+		ScheduleTime:    scheduled.ScheduleTime.UTC(),
 	})
 	if err != nil {
 		return nil, err
@@ -66,7 +67,7 @@ func (c *CaseExecutionWriter) UpdateStartedCaseExecution(ctx context.Context, st
 	exec, err := c.db.UpdateCaseExecutionStarted(ctx, sqlc.UpdateCaseExecutionStartedParams{
 		ID:              started.ID,
 		TestExecutionID: started.TestExecutionID,
-		StartTime:       &started.StartTime,
+		StartTime:       ptr.Get(started.StartTime.UTC()),
 	})
 	if err != nil {
 		return nil, err
@@ -78,7 +79,7 @@ func (c *CaseExecutionWriter) UpdateFinishedCaseExecution(ctx context.Context, f
 	exec, err := c.db.UpdateCaseExecutionFinished(ctx, sqlc.UpdateCaseExecutionFinishedParams{
 		ID:              finished.ID,
 		TestExecutionID: finished.TestExecutionID,
-		FinishTime:      &finished.FinishTime,
+		FinishTime:      ptr.Get(finished.FinishTime.UTC()),
 		Error:           finished.Error,
 	})
 	if err != nil {
