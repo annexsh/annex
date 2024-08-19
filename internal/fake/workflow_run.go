@@ -3,8 +3,9 @@ package fake
 import (
 	"context"
 
-	"github.com/google/uuid"
 	"go.temporal.io/sdk/client"
+
+	"github.com/annexsh/annex/uuid"
 )
 
 var _ client.WorkflowRun = (*WorkflowRun)(nil)

@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/annexsh/annex/test"
-	"github.com/google/uuid"
+	"github.com/annexsh/annex/uuid"
 )
 
 const createLog = `-- name: CreateLog :exec
@@ -19,7 +19,7 @@ VALUES ($1, $2, $3, $4, $5, $6)
 `
 
 type CreateLogParams struct {
-	ID              uuid.UUID             `json:"id"`
+	ID              uuid.V7               `json:"id"`
 	TestExecutionID test.TestExecutionID  `json:"test_execution_id"`
 	CaseExecutionID *test.CaseExecutionID `json:"case_execution_id"`
 	Level           string                `json:"level"`
@@ -45,7 +45,7 @@ FROM logs
 WHERE id = $1
 `
 
-func (q *Queries) DeleteLog(ctx context.Context, id uuid.UUID) error {
+func (q *Queries) DeleteLog(ctx context.Context, id uuid.V7) error {
 	_, err := q.db.Exec(ctx, deleteLog, id)
 	return err
 }
@@ -56,7 +56,7 @@ FROM logs
 WHERE id = $1
 `
 
-func (q *Queries) GetLog(ctx context.Context, id uuid.UUID) (*Log, error) {
+func (q *Queries) GetLog(ctx context.Context, id uuid.V7) (*Log, error) {
 	row := q.db.QueryRow(ctx, getLog, id)
 	var i Log
 	err := row.Scan(

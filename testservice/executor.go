@@ -9,7 +9,6 @@ import (
 	eventsv1 "github.com/annexsh/annex-proto/go/gen/annex/events/v1"
 	testsv1 "github.com/annexsh/annex-proto/go/gen/annex/tests/v1"
 	mapset "github.com/deckarep/golang-set/v2"
-	"github.com/google/uuid"
 	"go.temporal.io/api/common/v1"
 	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/api/workflowservice/v1"
@@ -18,9 +17,9 @@ import (
 	"go.temporal.io/sdk/temporal"
 
 	"github.com/annexsh/annex/event"
-	"github.com/annexsh/annex/test"
-
 	"github.com/annexsh/annex/log"
+	"github.com/annexsh/annex/test"
+	"github.com/annexsh/annex/uuid"
 )
 
 const retryReason = "retry failed test execution"
@@ -53,7 +52,7 @@ func withInput(input *testsv1.Payload) executeOption {
 	}
 }
 
-func (e *executor) execute(ctx context.Context, testID uuid.UUID, opts ...executeOption) (*test.TestExecution, error) {
+func (e *executor) execute(ctx context.Context, testID uuid.V7, opts ...executeOption) (*test.TestExecution, error) {
 	t, err := e.repo.GetTest(ctx, testID)
 	if err != nil {
 		return nil, err
@@ -129,8 +128,8 @@ func (e *executor) retry(ctx context.Context, execID test.TestExecutionID) (*tes
 		return nil, err
 	}
 
-	testLogsToDelete := mapset.NewSet[uuid.UUID]()
-	caseLogsToDelete := map[test.CaseExecutionID][]uuid.UUID{}
+	testLogsToDelete := mapset.NewSet[uuid.V7]()
+	caseLogsToDelete := map[test.CaseExecutionID][]uuid.V7{}
 	for _, l := range origLogs {
 		if l.CaseExecutionID == nil {
 			testLogsToDelete.Add(l.ID)
@@ -139,7 +138,7 @@ func (e *executor) retry(ctx context.Context, execID test.TestExecutionID) (*tes
 				caseLogs = append(caseLogs, l.ID)
 				caseLogsToDelete[*l.CaseExecutionID] = caseLogs
 			} else {
-				caseLogsToDelete[*l.CaseExecutionID] = []uuid.UUID{l.ID}
+				caseLogsToDelete[*l.CaseExecutionID] = []uuid.V7{l.ID}
 			}
 		}
 	}
@@ -203,7 +202,7 @@ func (e *executor) retry(ctx context.Context, execID test.TestExecutionID) (*tes
 				if data, ok := attrs.Details["result"]; ok {
 					// Local activity should just have a single payload
 					if len(data.Payloads) == 1 {
-						var logResult struct{ LogID uuid.UUID }
+						var logResult struct{ LogID uuid.V7 }
 						dc := converter.GetDefaultDataConverter()
 						if err = dc.FromPayload(data.Payloads[0], &logResult); err != nil {
 							return nil, err

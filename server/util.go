@@ -6,12 +6,12 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/google/uuid"
 	"github.com/lmittmann/tint"
 	"github.com/temporalio/cli/temporalcli/devserver"
 
 	"github.com/annexsh/annex/internal/rpc"
 	"github.com/annexsh/annex/log"
+	"github.com/annexsh/annex/uuid"
 	"github.com/annexsh/annex/workflowservice"
 )
 

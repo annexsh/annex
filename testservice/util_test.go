@@ -4,13 +4,13 @@ import (
 	"context"
 	"testing"
 
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
 	"github.com/annexsh/annex/event"
 	"github.com/annexsh/annex/inmem"
 	"github.com/annexsh/annex/internal/fake"
 	"github.com/annexsh/annex/test"
+	"github.com/annexsh/annex/uuid"
 )
 
 type fakeDeps struct {
@@ -29,7 +29,7 @@ func newService() (*Service, *fakeDeps) {
 	}
 }
 
-func createTestExec(t *testing.T, ctx context.Context, repo test.Repository, testID uuid.UUID, failure *string) *test.TestExecution {
+func createTestExec(t *testing.T, ctx context.Context, repo test.Repository, testID uuid.V7, failure *string) *test.TestExecution {
 	te, err := repo.CreateScheduledTestExecution(ctx, fake.GenScheduledTestExec(testID))
 	require.NoError(t, err)
 	te, err = repo.UpdateStartedTestExecution(ctx, fake.GenStartedTestExec(te.ID))

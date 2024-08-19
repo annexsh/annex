@@ -3,13 +3,13 @@ package test
 import (
 	"time"
 
-	"github.com/google/uuid"
+	"github.com/annexsh/annex/uuid"
 )
 
 type TestDefinition struct {
 	ContextID    string
 	GroupID      string
-	TestID       uuid.UUID
+	TestID       uuid.V7
 	Name         string
 	DefaultInput *Payload
 }
@@ -17,7 +17,7 @@ type TestDefinition struct {
 type Test struct {
 	ContextID  string
 	GroupID    string
-	ID         uuid.UUID
+	ID         uuid.V7
 	Name       string
 	HasInput   bool
 	CreateTime time.Time
@@ -32,7 +32,7 @@ type Payload struct {
 
 type TestExecution struct {
 	ID           TestExecutionID
-	TestID       uuid.UUID
+	TestID       uuid.V7
 	HasInput     bool
 	ScheduleTime time.Time
 	StartTime    *time.Time
@@ -46,12 +46,12 @@ type ResetTestExecution struct {
 	ID                  TestExecutionID
 	ResetTime           time.Time
 	StaleCaseExecutions []CaseExecutionID
-	StaleLogs           []uuid.UUID
+	StaleLogs           []uuid.V7
 }
 
 type ScheduledTestExecution struct {
 	ID           TestExecutionID
-	TestID       uuid.UUID
+	TestID       uuid.V7
 	Payload      []byte
 	ScheduleTime time.Time
 }
@@ -69,7 +69,7 @@ type FinishedTestExecution struct {
 
 type TestExecutionListFilter struct {
 	LastScheduleTime    *time.Time // required when listing next page
-	LastTestExecutionID *uuid.UUID // required when listing next page
+	LastTestExecutionID *uuid.V7   // required when listing next page
 	PageSize            uint32
 }
 
@@ -106,7 +106,7 @@ type FinishedCaseExecution struct {
 }
 
 type Log struct {
-	ID              uuid.UUID
+	ID              uuid.V7
 	TestExecutionID TestExecutionID
 	CaseExecutionID *CaseExecutionID
 	Level           string

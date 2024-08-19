@@ -5,10 +5,9 @@ import (
 	"errors"
 	"slices"
 
-	"github.com/google/uuid"
-
 	"github.com/annexsh/annex/internal/ptr"
 	"github.com/annexsh/annex/test"
+	"github.com/annexsh/annex/uuid"
 )
 
 var (
@@ -48,7 +47,7 @@ func (t *TestExecutionReader) GetTestExecutionInput(_ context.Context, id test.T
 	}, nil
 }
 
-func (t *TestExecutionReader) ListTestExecutions(_ context.Context, testID uuid.UUID, filter *test.TestExecutionListFilter) (test.TestExecutionList, error) {
+func (t *TestExecutionReader) ListTestExecutions(_ context.Context, testID uuid.V7, filter *test.TestExecutionListFilter) (test.TestExecutionList, error) {
 	t.db.mu.RLock()
 	defer t.db.mu.RUnlock()
 

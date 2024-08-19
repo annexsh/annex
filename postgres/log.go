@@ -3,11 +3,10 @@ package postgres
 import (
 	"context"
 
-	"github.com/google/uuid"
-
 	"github.com/annexsh/annex/postgres/sqlc"
 
 	"github.com/annexsh/annex/test"
+	"github.com/annexsh/annex/uuid"
 )
 
 var (
@@ -23,7 +22,7 @@ func NewLogReader(db *DB) *LogReader {
 	return &LogReader{db: db}
 }
 
-func (e *LogReader) GetLog(ctx context.Context, id uuid.UUID) (*test.Log, error) {
+func (e *LogReader) GetLog(ctx context.Context, id uuid.V7) (*test.Log, error) {
 	execLog, err := e.db.GetLog(ctx, id)
 	if err != nil {
 		return nil, err
@@ -59,6 +58,6 @@ func (e *LogWriter) CreateLog(ctx context.Context, log *test.Log) error {
 	})
 }
 
-func (e *LogWriter) DeleteLog(ctx context.Context, id uuid.UUID) error {
+func (e *LogWriter) DeleteLog(ctx context.Context, id uuid.V7) error {
 	return e.db.DeleteLog(ctx, id)
 }

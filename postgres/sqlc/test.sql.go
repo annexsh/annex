@@ -8,7 +8,7 @@ package sqlc
 import (
 	"context"
 
-	"github.com/google/uuid"
+	"github.com/annexsh/annex/uuid"
 )
 
 const createTest = `-- name: CreateTest :one
@@ -21,11 +21,11 @@ RETURNING context_id, group_id, id, name, has_input, create_time
 `
 
 type CreateTestParams struct {
-	ContextID string    `json:"context_id"`
-	GroupID   string    `json:"group_id"`
-	ID        uuid.UUID `json:"id"`
-	Name      string    `json:"name"`
-	HasInput  bool      `json:"has_input"`
+	ContextID string  `json:"context_id"`
+	GroupID   string  `json:"group_id"`
+	ID        uuid.V7 `json:"id"`
+	Name      string  `json:"name"`
+	HasInput  bool    `json:"has_input"`
 }
 
 func (q *Queries) CreateTest(ctx context.Context, arg CreateTestParams) (*Test, error) {
@@ -56,8 +56,8 @@ ON CONFLICT (test_id) DO UPDATE
 `
 
 type CreateTestDefaultInputParams struct {
-	TestID uuid.UUID `json:"test_id"`
-	Data   []byte    `json:"data"`
+	TestID uuid.V7 `json:"test_id"`
+	Data   []byte  `json:"data"`
 }
 
 func (q *Queries) CreateTestDefaultInput(ctx context.Context, arg CreateTestDefaultInputParams) error {
@@ -71,7 +71,7 @@ FROM tests
 WHERE id = $1
 `
 
-func (q *Queries) GetTest(ctx context.Context, id uuid.UUID) (*Test, error) {
+func (q *Queries) GetTest(ctx context.Context, id uuid.V7) (*Test, error) {
 	row := q.db.QueryRow(ctx, getTest, id)
 	var i Test
 	err := row.Scan(
@@ -117,7 +117,7 @@ FROM test_default_inputs
 WHERE test_id = $1
 `
 
-func (q *Queries) GetTestDefaultInput(ctx context.Context, testID uuid.UUID) (*TestDefaultInput, error) {
+func (q *Queries) GetTestDefaultInput(ctx context.Context, testID uuid.V7) (*TestDefaultInput, error) {
 	row := q.db.QueryRow(ctx, getTestDefaultInput, testID)
 	var i TestDefaultInput
 	err := row.Scan(&i.TestID, &i.Data)

@@ -5,11 +5,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/uuid"
 	"go.temporal.io/sdk/converter"
 
 	"github.com/annexsh/annex/internal/ptr"
 	"github.com/annexsh/annex/test"
+	"github.com/annexsh/annex/uuid"
 )
 
 type TestOptions func(opts *testOptions)
@@ -71,7 +71,7 @@ func GenTest(opts ...TestOptions) *test.Test {
 	}
 }
 
-func GenScheduledTestExec(testID uuid.UUID) *test.ScheduledTestExecution {
+func GenScheduledTestExec(testID uuid.V7) *test.ScheduledTestExecution {
 	return &test.ScheduledTestExecution{
 		ID:           test.NewTestExecutionID(),
 		TestID:       testID,
@@ -95,7 +95,7 @@ func GenFinishedTestExec(testExecID test.TestExecutionID, err *string) *test.Fin
 	}
 }
 
-func GenTestExec(testID uuid.UUID) *test.TestExecution {
+func GenTestExec(testID uuid.V7) *test.TestExecution {
 	return &test.TestExecution{
 		ID:           test.NewTestExecutionID(),
 		TestID:       testID,

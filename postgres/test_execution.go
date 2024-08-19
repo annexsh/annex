@@ -4,12 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/uuid"
-
-	"github.com/annexsh/annex/postgres/sqlc"
-
 	"github.com/annexsh/annex/internal/ptr"
+	"github.com/annexsh/annex/postgres/sqlc"
 	"github.com/annexsh/annex/test"
+	"github.com/annexsh/annex/uuid"
 )
 
 var (
@@ -41,7 +39,7 @@ func (t *TestExecutionReader) GetTestExecutionInput(ctx context.Context, id test
 	return marshalTestExecPayload(payload), nil
 }
 
-func (t *TestExecutionReader) ListTestExecutions(ctx context.Context, testID uuid.UUID, filter *test.TestExecutionListFilter) (test.TestExecutionList, error) {
+func (t *TestExecutionReader) ListTestExecutions(ctx context.Context, testID uuid.V7, filter *test.TestExecutionListFilter) (test.TestExecutionList, error) {
 	params := sqlc.ListTestExecutionsParams{
 		TestID:           testID,
 		LastScheduleTime: filter.LastScheduleTime,

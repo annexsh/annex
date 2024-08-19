@@ -7,13 +7,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/uuid"
 	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/api/history/v1"
 	"go.temporal.io/api/taskqueue/v1"
 	"go.temporal.io/api/workflowservice/v1"
 	"go.temporal.io/sdk/client"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/annexsh/annex/uuid"
 )
 
 const WorkflowName = "FakeWorkflow"

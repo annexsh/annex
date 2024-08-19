@@ -3,7 +3,6 @@ package fake
 import (
 	"time"
 
-	"github.com/google/uuid"
 	"go.temporal.io/api/common/v1"
 	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/api/failure/v1"
@@ -16,6 +15,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/annexsh/annex/test"
+	"github.com/annexsh/annex/uuid"
 )
 
 var _ client.HistoryEventIterator = (*iterator)(nil)
@@ -62,11 +62,11 @@ func parseTime(timeStr string) *timestamppb.Timestamp {
 // - Test execution finish - error (case 2)
 func GenCaseFailureHistory(
 	testExecID test.TestExecutionID,
-	testExecLogID uuid.UUID, // log published by event 7 local activity
+	testExecLogID uuid.V7, // log published by event 7 local activity
 	successCaseExecID test.CaseExecutionID,
 	failureCaseExecID test.CaseExecutionID,
 ) *history.History {
-	logResult := struct{ LogID uuid.UUID }{LogID: testExecLogID}
+	logResult := struct{ LogID uuid.V7 }{LogID: testExecLogID}
 
 	dc := converter.GetDefaultDataConverter()
 	logPayload, err := dc.ToPayload(logResult)

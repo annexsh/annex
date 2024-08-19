@@ -7,9 +7,9 @@ import (
 
 	"connectrpc.com/connect"
 	testsv1 "github.com/annexsh/annex-proto/go/gen/annex/tests/v1"
-	"github.com/google/uuid"
 
 	"github.com/annexsh/annex/test"
+	"github.com/annexsh/annex/uuid"
 )
 
 func (s *Service) RegisterTests(

@@ -2,10 +2,10 @@ package fake
 
 import (
 	eventsv1 "github.com/annexsh/annex-proto/go/gen/annex/events/v1"
-	"github.com/google/uuid"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/annexsh/annex/test"
+	"github.com/annexsh/annex/uuid"
 )
 
 func GenExecEvent(testExecID test.TestExecutionID) *eventsv1.Event {

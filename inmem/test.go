@@ -6,10 +6,9 @@ import (
 	"slices"
 	"time"
 
-	"github.com/google/uuid"
-
 	"github.com/annexsh/annex/internal/ptr"
 	"github.com/annexsh/annex/test"
+	"github.com/annexsh/annex/uuid"
 )
 
 var (
@@ -25,7 +24,7 @@ func NewTestReader(db *DB) *TestReader {
 	return &TestReader{db: db}
 }
 
-func (t *TestReader) GetTest(_ context.Context, id uuid.UUID) (*test.Test, error) {
+func (t *TestReader) GetTest(_ context.Context, id uuid.V7) (*test.Test, error) {
 	t.db.mu.RLock()
 	defer t.db.mu.RUnlock()
 
@@ -57,7 +56,7 @@ func (t *TestReader) ListTests(_ context.Context, contextID string, groupID stri
 	return tests, nil
 }
 
-func (t *TestReader) GetTestDefaultInput(_ context.Context, testID uuid.UUID) (*test.Payload, error) {
+func (t *TestReader) GetTestDefaultInput(_ context.Context, testID uuid.V7) (*test.Payload, error) {
 	t.db.mu.RLock()
 	defer t.db.mu.RUnlock()
 
