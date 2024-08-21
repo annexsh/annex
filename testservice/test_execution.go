@@ -7,11 +7,11 @@ import (
 	"connectrpc.com/connect"
 	eventsv1 "github.com/annexsh/annex-proto/go/gen/annex/events/v1"
 	testsv1 "github.com/annexsh/annex-proto/go/gen/annex/tests/v1"
-	"github.com/google/uuid"
 
 	"github.com/annexsh/annex/event"
 	"github.com/annexsh/annex/internal/pagination"
 	"github.com/annexsh/annex/test"
+	"github.com/annexsh/annex/uuid"
 )
 
 func (s *Service) GetTestExecution(
@@ -84,7 +84,7 @@ func (s *Service) ListTestExecutions(
 	if hasNextPage {
 		testExecs = testExecs[:len(testExecs)-1] // remove page buffer item
 		lastExec := testExecs[len(testExecs)-1]
-		res.NextPageToken, err = pagination.EncodeNextPageToken(lastExec.ScheduleTime.UTC(), lastExec.ID.UUID)
+		res.NextPageToken, err = pagination.EncodeNextPageToken(lastExec.ScheduleTime.UTC(), lastExec.ID.V7)
 		if err != nil {
 			return nil, err
 		}

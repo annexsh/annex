@@ -5,13 +5,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/annexsh/annex/internal/fake"
 	"github.com/annexsh/annex/internal/ptr"
 	"github.com/annexsh/annex/test"
+	"github.com/annexsh/annex/uuid"
 )
 
 func TestTestExecutionReader_GetTestExecution(t *testing.T) {
@@ -230,7 +230,7 @@ func TestTestExecutionWriter_ResetTestExecution(t *testing.T) {
 			existing := fake.GenTestExec(testID)
 
 			var staleCaseExecIDs []test.CaseExecutionID
-			var staleLogIDs []uuid.UUID
+			var staleLogIDs []uuid.V7
 
 			if tt.existingTestExec {
 				db.testExecs[existing.ID] = existing

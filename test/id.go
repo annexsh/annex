@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/google/uuid"
+	"github.com/annexsh/annex/uuid"
 )
 
 const (
@@ -14,15 +14,11 @@ const (
 )
 
 type TestExecutionID struct {
-	uuid.UUID
+	uuid.V7
 }
 
 func (i TestExecutionID) WorkflowID() string {
 	return testWorkflowPrefix + i.String()
-}
-
-func (i TestExecutionID) IsEmpty() bool {
-	return i.UUID == uuid.Nil
 }
 
 func NewTestExecutionID() TestExecutionID {

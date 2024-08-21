@@ -4,10 +4,9 @@ import (
 	"context"
 	"slices"
 
-	"github.com/google/uuid"
-
 	"github.com/annexsh/annex/internal/ptr"
 	"github.com/annexsh/annex/test"
+	"github.com/annexsh/annex/uuid"
 )
 
 var (
@@ -23,7 +22,7 @@ func NewLogReader(db *DB) *LogReader {
 	return &LogReader{db: db}
 }
 
-func (e *LogReader) GetLog(_ context.Context, id uuid.UUID) (*test.Log, error) {
+func (e *LogReader) GetLog(_ context.Context, id uuid.V7) (*test.Log, error) {
 	execLog, ok := e.db.execLogs[id]
 	if !ok {
 		return nil, test.ErrorLogNotFound
@@ -76,7 +75,7 @@ func (e *LogWriter) CreateLog(_ context.Context, log *test.Log) error {
 	return nil
 }
 
-func (e *LogWriter) DeleteLog(_ context.Context, id uuid.UUID) error {
+func (e *LogWriter) DeleteLog(_ context.Context, id uuid.V7) error {
 	e.db.mu.Lock()
 	defer e.db.mu.Unlock()
 	delete(e.db.execLogs, id)

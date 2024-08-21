@@ -7,11 +7,11 @@ import (
 	"connectrpc.com/connect"
 	eventsv1 "github.com/annexsh/annex-proto/go/gen/annex/events/v1"
 	testsv1 "github.com/annexsh/annex-proto/go/gen/annex/tests/v1"
-	"github.com/google/uuid"
 
 	"github.com/annexsh/annex/event"
 	"github.com/annexsh/annex/internal/ptr"
 	"github.com/annexsh/annex/test"
+	"github.com/annexsh/annex/uuid"
 )
 
 func (s *Service) PublishLog(

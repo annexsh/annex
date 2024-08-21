@@ -3,7 +3,7 @@ package test
 import (
 	"context"
 
-	"github.com/google/uuid"
+	"github.com/annexsh/annex/uuid"
 )
 
 type Repository interface {
@@ -49,9 +49,9 @@ type TestReadWriter interface {
 }
 
 type TestReader interface {
-	GetTest(ctx context.Context, id uuid.UUID) (*Test, error)
+	GetTest(ctx context.Context, id uuid.V7) (*Test, error)
 	ListTests(ctx context.Context, contextID string, groupID string) (TestList, error)
-	GetTestDefaultInput(ctx context.Context, testID uuid.UUID) (*Payload, error)
+	GetTestDefaultInput(ctx context.Context, testID uuid.V7) (*Payload, error)
 }
 
 type TestWriter interface {
@@ -67,7 +67,7 @@ type TestExecutionReadWriter interface {
 type TestExecutionReader interface {
 	GetTestExecution(ctx context.Context, id TestExecutionID) (*TestExecution, error)
 	GetTestExecutionInput(ctx context.Context, id TestExecutionID) (*Payload, error)
-	ListTestExecutions(ctx context.Context, testID uuid.UUID, filter *TestExecutionListFilter) (TestExecutionList, error)
+	ListTestExecutions(ctx context.Context, testID uuid.V7, filter *TestExecutionListFilter) (TestExecutionList, error)
 }
 
 type TestExecutionWriter interface {
@@ -100,13 +100,13 @@ type LogReadWriter interface {
 }
 
 type LogReader interface {
-	GetLog(ctx context.Context, id uuid.UUID) (*Log, error)
+	GetLog(ctx context.Context, id uuid.V7) (*Log, error)
 	ListLogs(ctx context.Context, testExecID TestExecutionID) (LogList, error)
 }
 
 type LogWriter interface {
 	CreateLog(ctx context.Context, log *Log) error
-	DeleteLog(ctx context.Context, id uuid.UUID) error
+	DeleteLog(ctx context.Context, id uuid.V7) error
 }
 
 type ResetRollback func(ctx context.Context) error

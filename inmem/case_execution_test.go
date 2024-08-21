@@ -4,13 +4,13 @@ import (
 	"context"
 	"testing"
 
-	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/annexsh/annex/internal/fake"
 	"github.com/annexsh/annex/internal/ptr"
 	"github.com/annexsh/annex/test"
+	"github.com/annexsh/annex/uuid"
 )
 
 func TestCaseExecutionReader_GetCaseExecution(t *testing.T) {

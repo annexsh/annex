@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/annexsh/annex/test"
-	"github.com/google/uuid"
+	"github.com/annexsh/annex/uuid"
 )
 
 const createTestExecution = `-- name: CreateTestExecution :one
@@ -28,7 +28,7 @@ RETURNING id, test_id, has_input, schedule_time, start_time, finish_time, error
 
 type CreateTestExecutionParams struct {
 	ID           test.TestExecutionID `json:"id"`
-	TestID       uuid.UUID            `json:"test_id"`
+	TestID       uuid.V7              `json:"test_id"`
 	HasInput     bool                 `json:"has_input"`
 	ScheduleTime time.Time            `json:"schedule_time"`
 }
@@ -117,10 +117,10 @@ LIMIT ($5::integer)
 `
 
 type ListTestExecutionsParams struct {
-	TestID              uuid.UUID  `json:"test_id"`
+	TestID              uuid.V7    `json:"test_id"`
 	LastScheduleTime    *time.Time `json:"last_schedule_time"`
-	LastExecID          *uuid.UUID `json:"last_exec_id"`
-	LastTestExecutionID uuid.UUID  `json:"last_test_execution_id"`
+	LastExecID          *uuid.V7   `json:"last_exec_id"`
+	LastTestExecutionID uuid.V7    `json:"last_test_execution_id"`
 	PageSize            *int32     `json:"page_size"`
 }
 

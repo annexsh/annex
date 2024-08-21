@@ -4,12 +4,11 @@ import (
 	"context"
 	"errors"
 
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
 	"github.com/annexsh/annex/postgres/sqlc"
-
 	"github.com/annexsh/annex/test"
+	"github.com/annexsh/annex/uuid"
 )
 
 var (
@@ -25,7 +24,7 @@ func NewTestReader(db *DB) *TestReader {
 	return &TestReader{db: db}
 }
 
-func (t *TestReader) GetTest(ctx context.Context, id uuid.UUID) (*test.Test, error) {
+func (t *TestReader) GetTest(ctx context.Context, id uuid.V7) (*test.Test, error) {
 	tt, err := t.db.GetTest(ctx, id)
 	if err != nil {
 		return nil, err
@@ -45,7 +44,7 @@ func (t *TestReader) ListTests(ctx context.Context, contextID string, groupID st
 	return marshalTests(tests), nil
 }
 
-func (t *TestReader) GetTestDefaultInput(ctx context.Context, testID uuid.UUID) (*test.Payload, error) {
+func (t *TestReader) GetTestDefaultInput(ctx context.Context, testID uuid.V7) (*test.Payload, error) {
 	payload, err := t.db.GetTestDefaultInput(ctx, testID)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

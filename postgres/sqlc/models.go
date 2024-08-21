@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/annexsh/annex/test"
-	"github.com/google/uuid"
+	"github.com/annexsh/annex/uuid"
 )
 
 type CaseExecution struct {
@@ -31,7 +31,7 @@ type Group struct {
 }
 
 type Log struct {
-	ID              uuid.UUID             `json:"id"`
+	ID              uuid.V7               `json:"id"`
 	TestExecutionID test.TestExecutionID  `json:"test_execution_id"`
 	CaseExecutionID *test.CaseExecutionID `json:"case_execution_id"`
 	Level           string                `json:"level"`
@@ -42,20 +42,20 @@ type Log struct {
 type Test struct {
 	ContextID  string    `json:"context_id"`
 	GroupID    string    `json:"group_id"`
-	ID         uuid.UUID `json:"id"`
+	ID         uuid.V7   `json:"id"`
 	Name       string    `json:"name"`
 	HasInput   bool      `json:"has_input"`
 	CreateTime time.Time `json:"create_time"`
 }
 
 type TestDefaultInput struct {
-	TestID uuid.UUID `json:"test_id"`
-	Data   []byte    `json:"data"`
+	TestID uuid.V7 `json:"test_id"`
+	Data   []byte  `json:"data"`
 }
 
 type TestExecution struct {
 	ID           test.TestExecutionID `json:"id"`
-	TestID       uuid.UUID            `json:"test_id"`
+	TestID       uuid.V7              `json:"test_id"`
 	HasInput     bool                 `json:"has_input"`
 	ScheduleTime time.Time            `json:"schedule_time"`
 	StartTime    *time.Time           `json:"start_time"`

@@ -8,7 +8,7 @@ import (
 	"context"
 
 	"github.com/annexsh/annex/test"
-	"github.com/google/uuid"
+	"github.com/annexsh/annex/uuid"
 )
 
 type Querier interface {
@@ -22,12 +22,12 @@ type Querier interface {
 	CreateTestExecution(ctx context.Context, arg CreateTestExecutionParams) (*TestExecution, error)
 	CreateTestExecutionInput(ctx context.Context, arg CreateTestExecutionInputParams) error
 	DeleteCaseExecution(ctx context.Context, arg DeleteCaseExecutionParams) error
-	DeleteLog(ctx context.Context, id uuid.UUID) error
+	DeleteLog(ctx context.Context, id uuid.V7) error
 	GetCaseExecution(ctx context.Context, arg GetCaseExecutionParams) (*CaseExecution, error)
-	GetLog(ctx context.Context, id uuid.UUID) (*Log, error)
-	GetTest(ctx context.Context, id uuid.UUID) (*Test, error)
+	GetLog(ctx context.Context, id uuid.V7) (*Log, error)
+	GetTest(ctx context.Context, id uuid.V7) (*Test, error)
 	GetTestByName(ctx context.Context, arg GetTestByNameParams) (*Test, error)
-	GetTestDefaultInput(ctx context.Context, testID uuid.UUID) (*TestDefaultInput, error)
+	GetTestDefaultInput(ctx context.Context, testID uuid.V7) (*TestDefaultInput, error)
 	GetTestExecution(ctx context.Context, id test.TestExecutionID) (*TestExecution, error)
 	GetTestExecutionInput(ctx context.Context, testExecutionID test.TestExecutionID) (*TestExecutionInput, error)
 	GroupExists(ctx context.Context, arg GroupExistsParams) error
