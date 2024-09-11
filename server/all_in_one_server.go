@@ -16,18 +16,18 @@ import (
 	grpchealthv1 "google.golang.org/grpc/health/grpc_health_v1"
 
 	"github.com/annexsh/annex/eventservice"
-	"github.com/annexsh/annex/inmem"
 	"github.com/annexsh/annex/internal/rpc"
 	"github.com/annexsh/annex/log"
 	"github.com/annexsh/annex/nats"
 	"github.com/annexsh/annex/postgres"
+	"github.com/annexsh/annex/sqlite"
 	"github.com/annexsh/annex/test"
 	"github.com/annexsh/annex/testservice"
 	"github.com/annexsh/annex/workflowservice"
 )
 
 func ServeAllInOne(ctx context.Context, cfg AllInOneConfig) error {
-	var logger log.Logger
+	logger := log.NewLogger("app", "annex")
 	if cfg.Development.Logger {
 		logger = log.NewDevLogger("app", "annex")
 	}
@@ -40,18 +40,23 @@ func ServeAllInOne(ctx context.Context, cfg AllInOneConfig) error {
 
 	// Repository
 
-	if cfg.Development.InMemory {
-		db := inmem.NewDB()
-		repo = inmem.NewTestRepository(db)
+	if cfg.Development.SQLiteDatabase {
+		db, err := sqlite.Open(sqlite.WithMigration())
+		if err != nil {
+			return err
+		}
+		defer db.Close()
+		repo = sqlite.NewTestRepository(sqlite.NewDB(db))
+		logger.Info("sqlite db created")
 	} else {
-		pgPool, err = postgres.OpenPool(ctx, cfg.Postgres.URL(),
-			postgres.WithMigration(cfg.Postgres.SchemaVersion),
-		)
+		pgCfg := cfg.Postgres
+		pgPool, err = postgres.OpenPool(ctx, pgCfg.User, pgCfg.Password, pgCfg.HostPort, postgres.WithMigration())
 		if err != nil {
 			return err
 		}
 		defer pgPool.Close()
 		repo = postgres.NewTestRepository(postgres.NewDB(pgPool))
+		logger.Info("postgres db created")
 	}
 
 	if err := repo.CreateContext(ctx, "default"); err != nil {
@@ -61,7 +66,7 @@ func ServeAllInOne(ctx context.Context, cfg AllInOneConfig) error {
 	// Pub/Sub
 
 	var nc *corenats.Conn
-	if cfg.Nats.EmbeddedNats {
+	if cfg.Nats.Embedded {
 		ns, err := runEmbeddedNats(cfg.Nats.HostPort)
 		if err != nil {
 			return err
@@ -82,7 +87,7 @@ func ServeAllInOne(ctx context.Context, cfg AllInOneConfig) error {
 
 	// Temporal dev server
 
-	if cfg.Development.Temporal {
+	if cfg.Development.EmbeddedTemporal {
 		temporalDevSrv, temporalAddr, err := setupTemporalDevServer()
 		if err != nil {
 			return err

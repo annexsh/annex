@@ -6,14 +6,6 @@ import (
 	"github.com/annexsh/annex/uuid"
 )
 
-type TestDefinition struct {
-	ContextID    string
-	GroupID      string
-	TestID       uuid.V7
-	Name         string
-	DefaultInput *Payload
-}
-
 type Test struct {
 	ContextID  string
 	GroupID    string
@@ -42,17 +34,10 @@ type TestExecution struct {
 
 type TestExecutionList []*TestExecution
 
-type ResetTestExecution struct {
-	ID                  TestExecutionID
-	ResetTime           time.Time
-	StaleCaseExecutions []CaseExecutionID
-	StaleLogs           []uuid.V7
-}
-
 type ScheduledTestExecution struct {
 	ID           TestExecutionID
 	TestID       uuid.V7
-	Payload      []byte
+	HasInput     bool
 	ScheduleTime time.Time
 }
 
@@ -65,12 +50,6 @@ type FinishedTestExecution struct {
 	ID         TestExecutionID
 	FinishTime time.Time
 	Error      *string
-}
-
-type TestExecutionListFilter struct {
-	LastScheduleTime    *time.Time // required when listing next page
-	LastTestExecutionID *uuid.V7   // required when listing next page
-	PageSize            uint32
 }
 
 type CaseExecution struct {
@@ -86,10 +65,10 @@ type CaseExecution struct {
 type CaseExecutionList []*CaseExecution
 
 type ScheduledCaseExecution struct {
-	ID           CaseExecutionID
-	TestExecID   TestExecutionID
-	CaseName     string
-	ScheduleTime time.Time
+	ID              CaseExecutionID
+	TestExecutionID TestExecutionID
+	CaseName        string
+	ScheduleTime    time.Time
 }
 
 type StartedCaseExecution struct {
@@ -115,3 +94,12 @@ type Log struct {
 }
 
 type LogList []*Log
+
+type Identifier interface {
+	string | uuid.V7 | TestExecutionID | CaseExecutionID
+}
+
+type PageFilter[T Identifier] struct {
+	Size     int
+	OffsetID *T
+}

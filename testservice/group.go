@@ -2,12 +2,15 @@ package testservice
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"connectrpc.com/connect"
 	testsv1 "github.com/annexsh/annex-proto/go/gen/annex/tests/v1"
 	"go.temporal.io/api/enums/v1"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/annexsh/annex/internal/pagination"
 )
 
 const runnerActiveExpireDuration = time.Minute
@@ -25,7 +28,19 @@ func (s *Service) RegisterGroup(
 func (s *Service) ListGroups(ctx context.Context, req *connect.Request[testsv1.ListGroupsRequest]) (*connect.Response[testsv1.ListGroupsResponse], error) {
 	contextID := req.Msg.Context
 
-	groupIDs, err := s.repo.ListGroups(ctx, contextID)
+	filter, err := pagination.FilterFromRequest(req.Msg, pagination.WithString())
+	if err != nil {
+		return nil, err
+	}
+
+	groupIDs, err := s.repo.ListGroups(ctx, contextID, filter)
+	if err != nil {
+		return nil, err
+	}
+
+	nextPageTkn, err := pagination.NextPageTokenFromItems(filter.Size, groupIDs, func(id string) string {
+		return id
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -45,6 +60,8 @@ func (s *Service) ListGroups(ctx context.Context, req *connect.Request[testsv1.L
 	for i, groupID := range groupIDs {
 		sem <- struct{}{}
 		errg.Go(func() error {
+			defer func() { <-sem }()
+
 			runners, isGroupAvail, err := getGroupRunners(errCtx, contextID, groupID, s.workflower)
 			if err != nil {
 				return err
@@ -58,7 +75,6 @@ func (s *Service) ListGroups(ctx context.Context, req *connect.Request[testsv1.L
 					Available: isGroupAvail,
 				},
 			}
-			<-sem
 			return nil
 		})
 	}
@@ -72,8 +88,10 @@ func (s *Service) ListGroups(ctx context.Context, req *connect.Request[testsv1.L
 	for p := range processedCh {
 		groups[p.orderID] = p.group
 	}
+
 	return connect.NewResponse(&testsv1.ListGroupsResponse{
-		Groups: groups,
+		Groups:        groups,
+		NextPageToken: nextPageTkn,
 	}), nil
 }
 
@@ -92,10 +110,14 @@ func getGroupRunners(ctx context.Context, contextID string, groupID string, work
 			Id:             poller.Identity,
 			LastAccessTime: poller.LastAccessTime,
 		}
-		if poller.LastAccessTime.AsTime().Sub(time.Now()) < runnerActiveExpireDuration {
+		if time.Now().UTC().Sub(poller.LastAccessTime.AsTime().UTC()) < runnerActiveExpireDuration {
 			isGroupAvail = true
 		}
 	}
 
 	return runners, isGroupAvail, nil
+}
+
+func getTaskQueue(context string, groupName string) string {
+	return fmt.Sprintf("%s-%s", context, groupName)
 }

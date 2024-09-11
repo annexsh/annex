@@ -33,9 +33,16 @@ func (c *CaseExecutionReader) GetCaseExecution(ctx context.Context, testExecID t
 	return marshalCaseExec(caseExec), nil
 }
 
-func (c *CaseExecutionReader) ListCaseExecutions(ctx context.Context, testExecID test.TestExecutionID) (test.CaseExecutionList, error) {
-	// TODO: pagination
-	execs, err := c.db.ListCaseExecutions(ctx, testExecID)
+func (c *CaseExecutionReader) ListCaseExecutions(ctx context.Context, testExecID test.TestExecutionID, filter test.PageFilter[test.CaseExecutionID]) (test.CaseExecutionList, error) {
+	params := sqlc.ListCaseExecutionsParams{
+		TestExecutionID: testExecID,
+		PageSize:        int32(filter.Size),
+	}
+	if filter.OffsetID != nil {
+		params.OffsetID = ptr.Get(int32(*filter.OffsetID))
+	}
+
+	execs, err := c.db.ListCaseExecutions(ctx, params)
 	if err != nil {
 		return nil, err
 	}
@@ -50,10 +57,10 @@ func NewCaseExecutionWriter(db *DB) *CaseExecutionWriter {
 	return &CaseExecutionWriter{db: db}
 }
 
-func (c *CaseExecutionWriter) CreateScheduledCaseExecution(ctx context.Context, scheduled *test.ScheduledCaseExecution) (*test.CaseExecution, error) {
-	exec, err := c.db.CreateCaseExecution(ctx, sqlc.CreateCaseExecutionParams{
+func (c *CaseExecutionWriter) CreateCaseExecutionScheduled(ctx context.Context, scheduled *test.ScheduledCaseExecution) (*test.CaseExecution, error) {
+	exec, err := c.db.CreateCaseExecutionScheduled(ctx, sqlc.CreateCaseExecutionScheduledParams{
 		ID:              scheduled.ID,
-		TestExecutionID: scheduled.TestExecID,
+		TestExecutionID: scheduled.TestExecutionID,
 		CaseName:        scheduled.CaseName,
 		ScheduleTime:    scheduled.ScheduleTime.UTC(),
 	})
@@ -63,7 +70,7 @@ func (c *CaseExecutionWriter) CreateScheduledCaseExecution(ctx context.Context, 
 	return marshalCaseExec(exec), nil
 }
 
-func (c *CaseExecutionWriter) UpdateStartedCaseExecution(ctx context.Context, started *test.StartedCaseExecution) (*test.CaseExecution, error) {
+func (c *CaseExecutionWriter) UpdateCaseExecutionStarted(ctx context.Context, started *test.StartedCaseExecution) (*test.CaseExecution, error) {
 	exec, err := c.db.UpdateCaseExecutionStarted(ctx, sqlc.UpdateCaseExecutionStartedParams{
 		ID:              started.ID,
 		TestExecutionID: started.TestExecutionID,
@@ -75,7 +82,7 @@ func (c *CaseExecutionWriter) UpdateStartedCaseExecution(ctx context.Context, st
 	return marshalCaseExec(exec), nil
 }
 
-func (c *CaseExecutionWriter) UpdateFinishedCaseExecution(ctx context.Context, finished *test.FinishedCaseExecution) (*test.CaseExecution, error) {
+func (c *CaseExecutionWriter) UpdateCaseExecutionFinished(ctx context.Context, finished *test.FinishedCaseExecution) (*test.CaseExecution, error) {
 	exec, err := c.db.UpdateCaseExecutionFinished(ctx, sqlc.UpdateCaseExecutionFinishedParams{
 		ID:              finished.ID,
 		TestExecutionID: finished.TestExecutionID,

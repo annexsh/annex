@@ -10,8 +10,10 @@ WHERE id = $1;
 -- name: ListLogs :many
 SELECT *
 FROM logs
-WHERE test_execution_id = $1
-ORDER BY create_time;
+WHERE (test_execution_id = @test_execution_id)
+  AND (sqlc.narg('offset_id')::uuid IS NULL OR id < sqlc.narg('offset_id')::uuid)
+ORDER BY id DESC
+LIMIT @page_size;
 
 -- name: DeleteLog :exec
 DELETE

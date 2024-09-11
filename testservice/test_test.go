@@ -3,143 +3,221 @@ package testservice
 import (
 	"context"
 	"testing"
-	"time"
 
 	"connectrpc.com/connect"
+	eventsv1 "github.com/annexsh/annex-proto/go/gen/annex/events/v1"
 	testsv1 "github.com/annexsh/annex-proto/go/gen/annex/tests/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.temporal.io/sdk/client"
 
 	"github.com/annexsh/annex/internal/fake"
+	"github.com/annexsh/annex/log"
 	"github.com/annexsh/annex/test"
 	"github.com/annexsh/annex/uuid"
 )
 
-func TestService_RegisterTest(t *testing.T) {
-	tests := []struct {
-		name         string
-		testName     string
-		defaultInput *testsv1.Payload
-	}{
-		{
-			name:         "create test without payload",
-			testName:     uuid.NewString(),
-			defaultInput: nil,
-		},
-		{
-			name:         "create test with payload",
-			testName:     uuid.NewString(),
-			defaultInput: fake.GenDefaultInput().Proto(),
+func TestService_RegisterTests(t *testing.T) {
+	defs := []*testsv1.TestDefinition{
+		{Name: "test-1", DefaultInput: nil},
+		{Name: "test-2", DefaultInput: fake.GenDefaultInput().Proto()},
+	}
+
+	req := &testsv1.RegisterTestsRequest{
+		Context:     uuid.NewString(),
+		Group:       uuid.NewString(),
+		Definitions: defs,
+	}
+
+	r := &RepositoryMock{
+		CreateGroupFunc: func(ctx context.Context, contextID string, groupID string) error {
+			assert.Equal(t, req.Context, contextID)
+			assert.Equal(t, req.Group, groupID)
+			return nil
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			req := &testsv1.RegisterTestsRequest{
-				Context: uuid.NewString(),
-				Group:   uuid.NewString(),
-				Definitions: []*testsv1.TestDefinition{
-					{
-						Name:         tt.testName,
-						DefaultInput: tt.defaultInput,
-					},
-				},
-			}
-			s, _ := newService()
-			res, err := s.RegisterTests(context.Background(), connect.NewRequest(req))
-			require.NoError(t, err)
+	r.CreateTestFunc = func(ctx context.Context, def *test.Test) (*test.Test, error) {
+		assert.False(t, def.ID.Empty())
+		assert.False(t, def.CreateTime.IsZero())
+		i := len(r.CreateTestCalls()) - 1
+		wantTest := &test.Test{
+			ContextID:  req.Context,
+			GroupID:    req.Group,
+			ID:         def.ID,
+			Name:       req.Definitions[i].Name,
+			HasInput:   req.Definitions[i].DefaultInput != nil,
+			CreateTime: def.CreateTime,
+		}
+		assert.Equal(t, wantTest, def)
+		return def, nil
+	}
 
-			require.Len(t, res.Msg.Tests, len(req.Definitions))
+	r.CreateTestDefaultInputFunc = func(ctx context.Context, testID uuid.V7, defaultInput *test.Payload) error {
+		assert.False(t, testID.Empty())
+		i := len(r.CreateTestCalls()) - 1
+		assert.Equal(t, req.Definitions[i].DefaultInput, defaultInput.Proto())
+		return nil
+	}
 
-			for _, gotTest := range res.Msg.Tests {
-				assert.NotEmpty(t, gotTest.Id)
-				assert.Equal(t, req.Context, gotTest.Context)
-				assert.Equal(t, req.Group, gotTest.Group)
-				assert.Equal(t, tt.testName, gotTest.Name)
-				assert.Equal(t, tt.defaultInput != nil, gotTest.HasInput)
-				assert.NotEmpty(t, gotTest.CreateTime)
-			}
-		})
+	r.ExecuteTxFunc = func(ctx context.Context, query func(repo test.Repository) error) error {
+		return query(r)
+	}
+
+	s := Service{repo: r}
+
+	res, err := s.RegisterTests(context.Background(), connect.NewRequest(req))
+	require.NoError(t, err)
+	require.Len(t, res.Msg.Tests, len(req.Definitions))
+
+	for i, gotTest := range res.Msg.Tests {
+		assert.NotEmpty(t, gotTest.Id)
+		assert.Equal(t, req.Context, gotTest.Context)
+		assert.Equal(t, req.Group, gotTest.Group)
+		assert.Equal(t, req.Definitions[i].Name, gotTest.Name)
+		assert.Equal(t, req.Definitions[i].DefaultInput != nil, gotTest.HasInput)
+		assert.NotEmpty(t, gotTest.CreateTime)
 	}
 }
 
 func TestService_GetDefaultInput(t *testing.T) {
-	ctx := context.Background()
-	s, fakes := newService()
+	testID := uuid.New()
+	input := fake.GenInput()
+	req := &testsv1.GetTestDefaultInputRequest{TestId: testID.String()}
 
-	def := fake.GenTestDefinition()
-	want := string(def.DefaultInput.Data)
-
-	_, err := fakes.repo.CreateTest(ctx, def)
-	require.NoError(t, err)
-
-	req := &testsv1.GetTestDefaultInputRequest{
-		TestId: def.TestID.String(),
+	r := &RepositoryMock{
+		GetTestDefaultInputFunc: func(ctx context.Context, gotTestID uuid.V7) (*test.Payload, error) {
+			assert.Equal(t, testID, gotTestID)
+			return input, nil
+		},
 	}
-	res, err := s.GetTestDefaultInput(ctx, connect.NewRequest(req))
+
+	s := Service{repo: r}
+
+	res, err := s.GetTestDefaultInput(context.Background(), connect.NewRequest(req))
 	require.NoError(t, err)
 
+	want := string(input.Data)
 	assert.Equal(t, want, res.Msg.DefaultInput)
 }
 
 func TestService_ListTests(t *testing.T) {
-	ctx := context.Background()
-	s, fakes := newService()
-
-	wantCount := 30
-	want := make([]*testsv1.Test, wantCount)
-
-	contextID := "test-context"
-	groupID := "test-group"
-	err := fakes.repo.CreateContext(ctx, contextID)
-	require.NoError(t, err)
-	err = fakes.repo.CreateGroup(ctx, contextID, groupID)
-	require.NoError(t, err)
-
-	for i := range wantCount {
-		def := fake.GenTestDefinition(fake.WithContextID(contextID), fake.WithGroupID(groupID))
-		tt, err := fakes.repo.CreateTest(ctx, def)
-		require.NoError(t, err)
-		want[i] = tt.Proto()
+	pageSize := 2
+	contextID := "foo"
+	groupID := "bar"
+	wantPage1 := test.TestList{
+		fake.GenTest(fake.WithContextID(contextID), fake.WithGroupID(groupID)),
+		fake.GenTest(fake.WithContextID(contextID), fake.WithGroupID(groupID)),
 	}
+	wantPage2 := test.TestList{
+		fake.GenTest(fake.WithContextID(contextID), fake.WithGroupID(groupID)),
+	}
+
+	r := new(RepositoryMock)
+	r.ListTestsFunc = func(ctx context.Context, gotContextID string, gotGroupID string, filter test.PageFilter[uuid.V7]) (test.TestList, error) {
+		assert.Equal(t, contextID, gotContextID)
+		assert.Equal(t, groupID, gotGroupID)
+		assert.Equal(t, pageSize, filter.Size)
+
+		switch len(r.ListTestsCalls()) {
+		case 1:
+			assert.Nil(t, filter.OffsetID)
+			return wantPage1, nil
+		case 2:
+			assert.Equal(t, wantPage1[pageSize-1].ID, *filter.OffsetID)
+			return wantPage2, nil
+		default:
+			panic("unexpected list invocation")
+		}
+	}
+
+	s := Service{repo: r}
 
 	req := &testsv1.ListTestsRequest{
-		Context:       contextID,
-		Group:         groupID,
-		PageSize:      0, // TODO: pagination
-		NextPageToken: "",
+		Context:  contextID,
+		Group:    groupID,
+		PageSize: int32(pageSize),
 	}
-	res, err := s.ListTests(ctx, connect.NewRequest(req))
+	res, err := s.ListTests(context.Background(), connect.NewRequest(req))
 	require.NoError(t, err)
+	assert.Equal(t, wantPage1.Proto(), res.Msg.Tests)
+	assert.NotEmpty(t, res.Msg.NextPageToken)
 
-	got := res.Msg.Tests
-	assert.Len(t, got, wantCount)
-	require.Equal(t, want, got)
+	req.NextPageToken = res.Msg.NextPageToken
+	res, err = s.ListTests(context.Background(), connect.NewRequest(req))
+	require.NoError(t, err)
+	assert.Equal(t, wantPage2.Proto(), res.Msg.Tests)
+	assert.Empty(t, res.Msg.NextPageToken)
 }
 
 func TestService_ExecuteTest(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
+	input := fake.GenInput()
+	tt := fake.GenTest(fake.WithHasInput(true))
 
-	s, fakes := newService()
+	var gotTestExec *test.TestExecution
 
-	def := fake.GenTestDefinition()
-	def.Name = fake.WorkflowName
+	r := &RepositoryMock{
+		GetTestFunc: func(ctx context.Context, testID uuid.V7) (*test.Test, error) {
+			assert.Equal(t, tt.ID, testID)
+			return tt, nil
+		},
+		CreateTestExecutionScheduledFunc: func(ctx context.Context, scheduled *test.ScheduledTestExecution) (*test.TestExecution, error) {
+			assert.Equal(t, tt.ID, scheduled.TestID)
+			assert.False(t, scheduled.ID.Empty())
+			assert.Equal(t, tt.HasInput, scheduled.HasInput)
+			assert.False(t, scheduled.ScheduleTime.IsZero())
+			gotTestExec = &test.TestExecution{
+				ID:           scheduled.ID,
+				TestID:       scheduled.TestID,
+				HasInput:     scheduled.HasInput,
+				ScheduleTime: scheduled.ScheduleTime,
+			}
+			return gotTestExec, nil
+		},
+		CreateTestExecutionInputFunc: func(ctx context.Context, testExecID test.TestExecutionID, gotInput *test.Payload) error {
+			assert.Equal(t, gotTestExec.ID, testExecID)
+			assert.Equal(t, input, gotInput)
+			return nil
+		},
+	}
 
-	tt, err := fakes.repo.CreateTest(ctx, def)
-	require.NoError(t, err)
+	r.ExecuteTxFunc = func(ctx context.Context, query func(repo test.Repository) error) error {
+		return query(r)
+	}
+
+	p := &PublisherMock{
+		PublishFunc: func(testExecID string, e *eventsv1.Event) error {
+			assert.Equal(t, gotTestExec.ID.String(), testExecID)
+			assert.Equal(t, gotTestExec.ID.String(), e.TestExecutionId)
+			assert.Equal(t, eventsv1.Event_TYPE_TEST_EXECUTION_SCHEDULED, e.Type)
+			assert.NotEmpty(t, e.EventId)
+			assert.True(t, e.CreateTime.IsValid())
+			assert.Equal(t, eventsv1.Event_Data_TYPE_TEST_EXECUTION, e.Data.Type)
+			assert.Equal(t, gotTestExec.Proto(), e.Data.GetTestExecution())
+			return nil
+		},
+	}
+
+	w := &WorkflowerMock{
+		ExecuteWorkflowFunc: func(ctx context.Context, options client.StartWorkflowOptions, workflow any, args ...any) (client.WorkflowRun, error) {
+			want := newStartWorkflowOpts(gotTestExec.ID.WorkflowID(), tt.ContextID, tt.GroupID)
+			assert.Equal(t, want, options)
+			assert.Equal(t, tt.Name, workflow)
+			assert.Len(t, args, 1)
+			assert.Equal(t, input.Proto(), args[0])
+			return nil, nil
+		},
+	}
+
+	s := Service{executor: newExecutor(r, p, w, log.NewNopLogger())}
 
 	req := &testsv1.ExecuteTestRequest{
-		TestId: tt.ID.String(),
-		Input:  fake.GenInput().Proto(),
+		Context: tt.ContextID,
+		TestId:  tt.ID.String(),
+		Input:   input.Proto(),
 	}
-	res, err := s.ExecuteTest(ctx, connect.NewRequest(req))
-	require.NoError(t, err)
 
-	testExecID, err := test.ParseTestExecutionID(res.Msg.TestExecution.Id)
+	res, err := s.ExecuteTest(context.Background(), connect.NewRequest(req))
 	require.NoError(t, err)
-
-	wr := fakes.workflower.GetWorkflow(ctx, testExecID.WorkflowID(), "")
-	err = wr.Get(ctx, nil)
-	require.NoError(t, err)
+	assert.Equal(t, gotTestExec.Proto(), res.Msg.TestExecution)
 }

@@ -3,8 +3,10 @@ package testservice
 import (
 	"context"
 	"testing"
+	"time"
 
 	"connectrpc.com/connect"
+	eventsv1 "github.com/annexsh/annex-proto/go/gen/annex/events/v1"
 	testsv1 "github.com/annexsh/annex-proto/go/gen/annex/tests/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -17,110 +19,95 @@ import (
 )
 
 func TestService_PublishTestExecutionLog(t *testing.T) {
-	tests := []struct {
-		name      string
-		isCaseLog bool
-	}{
-		{
-			name:      "publish test execution log",
-			isCaseLog: false,
+	ctx := context.Background()
+
+	wantLog := &test.Log{
+		ID:              uuid.V7{}, // injected by create log mock
+		TestExecutionID: test.NewTestExecutionID(),
+		CaseExecutionID: ptr.Get(fake.GenCaseID()),
+		Level:           "INFO",
+		Message:         "foo bar",
+		CreateTime:      time.Now().UTC(),
+	}
+
+	r := &RepositoryMock{
+		CreateLogFunc: func(ctx context.Context, log *test.Log) error {
+			assert.False(t, log.ID.Empty())
+			wantLog.ID = log.ID
+			assert.Equal(t, wantLog, log)
+			return nil
 		},
-		{
-			name:      "publish case execution log",
-			isCaseLog: true,
+	}
+	r.ExecuteTxFunc = func(ctx context.Context, query func(repo test.Repository) error) error {
+		return query(r)
+	}
+
+	p := &PublisherMock{
+		PublishFunc: func(testExecID string, e *eventsv1.Event) error {
+			assert.Equal(t, wantLog.TestExecutionID.String(), testExecID)
+			assert.Equal(t, wantLog.TestExecutionID.String(), e.TestExecutionId)
+			assert.Equal(t, eventsv1.Event_TYPE_LOG_PUBLISHED, e.Type)
+			assert.NotEmpty(t, e.EventId)
+			assert.True(t, e.CreateTime.IsValid())
+			assert.Equal(t, eventsv1.Event_Data_TYPE_LOG, e.Data.Type)
+			assert.Equal(t, wantLog.Proto(), e.Data.GetLog())
+			return nil
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ctx := context.Background()
-			s, fakes := newService()
+	s := Service{repo: r, eventPub: p}
 
-			created, err := fakes.repo.CreateTest(ctx, fake.GenTestDefinition())
-			require.NoError(t, err)
-
-			te, err := fakes.repo.CreateScheduledTestExecution(ctx, fake.GenScheduledTestExec(created.ID))
-			require.NoError(t, err)
-
-			var reqCaseExecID *int32
-			var wantCaseExecID *test.CaseExecutionID
-			if tt.isCaseLog {
-				ce, err := fakes.repo.CreateScheduledCaseExecution(ctx, fake.GenScheduledCaseExec(te.ID))
-				require.NoError(t, err)
-				wantCaseExecID = &ce.ID
-				reqCaseExecID = ptr.Get(wantCaseExecID.Int32())
-			}
-
-			req := &testsv1.PublishLogRequest{
-				TestExecutionId: te.ID.String(),
-				CaseExecutionId: reqCaseExecID,
-				Level:           "INFO",
-				Message:         "lorem ipsum",
-				CreateTime:      timestamppb.Now(),
-			}
-			res, err := s.PublishLog(ctx, connect.NewRequest(req))
-			require.NoError(t, err)
-			assert.NotNil(t, res)
-
-			execLogID, err := uuid.Parse(res.Msg.LogId)
-			require.NoError(t, err)
-
-			got, err := fakes.repo.GetLog(ctx, execLogID)
-			require.NoError(t, err)
-
-			want := &test.Log{
-				ID:              execLogID,
-				TestExecutionID: te.ID,
-				CaseExecutionID: wantCaseExecID,
-				Level:           req.Level,
-				Message:         req.Message,
-				CreateTime:      req.CreateTime.AsTime(),
-			}
-
-			assert.Equal(t, got, want)
-		})
+	req := &testsv1.PublishLogRequest{
+		TestExecutionId: wantLog.TestExecutionID.String(),
+		CaseExecutionId: ptr.Get(wantLog.CaseExecutionID.Int32()),
+		Level:           wantLog.Level,
+		Message:         wantLog.Message,
+		CreateTime:      timestamppb.New(wantLog.CreateTime),
 	}
+	res, err := s.PublishLog(ctx, connect.NewRequest(req))
+	require.NoError(t, err)
+	assert.NotNil(t, res)
 }
 
 func TestService_ListTestExecutionLogs(t *testing.T) {
-	wantNumTestLogs := 15
-	wantNumCaseLogs := 15
+	pageSize := 2
+	testExecID := test.NewTestExecutionID()
 
-	ctx := context.Background()
-	s, fakes := newService()
+	wantPage1 := fake.GenTestExecLogs(testExecID, 2)
+	wantPage2 := fake.GenTestExecLogs(testExecID, 1)
 
-	tt, err := fakes.repo.CreateTest(ctx, fake.GenTestDefinition())
-	require.NoError(t, err)
+	r := new(RepositoryMock)
+	r.ListLogsFunc = func(ctx context.Context, gotTestExecID test.TestExecutionID, filter test.PageFilter[uuid.V7]) (test.LogList, error) {
+		assert.Equal(t, testExecID, gotTestExecID)
+		assert.Equal(t, pageSize, filter.Size)
 
-	te, err := fakes.repo.CreateScheduledTestExecution(ctx, fake.GenScheduledTestExec(tt.ID))
-	require.NoError(t, err)
-
-	ce, err := fakes.repo.CreateScheduledCaseExecution(ctx, fake.GenScheduledCaseExec(te.ID))
-	require.NoError(t, err)
-
-	var want []*testsv1.Log
-
-	for range wantNumTestLogs {
-		l := fake.GenTestExecLog(te.ID)
-		err = fakes.repo.CreateLog(ctx, l)
-		require.NoError(t, err)
-		want = append(want, l.Proto())
+		switch len(r.ListLogsCalls()) {
+		case 1:
+			assert.Nil(t, filter.OffsetID)
+			return wantPage1, nil
+		case 2:
+			assert.Equal(t, wantPage1[pageSize-1].ID, *filter.OffsetID)
+			return wantPage2, nil
+		default:
+			panic("unexpected list invocation")
+		}
 	}
 
-	for range wantNumCaseLogs {
-		l := fake.GenCaseExecLog(te.ID, ce.ID)
-		err = fakes.repo.CreateLog(ctx, l)
-		require.NoError(t, err)
-		want = append(want, l.Proto())
-	}
+	s := Service{repo: r}
 
 	req := &testsv1.ListTestExecutionLogsRequest{
-		TestExecutionId: te.ID.String(),
+		Context:         "foo",
+		TestExecutionId: testExecID.String(),
+		PageSize:        int32(pageSize),
 	}
-	res, err := s.ListTestExecutionLogs(ctx, connect.NewRequest(req))
+	res, err := s.ListTestExecutionLogs(context.Background(), connect.NewRequest(req))
 	require.NoError(t, err)
+	assert.Equal(t, wantPage1.Proto(), res.Msg.Logs)
+	assert.NotEmpty(t, res.Msg.NextPageToken)
 
-	got := res.Msg.Logs
-	assert.Len(t, got, wantNumTestLogs+wantNumCaseLogs)
-	assert.Equal(t, want, got)
+	req.NextPageToken = res.Msg.NextPageToken
+	res, err = s.ListTestExecutionLogs(context.Background(), connect.NewRequest(req))
+	require.NoError(t, err)
+	assert.Equal(t, wantPage2.Proto(), res.Msg.Logs)
+	assert.Empty(t, res.Msg.NextPageToken)
 }

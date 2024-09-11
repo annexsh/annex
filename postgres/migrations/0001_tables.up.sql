@@ -5,21 +5,20 @@ CREATE TABLE contexts
 
 CREATE TABLE groups
 (
-    context_id TEXT NOT NULL REFERENCES contexts (id),
+    context_id TEXT NOT NULL REFERENCES contexts (id) ON DELETE CASCADE,
     id         TEXT NOT NULL,
     PRIMARY KEY (context_id, id)
 );
 
 CREATE TABLE tests
 (
-    context_id  TEXT                    NOT NULL,
-    group_id    TEXT                    NOT NULL,
-    FOREIGN KEY (context_id, group_id) REFERENCES groups (context_id, id) ON UPDATE CASCADE,
-    --
-    id          UUID                    NOT NULL PRIMARY KEY,
-    name        TEXT                    NOT NULL,
-    has_input   BOOLEAN                 NOT NULL,
-    create_time TIMESTAMP DEFAULT now() NOT NULL,
+    id          UUID      NOT NULL PRIMARY KEY,
+    context_id  TEXT      NOT NULL,
+    group_id    TEXT      NOT NULL,
+    name        TEXT      NOT NULL,
+    has_input   BOOLEAN   NOT NULL,
+    create_time TIMESTAMP NOT NULL,
+    FOREIGN KEY (context_id, group_id) REFERENCES groups (context_id, id) ON UPDATE CASCADE DEFERRABLE,
     UNIQUE (context_id, group_id, name)
 );
 

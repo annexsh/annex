@@ -1,11 +1,11 @@
 services:
   postgres:
     container_name: postgres
-    image: postgres:latest
+    image: postgres:16
     environment:
       POSTGRES_DB: postgres
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: postgres
       POSTGRES_PORT: 5432
     ports:
       - "5432:5432"

@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"connectrpc.com/connect"
 	testsv1 "github.com/annexsh/annex-proto/go/gen/annex/tests/v1"
 
+	"github.com/annexsh/annex/internal/pagination"
 	"github.com/annexsh/annex/test"
 	"github.com/annexsh/annex/uuid"
 )
@@ -16,37 +18,47 @@ func (s *Service) RegisterTests(
 	ctx context.Context,
 	req *connect.Request[testsv1.RegisterTestsRequest],
 ) (*connect.Response[testsv1.RegisterTestsResponse], error) {
-	if err := s.repo.CreateGroup(ctx, req.Msg.Context, req.Msg.Group); err != nil {
-		return nil, err
-	}
+	createTime := time.Now().UTC()
+	var tests test.TestList
 
-	var defs []*test.TestDefinition
-
-	for _, defpb := range req.Msg.Definitions {
-		def := &test.TestDefinition{
-			ContextID:    req.Msg.Context,
-			GroupID:      req.Msg.Group,
-			TestID:       uuid.New(),
-			Name:         defpb.Name,
-			DefaultInput: nil,
+	err := s.repo.ExecuteTx(ctx, func(repo test.Repository) error {
+		if err := repo.CreateGroup(ctx, req.Msg.Context, req.Msg.Group); err != nil {
+			return err
 		}
 
-		if defpb.DefaultInput != nil {
-			def.DefaultInput = &test.Payload{
-				Data: defpb.DefaultInput.Data,
+		for _, defpb := range req.Msg.Definitions {
+			t, err := repo.CreateTest(ctx, &test.Test{
+				ID:         uuid.New(),
+				ContextID:  req.Msg.Context,
+				GroupID:    req.Msg.Group,
+				Name:       defpb.Name,
+				HasInput:   defpb.DefaultInput != nil,
+				CreateTime: createTime,
+			})
+			if err != nil {
+				return err
 			}
+
+			if t.HasInput {
+				if err = repo.CreateTestDefaultInput(ctx, t.ID, &test.Payload{
+					Metadata: defpb.DefaultInput.Metadata,
+					Data:     defpb.DefaultInput.Data,
+				}); err != nil {
+					return err
+				}
+			}
+
+			tests = append(tests, t)
 		}
 
-		defs = append(defs, def)
-	}
-
-	created, err := s.repo.CreateTests(ctx, defs...)
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
 
 	return connect.NewResponse(&testsv1.RegisterTestsResponse{
-		Tests: created.Proto(),
+		Tests: tests.Proto(),
 	}), nil
 }
 
@@ -97,13 +109,26 @@ func (s *Service) ListTests(
 	ctx context.Context,
 	req *connect.Request[testsv1.ListTestsRequest],
 ) (*connect.Response[testsv1.ListTestsResponse], error) {
-	tests, err := s.repo.ListTests(ctx, req.Msg.Context, req.Msg.Group)
+	filter, err := pagination.FilterFromRequest(req.Msg, pagination.WithUUID())
+	if err != nil {
+		return nil, err
+	}
+
+	tests, err := s.repo.ListTests(ctx, req.Msg.Context, req.Msg.Group, filter)
+	if err != nil {
+		return nil, err
+	}
+
+	nextPageTkn, err := pagination.NextPageTokenFromItems(filter.Size, tests, func(test *test.Test) uuid.V7 {
+		return test.ID
+	})
 	if err != nil {
 		return nil, err
 	}
 
 	return connect.NewResponse(&testsv1.ListTestsResponse{
-		Tests: tests.Proto(),
+		Tests:         tests.Proto(),
+		NextPageToken: nextPageTkn,
 	}), nil
 }
 
@@ -129,8 +154,4 @@ func (s *Service) ExecuteTest(
 	return connect.NewResponse(&testsv1.ExecuteTestResponse{
 		TestExecution: testExec.Proto(),
 	}), nil
-}
-
-func getTaskQueue(context string, groupName string) string {
-	return fmt.Sprintf("%s-%s", context, groupName)
 }

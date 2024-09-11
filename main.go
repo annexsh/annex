@@ -27,26 +27,26 @@ func run(ctx context.Context) error {
 
 	switch srvType {
 	case "all":
-		var cfg server.AllInOneConfig
-		if err := server.LoadConfig(&cfg); err != nil {
+		cfg, err := server.LoadAllInOneConfig()
+		if err != nil {
 			return err
 		}
 		return server.ServeAllInOne(ctx, cfg)
 	case "test":
-		var cfg server.TestServiceConfig
-		if err := server.LoadConfig(&cfg); err != nil {
+		cfg, err := server.LoadTestServiceConfig()
+		if err != nil {
 			return err
 		}
 		return server.ServeTestService(ctx, cfg)
 	case "event":
-		var cfg server.EventServiceConfig
-		if err := server.LoadConfig(&cfg); err != nil {
+		cfg, err := server.LoadEventServiceConfig()
+		if err != nil {
 			return err
 		}
 		return server.ServeEventService(ctx, cfg)
 	case "workflow-proxy":
-		var cfg server.WorkflowProxyServiceConfig
-		if err := server.LoadConfig(&cfg); err != nil {
+		cfg, err := server.LoadWorkflowProxyServiceConfig()
+		if err != nil {
 			return err
 		}
 		return server.ServeWorkflowProxyService(ctx, cfg)

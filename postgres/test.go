@@ -32,15 +32,21 @@ func (t *TestReader) GetTest(ctx context.Context, id uuid.V7) (*test.Test, error
 	return marshalTest(tt), nil
 }
 
-func (t *TestReader) ListTests(ctx context.Context, contextID string, groupID string) (test.TestList, error) {
-	// TODO: pagination
-	tests, err := t.db.ListTests(ctx, sqlc.ListTestsParams{
+func (t *TestReader) ListTests(ctx context.Context, contextID string, groupID string, filter test.PageFilter[uuid.V7]) (test.TestList, error) {
+	params := sqlc.ListTestsParams{
 		ContextID: contextID,
 		GroupID:   groupID,
-	})
+		PageSize:  int32(filter.Size),
+	}
+	if filter.OffsetID != nil {
+		params.OffsetID = filter.OffsetID
+	}
+
+	tests, err := t.db.ListTests(ctx, params)
 	if err != nil {
 		return nil, err
 	}
+
 	return marshalTests(tests), nil
 }
 
@@ -63,60 +69,24 @@ func NewTestWriter(db *DB) *TestWriter {
 	return &TestWriter{db: db}
 }
 
-func (t *TestWriter) CreateTest(ctx context.Context, definition *test.TestDefinition) (*test.Test, error) {
-	var tt *test.Test
-
-	if err := t.db.ExecuteTx(ctx, func(querier sqlc.Querier) error {
-		created, err := createTest(ctx, querier, definition)
-		if err != nil {
-			return err
-		}
-		tt = marshalTest(created)
-		return nil
-	}); err != nil {
-		return nil, err
-	}
-
-	return tt, nil
-}
-
-func (t *TestWriter) CreateTests(ctx context.Context, definitions ...*test.TestDefinition) (test.TestList, error) {
-	tests := make(test.TestList, len(definitions))
-
-	if err := t.db.ExecuteTx(ctx, func(querier sqlc.Querier) error {
-		for i, def := range definitions {
-			created, err := createTest(ctx, querier, def)
-			if err != nil {
-				return err
-			}
-			tests[i] = marshalTest(created)
-		}
-		return nil
-	}); err != nil {
-		return nil, err
-	}
-
-	return tests, nil
-}
-
-func createTest(ctx context.Context, querier sqlc.Querier, definition *test.TestDefinition) (*sqlc.Test, error) {
-	created, err := querier.CreateTest(ctx, sqlc.CreateTestParams{
-		ContextID: definition.ContextID,
-		GroupID:   definition.GroupID,
-		ID:        definition.TestID,
-		Name:      definition.Name,
-		HasInput:  definition.DefaultInput != nil,
+func (t *TestWriter) CreateTest(ctx context.Context, test *test.Test) (*test.Test, error) {
+	tt, err := t.db.CreateTest(ctx, sqlc.CreateTestParams{
+		ContextID:  test.ContextID,
+		GroupID:    test.GroupID,
+		ID:         test.ID,
+		Name:       test.Name,
+		HasInput:   test.HasInput,
+		CreateTime: test.CreateTime,
 	})
 	if err != nil {
 		return nil, err
 	}
-	if created.HasInput {
-		if err = querier.CreateTestDefaultInput(ctx, sqlc.CreateTestDefaultInputParams{
-			TestID: created.ID,
-			Data:   definition.DefaultInput.Data,
-		}); err != nil {
-			return nil, err
-		}
-	}
-	return created, nil
+	return marshalTest(tt), nil
+}
+
+func (t *TestWriter) CreateTestDefaultInput(ctx context.Context, testID uuid.V7, defaultInput *test.Payload) error {
+	return t.db.CreateTestDefaultInput(ctx, sqlc.CreateTestDefaultInputParams{
+		TestID: testID,
+		Data:   defaultInput.Data,
+	})
 }

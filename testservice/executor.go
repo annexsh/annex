@@ -66,20 +66,33 @@ func (e *executor) execute(ctx context.Context, testID uuid.V7, opts ...executeO
 	execID := test.NewTestExecutionID()
 	workflowID := execID.WorkflowID()
 
-	scheduled := &test.ScheduledTestExecution{
-		ID:           execID,
-		TestID:       t.ID,
-		Payload:      nil, // TODO: payload metadata isn't saved: double check if it is needed
-		ScheduleTime: time.Now().UTC(),
-	}
-	if options.payload != nil {
-		if options.payload.Metadata == nil {
-			return nil, errors.New("payload metadata cannot be nil")
-		}
-		scheduled.Payload = options.payload.Data
-	}
+	var testExec *test.TestExecution
 
-	testExec, err := e.repo.CreateScheduledTestExecution(ctx, scheduled)
+	err = e.repo.ExecuteTx(ctx, func(repo test.Repository) error {
+		testExec, err = repo.CreateTestExecutionScheduled(ctx, &test.ScheduledTestExecution{
+			ID:           execID,
+			TestID:       t.ID,
+			HasInput:     t.HasInput,
+			ScheduleTime: time.Now().UTC(),
+		})
+		if err != nil {
+			return err
+		}
+		if t.HasInput {
+			if options.payload == nil {
+				return errors.New("test execution input required")
+			}
+			if options.payload.Metadata == nil {
+				return errors.New("test execution input metadata required")
+			}
+			input := &test.Payload{
+				Metadata: options.payload.Metadata,
+				Data:     options.payload.Data,
+			}
+			return repo.CreateTestExecutionInput(ctx, testExec.ID, input)
+		}
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -89,14 +102,7 @@ func (e *executor) execute(ctx context.Context, testID uuid.V7, opts ...executeO
 		return nil, fmt.Errorf("failed to publish test execution event: %w", err)
 	}
 
-	wfOpts := client.StartWorkflowOptions{
-		ID:                       workflowID,
-		TaskQueue:                getTaskQueue(t.ContextID, t.GroupID),
-		WorkflowExecutionTimeout: 7 * 24 * time.Hour, // 1 week
-		RetryPolicy: &temporal.RetryPolicy{
-			MaximumAttempts: 1,
-		},
-	}
+	wfOpts := newStartWorkflowOpts(workflowID, t.ContextID, t.GroupID)
 
 	if options.payload == nil {
 		if _, err = e.temporal.ExecuteWorkflow(ctx, wfOpts, t.Name); err != nil {
@@ -111,6 +117,17 @@ func (e *executor) execute(ctx context.Context, testID uuid.V7, opts ...executeO
 	return testExec, nil
 }
 
+func newStartWorkflowOpts(workflowID string, contextID string, groupID string) client.StartWorkflowOptions {
+	return client.StartWorkflowOptions{
+		ID:                       workflowID,
+		TaskQueue:                getTaskQueue(contextID, groupID),
+		WorkflowExecutionTimeout: 7 * 24 * time.Hour, // 1 week
+		RetryPolicy: &temporal.RetryPolicy{
+			MaximumAttempts: 1,
+		},
+	}
+}
+
 // TODO: add safeguard to ensure reset point is after the start test execution signal
 func (e *executor) retry(ctx context.Context, execID test.TestExecutionID) (*test.TestExecution, error) {
 	testExec, err := e.repo.GetTestExecution(ctx, execID)
@@ -118,12 +135,12 @@ func (e *executor) retry(ctx context.Context, execID test.TestExecutionID) (*tes
 		return nil, err
 	}
 
-	origCaseExecs, err := e.repo.ListCaseExecutions(ctx, testExec.ID)
+	origCaseExecs, err := e.getAllCaseExecutions(ctx, testExec.ID)
 	if err != nil {
 		return nil, err
 	}
 
-	origLogs, err := e.repo.ListLogs(ctx, testExec.ID)
+	origLogs, err := e.getAllLogs(ctx, testExec.ID)
 	if err != nil {
 		return nil, err
 	}
@@ -223,39 +240,105 @@ func (e *executor) retry(ctx context.Context, execID test.TestExecutionID) (*tes
 		logsToDelete = append(logsToDelete, caseExecLogs...)
 	}
 
-	reset, rollback, err := e.repo.ResetTestExecution(ctx, &test.ResetTestExecution{
-		ID:                  testExec.ID,
-		ResetTime:           time.Now().UTC(),
-		StaleCaseExecutions: keys(caseExecsToDelete),
-		StaleLogs:           logsToDelete,
-	})
+	reset, err := e.resetTestExecution(ctx, testExec, resetID, mapKeys(caseExecsToDelete), logsToDelete)
 	if err != nil {
-		return nil, err
-	}
-
-	_, err = e.temporal.ResetWorkflowExecution(ctx, &workflowservice.ResetWorkflowExecutionRequest{
-		Namespace: "default",
-		WorkflowExecution: &common.WorkflowExecution{
-			WorkflowId: testExec.ID.WorkflowID(),
-		},
-		Reason:                    retryReason,
-		WorkflowTaskFinishEventId: resetID,
-	})
-	if err != nil {
-		if rbErr := rollback(ctx); rbErr != nil {
-			e.logger.Error("failed to rollback retry test execution after workflow failed to reset", "error", rbErr)
-		}
 		return nil, err
 	}
 
 	return reset, nil
 }
 
+func (e *executor) getAllCaseExecutions(ctx context.Context, testExecID test.TestExecutionID) (test.CaseExecutionList, error) {
+	var offsetID *test.CaseExecutionID
+	var items test.CaseExecutionList
+	pageSize := 250
+
+	for {
+		page, err := e.repo.ListCaseExecutions(ctx, testExecID, test.PageFilter[test.CaseExecutionID]{
+			Size:     pageSize,
+			OffsetID: offsetID,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		items = append(items, page...)
+		if len(page) < pageSize {
+			return items, nil
+		}
+		offsetID = &page[len(page)-1].ID
+	}
+}
+
+func (e *executor) getAllLogs(ctx context.Context, testExecID test.TestExecutionID) (test.LogList, error) {
+	var offsetID *uuid.V7
+	var items test.LogList
+	pageSize := 250
+
+	for {
+		page, err := e.repo.ListLogs(ctx, testExecID, test.PageFilter[uuid.V7]{
+			Size:     pageSize,
+			OffsetID: offsetID,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		items = append(items, page...)
+		if len(page) < pageSize {
+			return items, nil
+		}
+		offsetID = &page[len(page)-1].ID
+	}
+}
+
+func (e *executor) resetTestExecution(ctx context.Context, testExec *test.TestExecution, resetEventID int64, staleCaseExecs []test.CaseExecutionID, staleLogs []uuid.V7) (*test.TestExecution, error) {
+	var resetTestExec *test.TestExecution
+
+	err := e.repo.ExecuteTx(ctx, func(repo test.Repository) error {
+		for _, caseExecID := range staleCaseExecs {
+			if err := repo.DeleteCaseExecution(ctx, testExec.ID, caseExecID); err != nil {
+				return err
+			}
+		}
+
+		for _, logID := range staleLogs {
+			if err := repo.DeleteLog(ctx, logID); err != nil {
+				return err
+			}
+		}
+
+		var err error
+		resetTestExec, err = repo.ResetTestExecution(ctx, testExec.ID, time.Now().UTC())
+		if err != nil {
+			return err
+		}
+
+		_, err = e.temporal.ResetWorkflowExecution(ctx, &workflowservice.ResetWorkflowExecutionRequest{
+			Namespace: "default", // TODO: allow custom
+			WorkflowExecution: &common.WorkflowExecution{
+				WorkflowId: resetTestExec.ID.WorkflowID(),
+			},
+			Reason:                    retryReason,
+			WorkflowTaskFinishEventId: resetEventID,
+		})
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return resetTestExec, nil
+}
+
 func isResettableEvent(eventType enums.EventType) bool {
 	switch eventType {
 	case enums.EVENT_TYPE_WORKFLOW_TASK_COMPLETED,
 		enums.EVENT_TYPE_WORKFLOW_TASK_TIMED_OUT,
-		enums.EVENT_TYPE_WORKFLOW_TASK_FAILED,
 		enums.EVENT_TYPE_WORKFLOW_TASK_STARTED:
 		return true
 
@@ -278,7 +361,7 @@ func isFailedEvent(eventType enums.EventType) bool {
 	return false
 }
 
-func keys[T comparable, V any](in map[T]V) []T {
+func mapKeys[T comparable, V any](in map[T]V) []T {
 	out := make([]T, len(in))
 	i := 0
 	for k := range in {

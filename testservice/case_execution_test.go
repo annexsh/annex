@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
+	eventsv1 "github.com/annexsh/annex-proto/go/gen/annex/events/v1"
 	testsv1 "github.com/annexsh/annex-proto/go/gen/annex/tests/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -13,122 +14,194 @@ import (
 
 	"github.com/annexsh/annex/internal/fake"
 	"github.com/annexsh/annex/internal/ptr"
-	"github.com/annexsh/annex/uuid"
+	"github.com/annexsh/annex/test"
 )
 
-func TestService_AckCaseExecutionScheduled(t *testing.T) {
-	ctx := context.Background()
-	s, fakes := newService()
+func TestService_ListCaseExecutions(t *testing.T) {
+	pageSize := 2
+	testExecID := test.NewTestExecutionID()
 
-	tt, err := fakes.repo.CreateTest(ctx, fake.GenTestDefinition())
-	require.NoError(t, err)
+	wantPage1 := test.CaseExecutionList{fake.GenCaseExec(testExecID), fake.GenCaseExec(testExecID)}
+	wantPage2 := test.CaseExecutionList{fake.GenCaseExec(testExecID)}
 
-	te, err := fakes.repo.CreateScheduledTestExecution(ctx, fake.GenScheduledTestExec(tt.ID))
-	require.NoError(t, err)
+	r := new(RepositoryMock)
+	r.ListCaseExecutionsFunc = func(ctx context.Context, gotTestExecID test.TestExecutionID, filter test.PageFilter[test.CaseExecutionID]) (test.CaseExecutionList, error) {
+		assert.Equal(t, testExecID, gotTestExecID)
+		assert.Equal(t, pageSize, filter.Size)
 
-	caseID := fake.GenCaseID()
-	req := &testsv1.AckCaseExecutionScheduledRequest{
-		TestExecutionId: te.ID.String(),
-		CaseExecutionId: caseID.Int32(),
-		CaseName:        uuid.NewString(),
-		ScheduleTime:    timestamppb.New(time.Now().UTC()),
+		switch len(r.ListCaseExecutionsCalls()) {
+		case 1:
+			assert.Nil(t, filter.OffsetID)
+			return wantPage1, nil
+		case 2:
+			assert.Equal(t, wantPage1[pageSize-1].ID, *filter.OffsetID)
+			return wantPage2, nil
+		default:
+			panic("unexpected list invocation")
+		}
 	}
-	res, err := s.AckCaseExecutionScheduled(ctx, connect.NewRequest(req))
+
+	s := Service{repo: r}
+
+	req := &testsv1.ListCaseExecutionsRequest{
+		Context:         "foo",
+		TestExecutionId: testExecID.String(),
+		PageSize:        int32(pageSize),
+	}
+	res, err := s.ListCaseExecutions(context.Background(), connect.NewRequest(req))
+	require.NoError(t, err)
+	assert.Equal(t, wantPage1.Proto(), res.Msg.CaseExecutions)
+	assert.NotEmpty(t, res.Msg.NextPageToken)
+
+	req.NextPageToken = res.Msg.NextPageToken
+	res, err = s.ListCaseExecutions(context.Background(), connect.NewRequest(req))
+	require.NoError(t, err)
+	assert.Equal(t, wantPage2.Proto(), res.Msg.CaseExecutions)
+	assert.Empty(t, res.Msg.NextPageToken)
+}
+
+func TestService_AckCaseExecutionScheduled(t *testing.T) {
+	wantCaseExec := &test.CaseExecution{
+		ID:              fake.GenCaseID(),
+		TestExecutionID: test.NewTestExecutionID(),
+		CaseName:        "foo",
+		ScheduleTime:    time.Now().UTC(),
+	}
+
+	r := &RepositoryMock{
+		CreateCaseExecutionScheduledFunc: func(ctx context.Context, scheduled *test.ScheduledCaseExecution) (*test.CaseExecution, error) {
+			assert.Equal(t, wantCaseExec.ID, scheduled.ID)
+			assert.Equal(t, wantCaseExec.TestExecutionID, scheduled.TestExecutionID)
+			assert.Equal(t, wantCaseExec.CaseName, scheduled.CaseName)
+			assert.Equal(t, wantCaseExec.ScheduleTime, scheduled.ScheduleTime)
+			return wantCaseExec, nil
+		},
+	}
+
+	p := &PublisherMock{
+		PublishFunc: func(testExecID string, e *eventsv1.Event) error {
+			assert.Equal(t, wantCaseExec.TestExecutionID.String(), testExecID)
+			assert.Equal(t, wantCaseExec.TestExecutionID.String(), e.TestExecutionId)
+			assert.Equal(t, eventsv1.Event_TYPE_CASE_EXECUTION_SCHEDULED, e.Type)
+			assert.NotEmpty(t, e.EventId)
+			assert.True(t, e.CreateTime.IsValid())
+			assert.Equal(t, eventsv1.Event_Data_TYPE_CASE_EXECUTION, e.Data.Type)
+			assert.Equal(t, wantCaseExec.Proto(), e.Data.GetCaseExecution())
+			return nil
+		},
+	}
+
+	s := Service{repo: r, eventPub: p}
+
+	req := &testsv1.AckCaseExecutionScheduledRequest{
+		Context:         "foo",
+		TestExecutionId: wantCaseExec.TestExecutionID.String(),
+		CaseExecutionId: wantCaseExec.ID.Int32(),
+		CaseName:        wantCaseExec.CaseName,
+		ScheduleTime:    timestamppb.New(wantCaseExec.ScheduleTime),
+	}
+
+	res, err := s.AckCaseExecutionScheduled(context.Background(), connect.NewRequest(req))
 	require.NoError(t, err)
 	assert.NotNil(t, res)
-
-	ackd, err := fakes.repo.GetCaseExecution(ctx, te.ID, caseID)
-	require.NoError(t, err)
-	assert.Equal(t, req.ScheduleTime.AsTime(), ackd.ScheduleTime)
 }
 
 func TestService_AckCaseExecutionStarted(t *testing.T) {
-	ctx := context.Background()
-	s, fakes := newService()
+	wantCaseExec := &test.CaseExecution{
+		ID:              fake.GenCaseID(),
+		TestExecutionID: test.NewTestExecutionID(),
+		CaseName:        "foo",
+		ScheduleTime:    time.Now().UTC(),
+		StartTime:       ptr.Get(time.Now().UTC()),
+	}
 
-	tt, err := fakes.repo.CreateTest(ctx, fake.GenTestDefinition())
-	require.NoError(t, err)
+	r := &RepositoryMock{
+		UpdateCaseExecutionStartedFunc: func(ctx context.Context, started *test.StartedCaseExecution) (*test.CaseExecution, error) {
+			assert.Equal(t, wantCaseExec.ID, started.ID)
+			assert.Equal(t, wantCaseExec.TestExecutionID, started.TestExecutionID)
+			assert.Equal(t, *wantCaseExec.StartTime, started.StartTime)
+			return wantCaseExec, nil
+		},
+	}
 
-	testExec := fake.GenScheduledTestExec(tt.ID)
-	te, err := fakes.repo.CreateScheduledTestExecution(ctx, testExec)
-	require.NoError(t, err)
+	p := &PublisherMock{
+		PublishFunc: func(testExecID string, e *eventsv1.Event) error {
+			assert.Equal(t, wantCaseExec.TestExecutionID.String(), testExecID)
+			assert.Equal(t, wantCaseExec.TestExecutionID.String(), e.TestExecutionId)
+			assert.Equal(t, eventsv1.Event_TYPE_CASE_EXECUTION_STARTED, e.Type)
+			assert.NotEmpty(t, e.EventId)
+			assert.True(t, e.CreateTime.IsValid())
+			assert.Equal(t, eventsv1.Event_Data_TYPE_CASE_EXECUTION, e.Data.Type)
+			assert.Equal(t, wantCaseExec.Proto(), e.Data.GetCaseExecution())
+			return nil
+		},
+	}
 
-	scheduled := fake.GenScheduledCaseExec(te.ID)
-	caseExec, err := fakes.repo.CreateScheduledCaseExecution(ctx, scheduled)
-	require.NoError(t, err)
+	s := Service{repo: r, eventPub: p}
 
 	req := &testsv1.AckCaseExecutionStartedRequest{
-		TestExecutionId: caseExec.TestExecutionID.String(),
-		CaseExecutionId: caseExec.ID.Int32(),
-		StartTime:       timestamppb.New(time.Now().UTC()),
+		Context:         "foo",
+		TestExecutionId: wantCaseExec.TestExecutionID.String(),
+		CaseExecutionId: wantCaseExec.ID.Int32(),
+		StartTime:       timestamppb.New(*wantCaseExec.StartTime),
 	}
-	res, err := s.AckCaseExecutionStarted(ctx, connect.NewRequest(req))
+
+	res, err := s.AckCaseExecutionStarted(context.Background(), connect.NewRequest(req))
 	require.NoError(t, err)
 	assert.NotNil(t, res)
-
-	ackd, err := fakes.repo.GetCaseExecution(ctx, te.ID, caseExec.ID)
-	require.NoError(t, err)
-	assert.Equal(t, req.StartTime.AsTime(), *ackd.StartTime)
 }
 
 func TestService_AckCaseExecutionFinished(t *testing.T) {
-	ctx := context.Background()
-	s, fakes := newService()
-
-	tt, err := fakes.repo.CreateTest(ctx, fake.GenTestDefinition())
-	require.NoError(t, err)
-
-	testExec := fake.GenScheduledTestExec(tt.ID)
-	te, err := fakes.repo.CreateScheduledTestExecution(ctx, testExec)
-	require.NoError(t, err)
-
-	scheduled := fake.GenScheduledCaseExec(te.ID)
-	caseExec, err := fakes.repo.CreateScheduledCaseExecution(ctx, scheduled)
-	require.NoError(t, err)
-
-	req := &testsv1.AckCaseExecutionFinishedRequest{
-		TestExecutionId: caseExec.TestExecutionID.String(),
-		CaseExecutionId: caseExec.ID.Int32(),
-		FinishTime:      timestamppb.New(time.Now().UTC()),
+	wantCaseExec := &test.CaseExecution{
+		ID:              fake.GenCaseID(),
+		TestExecutionID: test.NewTestExecutionID(),
+		CaseName:        "foo",
+		ScheduleTime:    time.Now().UTC(),
+		StartTime:       ptr.Get(time.Now().UTC()),
+		FinishTime:      ptr.Get(time.Now().UTC()),
 		Error:           ptr.Get("bang"),
 	}
-	res, err := s.AckCaseExecutionFinished(ctx, connect.NewRequest(req))
+
+	r := &RepositoryMock{
+		UpdateCaseExecutionStartedFunc: func(ctx context.Context, started *test.StartedCaseExecution) (*test.CaseExecution, error) {
+			assert.Equal(t, wantCaseExec.ID, started.ID)
+			assert.Equal(t, wantCaseExec.TestExecutionID, started.TestExecutionID)
+			assert.Equal(t, *wantCaseExec.StartTime, started.StartTime)
+			return wantCaseExec, nil
+		},
+		UpdateCaseExecutionFinishedFunc: func(ctx context.Context, finished *test.FinishedCaseExecution) (*test.CaseExecution, error) {
+			assert.Equal(t, wantCaseExec.ID, finished.ID)
+			assert.Equal(t, wantCaseExec.TestExecutionID, finished.TestExecutionID)
+			assert.Equal(t, *wantCaseExec.FinishTime, finished.FinishTime)
+			assert.Equal(t, wantCaseExec.Error, finished.Error)
+			return wantCaseExec, nil
+		},
+	}
+
+	p := &PublisherMock{
+		PublishFunc: func(testExecID string, e *eventsv1.Event) error {
+			assert.Equal(t, wantCaseExec.TestExecutionID.String(), testExecID)
+			assert.Equal(t, wantCaseExec.TestExecutionID.String(), e.TestExecutionId)
+			assert.Equal(t, eventsv1.Event_TYPE_CASE_EXECUTION_FINISHED, e.Type)
+			assert.NotEmpty(t, e.EventId)
+			assert.True(t, e.CreateTime.IsValid())
+			assert.Equal(t, eventsv1.Event_Data_TYPE_CASE_EXECUTION, e.Data.Type)
+			assert.Equal(t, wantCaseExec.Proto(), e.Data.GetCaseExecution())
+			return nil
+		},
+	}
+
+	s := Service{repo: r, eventPub: p}
+
+	req := &testsv1.AckCaseExecutionFinishedRequest{
+		Context:         "foo",
+		TestExecutionId: wantCaseExec.TestExecutionID.String(),
+		CaseExecutionId: wantCaseExec.ID.Int32(),
+		FinishTime:      timestamppb.New(*wantCaseExec.FinishTime),
+		Error:           wantCaseExec.Error,
+	}
+
+	res, err := s.AckCaseExecutionFinished(context.Background(), connect.NewRequest(req))
 	require.NoError(t, err)
 	assert.NotNil(t, res)
-
-	ackd, err := fakes.repo.GetCaseExecution(ctx, te.ID, caseExec.ID)
-	require.NoError(t, err)
-	assert.Equal(t, req.FinishTime.AsTime(), *ackd.FinishTime)
-	assert.Equal(t, req.Error, ackd.Error)
-}
-
-func TestService_ListTestCaseExecutions(t *testing.T) {
-	ctx := context.Background()
-	s, fakes := newService()
-
-	tt, err := fakes.repo.CreateTest(ctx, fake.GenTestDefinition())
-	require.NoError(t, err)
-
-	te, err := fakes.repo.CreateScheduledTestExecution(ctx, fake.GenScheduledTestExec(tt.ID))
-	require.NoError(t, err)
-
-	wantCount := 30
-	want := make([]*testsv1.CaseExecution, wantCount)
-
-	for i := range wantCount {
-		scheduled := fake.GenScheduledCaseExec(te.ID)
-		ce, err := fakes.repo.CreateScheduledCaseExecution(ctx, scheduled)
-		require.NoError(t, err)
-		want[i] = ce.Proto()
-	}
-
-	req := &testsv1.ListCaseExecutionsRequest{
-		TestExecutionId: te.ID.String(),
-	}
-	res, err := s.ListCaseExecutions(ctx, connect.NewRequest(req))
-	require.NoError(t, err)
-
-	got := res.Msg.CaseExecutions
-	assert.Len(t, got, wantCount)
-	assert.Equal(t, want, got)
 }

@@ -9,6 +9,7 @@ import (
 	testsv1 "github.com/annexsh/annex-proto/go/gen/annex/tests/v1"
 
 	"github.com/annexsh/annex/event"
+	"github.com/annexsh/annex/internal/pagination"
 	"github.com/annexsh/annex/test"
 )
 
@@ -21,13 +22,26 @@ func (s *Service) ListCaseExecutions(
 		return nil, err
 	}
 
-	execs, err := s.repo.ListCaseExecutions(ctx, testExecID)
+	filter, err := pagination.FilterFromRequest(req.Msg, pagination.WithCaseExecutionID())
+	if err != nil {
+		return nil, err
+	}
+
+	execs, err := s.repo.ListCaseExecutions(ctx, testExecID, filter)
+	if err != nil {
+		return nil, err
+	}
+
+	nextPageTkn, err := pagination.NextPageTokenFromItems(filter.Size, execs, func(exec *test.CaseExecution) test.CaseExecutionID {
+		return exec.ID
+	})
 	if err != nil {
 		return nil, err
 	}
 
 	return connect.NewResponse(&testsv1.ListCaseExecutionsResponse{
 		CaseExecutions: execs.Proto(),
+		NextPageToken:  nextPageTkn,
 	}), nil
 }
 
@@ -41,13 +55,13 @@ func (s *Service) AckCaseExecutionScheduled(
 	}
 
 	scheduled := &test.ScheduledCaseExecution{
-		ID:           test.CaseExecutionID(req.Msg.CaseExecutionId),
-		TestExecID:   testExecID,
-		CaseName:     req.Msg.CaseName,
-		ScheduleTime: req.Msg.ScheduleTime.AsTime().UTC(),
+		ID:              test.CaseExecutionID(req.Msg.CaseExecutionId),
+		TestExecutionID: testExecID,
+		CaseName:        req.Msg.CaseName,
+		ScheduleTime:    req.Msg.ScheduleTime.AsTime().UTC(),
 	}
 
-	caseExec, err := s.repo.CreateScheduledCaseExecution(ctx, scheduled)
+	caseExec, err := s.repo.CreateCaseExecutionScheduled(ctx, scheduled)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create case execution: %w", err)
 	}
@@ -75,7 +89,7 @@ func (s *Service) AckCaseExecutionStarted(
 		StartTime:       req.Msg.StartTime.AsTime().UTC(),
 	}
 
-	caseExec, err := s.repo.UpdateStartedCaseExecution(ctx, started)
+	caseExec, err := s.repo.UpdateCaseExecutionStarted(ctx, started)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create case execution: %w", err)
 	}
@@ -104,7 +118,7 @@ func (s *Service) AckCaseExecutionFinished(
 		Error:           req.Msg.Error,
 	}
 
-	caseExec, err := s.repo.UpdateFinishedCaseExecution(ctx, finished)
+	caseExec, err := s.repo.UpdateCaseExecutionFinished(ctx, finished)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update case execution: %w", err)
 	}

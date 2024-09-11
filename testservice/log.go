@@ -9,6 +9,7 @@ import (
 	testsv1 "github.com/annexsh/annex-proto/go/gen/annex/tests/v1"
 
 	"github.com/annexsh/annex/event"
+	"github.com/annexsh/annex/internal/pagination"
 	"github.com/annexsh/annex/internal/ptr"
 	"github.com/annexsh/annex/test"
 	"github.com/annexsh/annex/uuid"
@@ -37,13 +38,20 @@ func (s *Service) PublishLog(
 		CreateTime:      req.Msg.CreateTime.AsTime().UTC(),
 	}
 
-	if err = s.repo.CreateLog(ctx, execLog); err != nil {
-		return nil, err
-	}
+	err = s.repo.ExecuteTx(ctx, func(repo test.Repository) error {
+		if err = s.repo.CreateLog(ctx, execLog); err != nil {
+			return err
+		}
 
-	execEvent := event.NewLogEvent(eventsv1.Event_TYPE_LOG_PUBLISHED, execLog.Proto())
-	if err = s.eventPub.Publish(execLog.TestExecutionID.String(), execEvent); err != nil {
-		return nil, fmt.Errorf("failed to publish log event: %w", err)
+		execEvent := event.NewLogEvent(eventsv1.Event_TYPE_LOG_PUBLISHED, execLog.Proto())
+		if err = s.eventPub.Publish(execLog.TestExecutionID.String(), execEvent); err != nil {
+			return fmt.Errorf("failed to publish log event: %w", err)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	return connect.NewResponse(&testsv1.PublishLogResponse{
@@ -60,12 +68,25 @@ func (s *Service) ListTestExecutionLogs(
 		return nil, err
 	}
 
-	logs, err := s.repo.ListLogs(ctx, testExecID)
+	filter, err := pagination.FilterFromRequest(req.Msg, pagination.WithUUID())
+	if err != nil {
+		return nil, err
+	}
+
+	logs, err := s.repo.ListLogs(ctx, testExecID, filter)
+	if err != nil {
+		return nil, err
+	}
+
+	nextPageTkn, err := pagination.NextPageTokenFromItems(filter.Size, logs, func(log *test.Log) uuid.V7 {
+		return log.ID
+	})
 	if err != nil {
 		return nil, err
 	}
 
 	return connect.NewResponse(&testsv1.ListTestExecutionLogsResponse{
-		Logs: logs.Proto(),
+		Logs:          logs.Proto(),
+		NextPageToken: nextPageTkn,
 	}), nil
 }

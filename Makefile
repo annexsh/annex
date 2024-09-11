@@ -1,4 +1,4 @@
-SQLC_VERSION = 1.23.0
+SQLC_VERSION = 1.27.0
 
 # Run
 
@@ -27,5 +27,15 @@ compose-down:
 
 .PHONY: sqlc-gen
 sqlc-gen:
+	make sqlc-gen-postgres
+	make sqlc-gen-sqlite
+
+.PHONY: sqlc-gen-postgres
+sqlc-gen-postgres:
 	rm -rf postgres/sqlc/*.sql.go
 	docker run --rm -v $(shell pwd)/postgres:/src -w /src sqlc/sqlc:$(SQLC_VERSION) generate
+
+.PHONY: sqlc-gen-sqlite
+sqlc-gen-sqlite:
+	rm -rf sqlite/sqlc/*.sql.go
+	docker run --rm -v $(shell pwd)/sqlite:/src -w /src sqlc/sqlc:$(SQLC_VERSION) generate
