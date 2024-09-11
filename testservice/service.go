@@ -1,5 +1,9 @@
 package testservice
 
+//go:generate go run github.com/matryer/moq@latest -out workflower_mock_test.go . Workflower
+//go:generate go run github.com/matryer/moq@latest -out repository_mock_test.go -pkg testservice ../test Repository
+//go:generate go run github.com/matryer/moq@latest -out event_publisher_mock_test.go -pkg testservice ../event Publisher
+
 import (
 	"context"
 
@@ -12,8 +16,6 @@ import (
 	"github.com/annexsh/annex/log"
 	"github.com/annexsh/annex/test"
 )
-
-const defaultPageSize int32 = 200
 
 var _ testsv1connect.TestServiceHandler = (*Service)(nil)
 

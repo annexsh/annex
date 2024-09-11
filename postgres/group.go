@@ -2,9 +2,6 @@ package postgres
 
 import (
 	"context"
-	"errors"
-
-	"github.com/jackc/pgx/v5"
 
 	"github.com/annexsh/annex/postgres/sqlc"
 	"github.com/annexsh/annex/test"
@@ -23,21 +20,22 @@ func NewGroupReader(db *DB) *GroupReader {
 	return &GroupReader{db: db}
 }
 
-func (g *GroupReader) ListGroups(ctx context.Context, contextID string) ([]string, error) {
-	return g.db.ListGroups(ctx, contextID)
-}
-
-func (g *GroupReader) GroupExists(ctx context.Context, contextID string, groupID string) (bool, error) {
-	if err := g.db.GroupExists(ctx, sqlc.GroupExistsParams{
+func (g *GroupReader) ListGroups(ctx context.Context, contextID string, filter test.PageFilter[string]) ([]string, error) {
+	groups, err := g.db.ListGroups(ctx, sqlc.ListGroupsParams{
 		ContextID: contextID,
-		ID:        groupID,
-	}); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return false, nil
-		}
-		return false, err
+		PageSize:  int32(filter.Size),
+		OffsetID:  filter.OffsetID,
+	})
+	if err != nil {
+		return nil, err
 	}
-	return true, nil
+
+	ids := make([]string, len(groups))
+	for i := range groups {
+		ids[i] = groups[i].ID
+	}
+
+	return ids, nil
 }
 
 type GroupWriter struct {

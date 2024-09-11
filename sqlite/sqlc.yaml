@@ -1,0 +1,62 @@
+version: "2"
+sql:
+  - engine: "sqlite"
+    queries: "queries"
+    schema: "migrations"
+    strict_function_checks: true # return an error if a called SQL function does not exist
+    gen:
+      go:
+        out: "sqlc"
+        emit_all_enum_values: true
+        emit_enum_valid_method: true
+        emit_pointers_for_null_types: true
+        emit_interface: true
+        emit_result_struct_pointers: true
+        emit_json_tags: true
+overrides:
+  go:
+    overrides:
+      - column: "tests.id"
+        go_type:
+          import: "github.com/annexsh/annex/uuid"
+          type: "V7"
+      - column: "test_executions.test_id"
+        go_type:
+          import: "github.com/annexsh/annex/uuid"
+          type: "V7"
+      - column: "test_executions.id"
+        go_type:
+          import: "github.com/annexsh/annex/test"
+          type: "TestExecutionID"
+      - column: "test_executions.id"
+        nullable: true
+        go_type:
+          import: "github.com/annexsh/annex/test"
+          type: "TestExecutionID"
+          pointer: true
+      - column: "test_execution_inputs.test_execution_id"
+        go_type:
+          import: "github.com/annexsh/annex/test"
+          type: "TestExecutionID"
+      - column: "case_executions.test_execution_id"
+        go_type:
+          import: "github.com/annexsh/annex/test"
+          type: "TestExecutionID"
+      - column: "logs.id"
+        go_type:
+          import: "github.com/annexsh/annex/uuid"
+          type: "V7"
+      - column: "logs.test_execution_id"
+        go_type:
+          import: "github.com/annexsh/annex/test"
+          type: "TestExecutionID"
+      - column: "case_executions.id"
+        go_type:
+          import: "github.com/annexsh/annex/test"
+          type: "CaseExecutionID"
+      - column: "logs.case_execution_id"
+        nullable: true
+        go_type:
+          import: "github.com/annexsh/annex/test"
+          type: "CaseExecutionID"
+          pointer: true

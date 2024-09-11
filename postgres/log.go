@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/annexsh/annex/postgres/sqlc"
-
 	"github.com/annexsh/annex/test"
 	"github.com/annexsh/annex/uuid"
 )
@@ -30,9 +29,16 @@ func (e *LogReader) GetLog(ctx context.Context, id uuid.V7) (*test.Log, error) {
 	return marshalLog(execLog), nil
 }
 
-func (e *LogReader) ListLogs(ctx context.Context, testExecID test.TestExecutionID) (test.LogList, error) {
-	// TODO: pagination
-	logs, err := e.db.ListLogs(ctx, testExecID)
+func (e *LogReader) ListLogs(ctx context.Context, testExecID test.TestExecutionID, filter test.PageFilter[uuid.V7]) (test.LogList, error) {
+	params := sqlc.ListLogsParams{
+		TestExecutionID: testExecID,
+		PageSize:        int32(filter.Size),
+	}
+	if filter.OffsetID != nil {
+		params.OffsetID = filter.OffsetID
+	}
+
+	logs, err := e.db.ListLogs(ctx, params)
 	if err != nil {
 		return nil, err
 	}

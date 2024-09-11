@@ -5,9 +5,9 @@ import (
 	"errors"
 
 	"github.com/jackc/pgerrcode"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
+	"github.com/annexsh/annex/postgres/sqlc"
 	"github.com/annexsh/annex/test"
 )
 
@@ -20,22 +20,15 @@ type ContextReader struct {
 	db *DB
 }
 
-func (c *ContextReader) ListContexts(ctx context.Context) ([]string, error) {
-	return c.db.ListContexts(ctx)
-}
-
 func NewContextReader(db *DB) *ContextReader {
 	return &ContextReader{db: db}
 }
 
-func (c *ContextReader) ContextExists(ctx context.Context, id string) (bool, error) {
-	if err := c.db.ContextExists(ctx, id); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return false, nil
-		}
-		return false, err
-	}
-	return true, nil
+func (c *ContextReader) ListContexts(ctx context.Context, filter test.PageFilter[string]) ([]string, error) {
+	return c.db.ListContexts(ctx, sqlc.ListContextsParams{
+		OffsetID: filter.OffsetID,
+		PageSize: int32(filter.Size),
+	})
 }
 
 type ContextWriter struct {
@@ -50,10 +43,11 @@ func (c *ContextWriter) CreateContext(ctx context.Context, id string) error {
 	err := c.db.CreateContext(ctx, id)
 
 	var pgErr *pgconn.PgError
-	if id == "default" && errors.As(err, &pgErr) {
-		if pgErr.Code == pgerrcode.UniqueViolation {
+	if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.UniqueViolation {
+		if id == "default" {
 			return nil
 		}
+		return test.ErrorContextAlreadyExists
 	}
 
 	return err

@@ -23,7 +23,7 @@ func ServeEventService(ctx context.Context, cfg EventServiceConfig) error {
 	testClient := testsv1connect.NewTestServiceClient(httpClient, cfg.TestServiceURL)
 
 	var natsOpts []corenats.Option
-	if cfg.Nats.EmbeddedNats {
+	if cfg.Nats.Embedded {
 		ns, err := runEmbeddedNats(cfg.Nats.HostPort)
 		if err != nil {
 			return err
@@ -34,7 +34,7 @@ func ServeEventService(ctx context.Context, cfg EventServiceConfig) error {
 
 	var nc *corenats.Conn
 	var err error
-	if cfg.Nats.EmbeddedNats {
+	if cfg.Nats.Embedded {
 		ns, err := runEmbeddedNats(cfg.Nats.HostPort)
 		if err != nil {
 			return err

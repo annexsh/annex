@@ -1,0 +1,14 @@
+port: 50051
+postgres:
+  hostPort: 0.0.0.0:5432
+  user: postgres
+  password: password
+nats:
+  hostPort: 0.0.0.0:4222
+  embedded: true
+temporal:
+  hostPort: 0.0.0.0:7233
+  namespace: default
+development:
+  embeddedTemporal: true
+  logger: true

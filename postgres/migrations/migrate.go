@@ -15,7 +15,7 @@ import (
 //go:embed *.sql
 var fs embed.FS
 
-func MigrateDatabase(pool *pgxpool.Pool, version uint) error {
+func MigrateDatabase(pool *pgxpool.Pool) error {
 	sd, err := iofs.New(fs, ".")
 	if err != nil {
 		return err
@@ -36,7 +36,7 @@ func MigrateDatabase(pool *pgxpool.Pool, version uint) error {
 		return err
 	}
 
-	if err = m.Migrate(version); err != nil && !errors.Is(err, migrate.ErrNoChange) {
+	if err = m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		return err
 	}
 

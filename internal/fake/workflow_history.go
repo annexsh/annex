@@ -18,18 +18,29 @@ import (
 	"github.com/annexsh/annex/uuid"
 )
 
-var _ client.HistoryEventIterator = (*iterator)(nil)
+var _ client.HistoryEventIterator = (*HistoryEventIterator)(nil)
 
-type iterator struct {
+type HistoryEventIterator struct {
 	events  chan *history.HistoryEvent
 	nextErr error
 }
 
-func (i *iterator) HasNext() bool {
+func NewHistoryEventIterator(his *history.History) *HistoryEventIterator {
+	iter := &HistoryEventIterator{
+		events: make(chan *history.HistoryEvent, len(his.Events)),
+	}
+	for _, event := range his.Events {
+		iter.events <- event
+	}
+	close(iter.events)
+	return iter
+}
+
+func (i *HistoryEventIterator) HasNext() bool {
 	return len(i.events) > 0
 }
 
-func (i *iterator) Next() (*history.HistoryEvent, error) {
+func (i *HistoryEventIterator) Next() (*history.HistoryEvent, error) {
 	if i.nextErr != nil {
 		return nil, i.nextErr
 	}
@@ -285,7 +296,7 @@ func GenCaseFailureHistory(
 				},
 			},
 			{
-				EventId:   14,
+				EventId:   12,
 				EventTime: parseTime("2024-05-28T10:04:11.666520Z"),
 				EventType: enums.EVENT_TYPE_ACTIVITY_TASK_SCHEDULED,
 				TaskId:    1048640,

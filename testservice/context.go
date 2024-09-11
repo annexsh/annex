@@ -5,20 +5,9 @@ import (
 
 	"connectrpc.com/connect"
 	testsv1 "github.com/annexsh/annex-proto/go/gen/annex/tests/v1"
-)
 
-func (s *Service) ListContexts(
-	ctx context.Context,
-	_ *connect.Request[testsv1.ListContextsRequest],
-) (*connect.Response[testsv1.ListContextsResponse], error) {
-	contexts, err := s.repo.ListContexts(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return connect.NewResponse(&testsv1.ListContextsResponse{
-		Contexts: contexts,
-	}), nil
-}
+	"github.com/annexsh/annex/internal/pagination"
+)
 
 func (s *Service) RegisterContext(
 	ctx context.Context,
@@ -28,4 +17,31 @@ func (s *Service) RegisterContext(
 		return nil, err
 	}
 	return connect.NewResponse(&testsv1.RegisterContextResponse{}), nil
+}
+
+func (s *Service) ListContexts(
+	ctx context.Context,
+	req *connect.Request[testsv1.ListContextsRequest],
+) (*connect.Response[testsv1.ListContextsResponse], error) {
+	filter, err := pagination.FilterFromRequest(req.Msg, pagination.WithString())
+	if err != nil {
+		return nil, err
+	}
+
+	contexts, err := s.repo.ListContexts(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+
+	nextPageTkn, err := pagination.NextPageTokenFromItems(filter.Size, contexts, func(id string) string {
+		return id
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return connect.NewResponse(&testsv1.ListContextsResponse{
+		Contexts:      contexts,
+		NextPageToken: nextPageTkn,
+	}), nil
 }

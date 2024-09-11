@@ -1,0 +1,11 @@
+port: 50051
+nats:
+  hostPort: 0.0.0.0:4222
+  embedded: true
+temporal:
+  hostPort: 0.0.0.0:7233
+  namespace: default
+development:
+  embeddedTemporal: true
+  sqliteDatabase: true
+  logger: true

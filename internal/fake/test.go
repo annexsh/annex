@@ -12,17 +12,23 @@ import (
 	"github.com/annexsh/annex/uuid"
 )
 
-type TestOptions func(opts *testOptions)
+type TestOption func(t *test.Test)
 
-func WithContextID(contextID string) TestOptions {
-	return func(opts *testOptions) {
-		opts.contextID = contextID
+func WithContextID(contextID string) TestOption {
+	return func(t *test.Test) {
+		t.ContextID = contextID
 	}
 }
 
-func WithGroupID(groupID string) TestOptions {
-	return func(opts *testOptions) {
-		opts.groupID = groupID
+func WithGroupID(groupID string) TestOption {
+	return func(t *test.Test) {
+		t.GroupID = groupID
+	}
+}
+
+func WithHasInput(hasInput bool) TestOption {
+	return func(t *test.Test) {
+		t.HasInput = hasInput
 	}
 }
 
@@ -48,34 +54,26 @@ func GenDefaultInput() *test.Payload {
 	}
 }
 
-func GenTestDefinition(opts ...TestOptions) *test.TestDefinition {
-	options := newTestOptions(opts...)
-	return &test.TestDefinition{
-		ContextID:    options.contextID,
-		GroupID:      options.groupID,
-		TestID:       uuid.New(),
-		Name:         uuid.NewString(),
-		DefaultInput: GenDefaultInput(),
-	}
-}
-
-func GenTest(opts ...TestOptions) *test.Test {
-	options := newTestOptions(opts...)
-	return &test.Test{
-		ContextID:  options.contextID,
-		GroupID:    options.groupID,
+func GenTest(opts ...TestOption) *test.Test {
+	t := &test.Test{
+		ContextID:  "default-context",
+		GroupID:    "default-group",
 		ID:         uuid.New(),
 		Name:       uuid.NewString(),
 		HasInput:   true,
 		CreateTime: time.Now().UTC(),
 	}
+	for _, opt := range opts {
+		opt(t)
+	}
+	return t
 }
 
 func GenScheduledTestExec(testID uuid.V7) *test.ScheduledTestExecution {
 	return &test.ScheduledTestExecution{
 		ID:           test.NewTestExecutionID(),
 		TestID:       testID,
-		Payload:      GenInput().Data,
+		HasInput:     true,
 		ScheduleTime: time.Now().UTC(),
 	}
 }
@@ -107,6 +105,15 @@ func GenTestExec(testID uuid.V7) *test.TestExecution {
 	}
 }
 
+func GenResetTestExec(existing *test.TestExecution) *test.TestExecution {
+	reset := *existing
+	reset.ScheduleTime = time.Now().UTC()
+	reset.StartTime = nil
+	reset.FinishTime = nil
+	reset.Error = nil
+	return &reset
+}
+
 func GenCaseID() test.CaseExecutionID {
 	mu.Lock()
 	currCaseID++
@@ -116,10 +123,10 @@ func GenCaseID() test.CaseExecutionID {
 
 func GenScheduledCaseExec(testExecID test.TestExecutionID) *test.ScheduledCaseExecution {
 	return &test.ScheduledCaseExecution{
-		ID:           GenCaseID(),
-		TestExecID:   testExecID,
-		CaseName:     uuid.NewString(),
-		ScheduleTime: time.Now().UTC(),
+		ID:              GenCaseID(),
+		TestExecutionID: testExecID,
+		CaseName:        uuid.NewString(),
+		ScheduleTime:    time.Now().UTC(),
 	}
 }
 
@@ -156,7 +163,7 @@ func GenTestExecLog(testExecID test.TestExecutionID) *test.Log {
 	return genExecLog(testExecID, nil)
 }
 
-func GenTestExecLogs(count int, testExecID test.TestExecutionID) []*test.Log {
+func GenTestExecLogs(testExecID test.TestExecutionID, count int) test.LogList {
 	logs := make([]*test.Log, count)
 	for i := range count {
 		logs[i] = genExecLog(testExecID, nil)
@@ -165,13 +172,13 @@ func GenTestExecLogs(count int, testExecID test.TestExecutionID) []*test.Log {
 }
 
 func GenCaseExecLog(testExecID test.TestExecutionID, caseExecID test.CaseExecutionID) *test.Log {
-	return genExecLog(testExecID, nil)
+	return genExecLog(testExecID, &caseExecID)
 }
 
-func GenCaseExecLogs(count int, testExecID test.TestExecutionID, caseExecID test.CaseExecutionID) []*test.Log {
+func GenCaseExecLogs(testExecID test.TestExecutionID, caseExecID test.CaseExecutionID, count int) test.LogList {
 	logs := make([]*test.Log, count)
 	for i := range count {
-		logs[i] = genExecLog(testExecID, &caseExecID)
+		logs[i] = GenCaseExecLog(testExecID, caseExecID)
 	}
 	return logs
 }
@@ -202,20 +209,4 @@ func GenData() *Data {
 		Foo: rand.Int(),
 		Bar: uuid.NewString(),
 	}
-}
-
-type testOptions struct {
-	contextID string
-	groupID   string
-}
-
-func newTestOptions(opts ...TestOptions) testOptions {
-	options := testOptions{
-		contextID: "default-context",
-		groupID:   "default-group",
-	}
-	for _, opt := range opts {
-		opt(&options)
-	}
-	return options
 }

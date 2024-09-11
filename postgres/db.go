@@ -2,8 +2,6 @@ package postgres
 
 import (
 	"context"
-	"errors"
-	"fmt"
 
 	"github.com/jackc/pgx/v5"
 
@@ -27,29 +25,18 @@ func NewDB(dbtx DBTX) *DB {
 	}
 }
 
-func (d *DB) WithTx(ctx context.Context) (pgx.Tx, sqlc.Querier, error) {
+func (d *DB) WithTx(ctx context.Context) (*DB, pgx.Tx, error) {
 	tx, err := d.beginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		return nil, nil, err
 	}
 
 	queries := d.Queries.WithTx(tx)
-	return tx, queries, nil
-}
 
-func (d *DB) ExecuteTx(ctx context.Context, query func(querier sqlc.Querier) error) error {
-	tx, err := d.beginTx(ctx, pgx.TxOptions{})
-	if err != nil {
-		return err
+	newDB := &DB{
+		Queries: queries,
+		beginTx: d.beginTx,
 	}
 
-	withTx := d.Queries.WithTx(tx)
-	if err = query(withTx); err != nil {
-		if rbErr := tx.Rollback(ctx); rbErr != nil {
-			return errors.Join(err, fmt.Errorf("rollback error: %w", rbErr))
-		}
-		return err
-	}
-
-	return tx.Commit(ctx)
+	return newDB, tx, nil
 }

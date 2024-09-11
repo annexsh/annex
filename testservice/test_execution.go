@@ -52,46 +52,27 @@ func (s *Service) ListTestExecutions(
 		return nil, err
 	}
 
-	queryPageSize := defaultPageSize + 1
-
-	if req.Msg.PageSize > 0 {
-		queryPageSize = req.Msg.PageSize + 1
-	}
-
-	filter := &test.TestExecutionListFilter{
-		PageSize: uint32(queryPageSize),
-	}
-
-	if req.Msg.NextPageToken != "" {
-		lastTimestamp, lastID, err := pagination.DecodeNextPageToken(req.Msg)
-		if err != nil {
-			return nil, err
-		}
-		filter.LastScheduleTime = &lastTimestamp
-		filter.LastTestExecutionID = &lastID
-	}
-
-	var testExecs test.TestExecutionList
-
-	testExecs, err = s.repo.ListTestExecutions(ctx, testID, filter)
+	filter, err := pagination.FilterFromRequest(req.Msg, pagination.WithTestExecutionID())
 	if err != nil {
 		return nil, err
 	}
 
-	res := &testsv1.ListTestExecutionsResponse{}
-
-	hasNextPage := len(testExecs) == int(queryPageSize)
-	if hasNextPage {
-		testExecs = testExecs[:len(testExecs)-1] // remove page buffer item
-		lastExec := testExecs[len(testExecs)-1]
-		res.NextPageToken, err = pagination.EncodeNextPageToken(lastExec.ScheduleTime.UTC(), lastExec.ID.V7)
-		if err != nil {
-			return nil, err
-		}
+	testExecs, err := s.repo.ListTestExecutions(ctx, testID, filter)
+	if err != nil {
+		return nil, err
 	}
 
-	res.TestExecutions = testExecs.Proto()
-	return connect.NewResponse(res), nil
+	nextPageTkn, err := pagination.NextPageTokenFromItems(filter.Size, testExecs, func(testExec *test.TestExecution) test.TestExecutionID {
+		return testExec.ID
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return connect.NewResponse(&testsv1.ListTestExecutionsResponse{
+		TestExecutions: testExecs.Proto(),
+		NextPageToken:  nextPageTkn,
+	}), nil
 }
 
 func (s *Service) AckTestExecutionStarted(
@@ -108,7 +89,7 @@ func (s *Service) AckTestExecutionStarted(
 		StartTime: req.Msg.StartTime.AsTime(),
 	}
 
-	testExec, err := s.repo.UpdateStartedTestExecution(ctx, started)
+	testExec, err := s.repo.UpdateTestExecutionStarted(ctx, started)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +117,7 @@ func (s *Service) AckTestExecutionFinished(
 		Error:      req.Msg.Error,
 	}
 
-	testExec, err := s.repo.UpdateFinishedTestExecution(ctx, finished)
+	testExec, err := s.repo.UpdateTestExecutionFinished(ctx, finished)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update test execution: %w", err)
 	}

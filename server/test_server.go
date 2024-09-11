@@ -24,9 +24,8 @@ func ServeTestService(ctx context.Context, cfg TestServiceConfig) error {
 
 	srv := rpc.NewServer(fmt.Sprint(":", cfg.Port))
 
-	pgPool, err := postgres.OpenPool(ctx, cfg.Postgres.URL(),
-		postgres.WithMigration(cfg.Postgres.SchemaVersion),
-	)
+	pgCfg := cfg.Postgres
+	pgPool, err := postgres.OpenPool(ctx, pgCfg.User, pgCfg.Password, pgCfg.HostPort, postgres.WithMigration())
 	if err != nil {
 		return err
 	}
@@ -38,7 +37,7 @@ func ServeTestService(ctx context.Context, cfg TestServiceConfig) error {
 		return err
 	}
 
-	nc, err := corenats.Connect(cfg.NatsConfig.HostPort)
+	nc, err := corenats.Connect(cfg.Nats.HostPort)
 	if err != nil {
 		return err
 	}
