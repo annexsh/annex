@@ -1,6 +1,8 @@
 package postgres
 
 import (
+	"go.temporal.io/sdk/converter"
+
 	"github.com/annexsh/annex/postgres/sqlc"
 
 	"github.com/annexsh/annex/test"
@@ -27,13 +29,15 @@ func marshalTests(tests []*sqlc.Test) []*test.Test {
 
 func marshalTestDefaultInput(input *sqlc.TestDefaultInput) *test.Payload {
 	return &test.Payload{
-		Data: input.Data,
+		Data:     input.Data,
+		Metadata: map[string][]byte{"encoding": []byte(converter.MetadataEncodingJSON)},
 	}
 }
 
-func marshalTestExecPayload(input *sqlc.TestExecutionInput) *test.Payload {
+func marshalTestExecInput(input *sqlc.TestExecutionInput) *test.Payload {
 	return &test.Payload{
-		Data: input.Data,
+		Data:     input.Data,
+		Metadata: map[string][]byte{"encoding": []byte(converter.MetadataEncodingJSON)},
 	}
 }
 

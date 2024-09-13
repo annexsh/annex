@@ -65,13 +65,13 @@ func TestCreateGetTestExecution(t *testing.T) {
 				require.NoError(t, err)
 			}
 
-			gotDefInput, err := r.GetTestExecutionInput(ctx, got.ID)
+			gotInput, err := r.GetTestExecutionInput(ctx, got.ID)
 			if tt.input != nil {
 				require.NoError(t, err)
-				assert.Equal(t, tt.input.Data, gotDefInput.Data)
+				assert.Equal(t, tt.input, gotInput)
 			} else {
 				assert.ErrorIs(t, err, test.ErrorTestExecutionPayloadNotFound)
-				assert.Nil(t, gotDefInput)
+				assert.Nil(t, gotInput)
 			}
 		})
 	}

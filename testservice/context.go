@@ -13,6 +13,10 @@ func (s *Service) RegisterContext(
 	ctx context.Context,
 	req *connect.Request[testsv1.RegisterContextRequest],
 ) (*connect.Response[testsv1.RegisterContextResponse], error) {
+	if err := validateRegisterContextRequest(req.Msg); err != nil {
+		return nil, err
+	}
+
 	if err := s.repo.CreateContext(ctx, req.Msg.Context); err != nil {
 		return nil, err
 	}
@@ -23,6 +27,10 @@ func (s *Service) ListContexts(
 	ctx context.Context,
 	req *connect.Request[testsv1.ListContextsRequest],
 ) (*connect.Response[testsv1.ListContextsResponse], error) {
+	if err := validateListContextsRequest(req.Msg); err != nil {
+		return nil, err
+	}
+
 	filter, err := pagination.FilterFromRequest(req.Msg, pagination.WithString())
 	if err != nil {
 		return nil, err

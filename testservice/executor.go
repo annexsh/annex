@@ -52,12 +52,7 @@ func withInput(input *testsv1.Payload) executeOption {
 	}
 }
 
-func (e *executor) execute(ctx context.Context, testID uuid.V7, opts ...executeOption) (*test.TestExecution, error) {
-	t, err := e.repo.GetTest(ctx, testID)
-	if err != nil {
-		return nil, err
-	}
-
+func (e *executor) execute(ctx context.Context, t *test.Test, opts ...executeOption) (*test.TestExecution, error) {
 	var options executeOptions
 	for _, opt := range opts {
 		opt(&options)
@@ -68,7 +63,8 @@ func (e *executor) execute(ctx context.Context, testID uuid.V7, opts ...executeO
 
 	var testExec *test.TestExecution
 
-	err = e.repo.ExecuteTx(ctx, func(repo test.Repository) error {
+	err := e.repo.ExecuteTx(ctx, func(repo test.Repository) error {
+		var err error
 		testExec, err = repo.CreateTestExecutionScheduled(ctx, &test.ScheduledTestExecution{
 			ID:           execID,
 			TestID:       t.ID,

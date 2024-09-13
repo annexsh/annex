@@ -2,6 +2,8 @@ package testservice
 
 import (
 	"context"
+	"fmt"
+	"strconv"
 	"testing"
 
 	"connectrpc.com/connect"
@@ -10,6 +12,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.temporal.io/sdk/client"
+	"go.temporal.io/sdk/converter"
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
 
 	"github.com/annexsh/annex/internal/fake"
 	"github.com/annexsh/annex/log"
@@ -80,10 +84,172 @@ func TestService_RegisterTests(t *testing.T) {
 	}
 }
 
+func TestService_RegisterTests_validation(t *testing.T) {
+	tests := []struct {
+		name               string
+		req                *testsv1.RegisterTestsRequest
+		wantFieldViolation *errdetails.BadRequest_FieldViolation
+	}{
+		{
+			name: "blank context",
+			req: &testsv1.RegisterTestsRequest{
+				Context:     "",
+				Group:       "foo",
+				Definitions: []*testsv1.TestDefinition{{Name: "bar"}},
+			},
+			wantFieldViolation: wantBlankContextFieldViolation,
+		},
+		{
+			name: "blank name",
+			req: &testsv1.RegisterTestsRequest{
+				Context:     "foo",
+				Group:       "",
+				Definitions: []*testsv1.TestDefinition{{Name: "bar"}},
+			},
+			wantFieldViolation: wantBlankGroupFieldViolation,
+		},
+		{
+			name: "empty definitions",
+			req: &testsv1.RegisterTestsRequest{
+				Context:     "foo",
+				Group:       "bar",
+				Definitions: []*testsv1.TestDefinition{},
+			},
+			wantFieldViolation: &errdetails.BadRequest_FieldViolation{
+				Field:       "definitions",
+				Description: "Definitions must not be empty",
+			},
+		},
+		{
+			name: "definitions length greater than max",
+			req: &testsv1.RegisterTestsRequest{
+				Context:     "foo",
+				Group:       "bar",
+				Definitions: genTestDefinitions(maxRegisterTests + 1),
+			},
+			wantFieldViolation: &errdetails.BadRequest_FieldViolation{
+				Field:       "definitions",
+				Description: fmt.Sprintf("Definitions must not exceed a length of %d per request", maxRegisterTests),
+			},
+		},
+		{
+			name: "default input data empty",
+			req: &testsv1.RegisterTestsRequest{
+				Context: "foo",
+				Group:   "bar",
+				Definitions: []*testsv1.TestDefinition{
+					{
+						Name: "baz",
+						DefaultInput: &testsv1.Payload{
+							Data:     nil,
+							Metadata: map[string][]byte{"encoding": []byte(converter.MetadataEncodingJSON)},
+						},
+					},
+				},
+			},
+			wantFieldViolation: &errdetails.BadRequest_FieldViolation{
+				Field:       "definitions[0].default_input.data",
+				Description: "Data can't be empty",
+			},
+		},
+		{
+			name: "default input missing json encoding metadata",
+			req: &testsv1.RegisterTestsRequest{
+				Context: "foo",
+				Group:   "bar",
+				Definitions: []*testsv1.TestDefinition{
+					{
+						Name: "baz",
+						DefaultInput: &testsv1.Payload{
+							Data: []byte("qux"),
+						},
+					},
+				},
+			},
+			wantFieldViolation: &errdetails.BadRequest_FieldViolation{
+				Field:       "definitions[0].default_input.metadata",
+				Description: "Metadata encoding must be json/plain",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := Service{}
+			res, err := s.RegisterTests(context.Background(), connect.NewRequest(tt.req))
+			require.Nil(t, res)
+			assertInvalidRequest(t, err, tt.wantFieldViolation)
+		})
+	}
+}
+
+func TestService_GetTest(t *testing.T) {
+	testID := uuid.New()
+	tt := fake.GenTest()
+
+	r := &RepositoryMock{
+		GetTestFunc: func(ctx context.Context, id uuid.V7) (*test.Test, error) {
+			assert.Equal(t, testID, id)
+			return tt, nil
+		},
+	}
+
+	s := Service{repo: r}
+
+	req := &testsv1.GetTestRequest{
+		Context: "foo",
+		TestId:  testID.String(),
+	}
+	res, err := s.GetTest(context.Background(), connect.NewRequest(req))
+	require.NoError(t, err)
+	assert.Equal(t, tt.Proto(), res.Msg.Test)
+}
+
+func TestService_GetTest_validation(t *testing.T) {
+	tests := []struct {
+		name               string
+		req                *testsv1.GetTestRequest
+		wantFieldViolation *errdetails.BadRequest_FieldViolation
+	}{
+		{
+			name: "blank context",
+			req: &testsv1.GetTestRequest{
+				Context: "",
+				TestId:  uuid.NewString(),
+			},
+			wantFieldViolation: wantBlankContextFieldViolation,
+		},
+		{
+			name: "blank test id",
+			req: &testsv1.GetTestRequest{
+				Context: "foo",
+				TestId:  "",
+			},
+			wantFieldViolation: wantBlankTestIDFieldViolation,
+		},
+		{
+			name: "test id not a uuid",
+			req: &testsv1.GetTestRequest{
+				Context: "foo",
+				TestId:  "bar",
+			},
+			wantFieldViolation: wantTestIDNotUUIDFieldViolation,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := Service{}
+			res, err := s.GetTest(context.Background(), connect.NewRequest(tt.req))
+			require.Nil(t, res)
+			assertInvalidRequest(t, err, tt.wantFieldViolation)
+		})
+	}
+}
+
 func TestService_GetDefaultInput(t *testing.T) {
 	testID := uuid.New()
 	input := fake.GenInput()
-	req := &testsv1.GetTestDefaultInputRequest{TestId: testID.String()}
 
 	r := &RepositoryMock{
 		GetTestDefaultInputFunc: func(ctx context.Context, gotTestID uuid.V7) (*test.Payload, error) {
@@ -94,11 +260,57 @@ func TestService_GetDefaultInput(t *testing.T) {
 
 	s := Service{repo: r}
 
+	req := &testsv1.GetTestDefaultInputRequest{
+		Context: "foo",
+		TestId:  testID.String(),
+	}
 	res, err := s.GetTestDefaultInput(context.Background(), connect.NewRequest(req))
 	require.NoError(t, err)
 
 	want := string(input.Data)
 	assert.Equal(t, want, res.Msg.DefaultInput)
+}
+
+func TestService_GetDefaultInput_validation(t *testing.T) {
+	tests := []struct {
+		name               string
+		req                *testsv1.GetTestDefaultInputRequest
+		wantFieldViolation *errdetails.BadRequest_FieldViolation
+	}{
+		{
+			name: "blank context",
+			req: &testsv1.GetTestDefaultInputRequest{
+				Context: "",
+				TestId:  uuid.NewString(),
+			},
+			wantFieldViolation: wantBlankContextFieldViolation,
+		},
+		{
+			name: "blank test id",
+			req: &testsv1.GetTestDefaultInputRequest{
+				Context: "foo",
+				TestId:  "",
+			},
+			wantFieldViolation: wantBlankTestIDFieldViolation,
+		},
+		{
+			name: "test id not a uuid",
+			req: &testsv1.GetTestDefaultInputRequest{
+				Context: "foo",
+				TestId:  "bar",
+			},
+			wantFieldViolation: wantTestIDNotUUIDFieldViolation,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := Service{}
+			res, err := s.GetTestDefaultInput(context.Background(), connect.NewRequest(tt.req))
+			require.Nil(t, res)
+			assertInvalidRequest(t, err, tt.wantFieldViolation)
+		})
+	}
 }
 
 func TestService_ListTests(t *testing.T) {
@@ -148,6 +360,60 @@ func TestService_ListTests(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, wantPage2.Proto(), res.Msg.Tests)
 	assert.Empty(t, res.Msg.NextPageToken)
+}
+
+func TestService_ListTests_validation(t *testing.T) {
+	tests := []struct {
+		name               string
+		req                *testsv1.ListTestsRequest
+		wantFieldViolation *errdetails.BadRequest_FieldViolation
+	}{
+		{
+			name: "blank context",
+			req: &testsv1.ListTestsRequest{
+				Context:  "",
+				Group:    "foo",
+				PageSize: 1,
+			},
+			wantFieldViolation: wantBlankContextFieldViolation,
+		},
+		{
+			name: "blank group",
+			req: &testsv1.ListTestsRequest{
+				Context:  "foo",
+				Group:    "",
+				PageSize: 1,
+			},
+			wantFieldViolation: wantBlankGroupFieldViolation,
+		},
+		{
+			name: "page size less than 0",
+			req: &testsv1.ListTestsRequest{
+				Context:  "foo",
+				Group:    "bar",
+				PageSize: int32(-1),
+			},
+			wantFieldViolation: wantPageSizeFieldViolation,
+		},
+		{
+			name: "page size greater than max",
+			req: &testsv1.ListTestsRequest{
+				Context:  "foo",
+				Group:    "bar",
+				PageSize: maxPageSize + 1,
+			},
+			wantFieldViolation: wantPageSizeFieldViolation,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := Service{}
+			res, err := s.ListTests(context.Background(), connect.NewRequest(tt.req))
+			require.Nil(t, res)
+			assertInvalidRequest(t, err, tt.wantFieldViolation)
+		})
+	}
 }
 
 func TestService_ExecuteTest(t *testing.T) {
@@ -209,7 +475,10 @@ func TestService_ExecuteTest(t *testing.T) {
 		},
 	}
 
-	s := Service{executor: newExecutor(r, p, w, log.NewNopLogger())}
+	s := Service{
+		repo:     r,
+		executor: newExecutor(r, p, w, log.NewNopLogger()),
+	}
 
 	req := &testsv1.ExecuteTestRequest{
 		Context: tt.ContextID,
@@ -220,4 +489,86 @@ func TestService_ExecuteTest(t *testing.T) {
 	res, err := s.ExecuteTest(context.Background(), connect.NewRequest(req))
 	require.NoError(t, err)
 	assert.Equal(t, gotTestExec.Proto(), res.Msg.TestExecution)
+}
+
+func TestService_ExecuteTest_validation(t *testing.T) {
+	tests := []struct {
+		name               string
+		req                *testsv1.ExecuteTestRequest
+		wantFieldViolation *errdetails.BadRequest_FieldViolation
+	}{
+		{
+			name: "blank context",
+			req: &testsv1.ExecuteTestRequest{
+				Context: "",
+				TestId:  uuid.NewString(),
+			},
+			wantFieldViolation: wantBlankContextFieldViolation,
+		},
+		{
+			name: "blank test id",
+			req: &testsv1.ExecuteTestRequest{
+				Context: "foo",
+				TestId:  "",
+			},
+			wantFieldViolation: wantBlankTestIDFieldViolation,
+		},
+		{
+			name: "test id not a uuid",
+			req: &testsv1.ExecuteTestRequest{
+				Context: "foo",
+				TestId:  "bar",
+			},
+			wantFieldViolation: wantTestIDNotUUIDFieldViolation,
+		},
+		{
+			name: "default input data empty",
+			req: &testsv1.ExecuteTestRequest{
+				Context: "foo",
+				TestId:  uuid.NewString(),
+				Input: &testsv1.Payload{
+					Data:     nil,
+					Metadata: map[string][]byte{"encoding": []byte(converter.MetadataEncodingJSON)},
+				},
+			},
+			wantFieldViolation: &errdetails.BadRequest_FieldViolation{
+				Field:       "input.data",
+				Description: "Data can't be empty",
+			},
+		},
+		{
+			name: "default input missing json encoding metadata",
+			req: &testsv1.ExecuteTestRequest{
+				Context: "foo",
+				TestId:  uuid.NewString(),
+				Input: &testsv1.Payload{
+					Data: []byte("qux"),
+				},
+			},
+			wantFieldViolation: &errdetails.BadRequest_FieldViolation{
+				Field:       "input.metadata",
+				Description: "Metadata encoding must be json/plain",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := Service{}
+			res, err := s.ExecuteTest(context.Background(), connect.NewRequest(tt.req))
+			require.Nil(t, res)
+			assertInvalidRequest(t, err, tt.wantFieldViolation)
+		})
+	}
+}
+
+func genTestDefinitions(count int) []*testsv1.TestDefinition {
+	defs := make([]*testsv1.TestDefinition, count)
+	for i := 0; i < count; i++ {
+		defs[i] = &testsv1.TestDefinition{
+			Name:         strconv.Itoa(i),
+			DefaultInput: fake.GenDefaultInput().Proto(),
+		}
+	}
+	return defs
 }

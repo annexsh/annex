@@ -19,6 +19,10 @@ func (s *Service) RegisterGroup(
 	ctx context.Context,
 	req *connect.Request[testsv1.RegisterGroupRequest],
 ) (*connect.Response[testsv1.RegisterGroupResponse], error) {
+	if err := validateRegisterGroupRequest(req.Msg); err != nil {
+		return nil, err
+	}
+
 	if err := s.repo.CreateGroup(ctx, req.Msg.Context, req.Msg.Name); err != nil {
 		return nil, err
 	}
@@ -26,6 +30,10 @@ func (s *Service) RegisterGroup(
 }
 
 func (s *Service) ListGroups(ctx context.Context, req *connect.Request[testsv1.ListGroupsRequest]) (*connect.Response[testsv1.ListGroupsResponse], error) {
+	if err := validateListGroupsRequest(req.Msg); err != nil {
+		return nil, err
+	}
+
 	contextID := req.Msg.Context
 
 	filter, err := pagination.FilterFromRequest(req.Msg, pagination.WithString())

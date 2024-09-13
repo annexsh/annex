@@ -7,10 +7,10 @@ require (
 	connectrpc.com/grpcreflect v1.2.0
 	github.com/annexsh/annex-proto/go v0.0.0-20240911004546-a4e7d61cec64
 	github.com/cenkalti/backoff/v4 v4.3.0
+	github.com/cohesivestack/valgo v0.4.1
 	github.com/cristalhq/aconfig v0.18.5
 	github.com/cristalhq/aconfig/aconfigyaml v0.17.1
 	github.com/deckarep/golang-set/v2 v2.6.0
-	github.com/go-ozzo/ozzo-validation/v4 v4.3.0
 	github.com/golang-migrate/migrate/v4 v4.17.1
 	github.com/google/uuid v1.6.0
 	github.com/grpc-ecosystem/go-grpc-middleware/v2 v2.1.0
@@ -26,6 +26,7 @@ require (
 	go.temporal.io/server v1.23.1
 	golang.org/x/net v0.28.0
 	golang.org/x/sync v0.8.0
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240730163845-b1a4ccb954bf
 	google.golang.org/grpc v1.64.1
 	google.golang.org/protobuf v1.34.2
 	modernc.org/sqlite v1.32.0
@@ -152,7 +153,6 @@ require (
 	google.golang.org/api v0.182.0 // indirect
 	google.golang.org/genproto v0.0.0-20240415180920-8c6c420018be // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240805194559-2c9e96a0b5d4 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240730163845-b1a4ccb954bf // indirect
 	gopkg.in/go-jose/go-jose.v2 v2.6.3 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/validator.v2 v2.0.1 // indirect

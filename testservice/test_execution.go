@@ -18,6 +18,10 @@ func (s *Service) GetTestExecution(
 	ctx context.Context,
 	req *connect.Request[testsv1.GetTestExecutionRequest],
 ) (*connect.Response[testsv1.GetTestExecutionResponse], error) {
+	if err := validateGetTestExecutionRequest(req.Msg); err != nil {
+		return nil, err
+	}
+
 	execID, err := test.ParseTestExecutionID(req.Msg.TestExecutionId)
 	if err != nil {
 		return nil, err
@@ -47,6 +51,10 @@ func (s *Service) ListTestExecutions(
 	ctx context.Context,
 	req *connect.Request[testsv1.ListTestExecutionsRequest],
 ) (*connect.Response[testsv1.ListTestExecutionsResponse], error) {
+	if err := validateListTestExecutionsRequest(req.Msg); err != nil {
+		return nil, err
+	}
+
 	testID, err := uuid.Parse(req.Msg.TestId)
 	if err != nil {
 		return nil, err
@@ -79,6 +87,10 @@ func (s *Service) AckTestExecutionStarted(
 	ctx context.Context,
 	req *connect.Request[testsv1.AckTestExecutionStartedRequest],
 ) (*connect.Response[testsv1.AckTestExecutionStartedResponse], error) {
+	if err := validateAckTestExecutionStartedRequest(req.Msg); err != nil {
+		return nil, err
+	}
+
 	execID, err := test.ParseTestExecutionID(req.Msg.TestExecutionId)
 	if err != nil {
 		return nil, err
@@ -106,6 +118,10 @@ func (s *Service) AckTestExecutionFinished(
 	ctx context.Context,
 	req *connect.Request[testsv1.AckTestExecutionFinishedRequest],
 ) (*connect.Response[testsv1.AckTestExecutionFinishedResponse], error) {
+	if err := validateAckTestExecutionFinishedRequest(req.Msg); err != nil {
+		return nil, err
+	}
+
 	execID, err := test.ParseTestExecutionID(req.Msg.TestExecutionId)
 	if err != nil {
 		return nil, err
@@ -134,6 +150,10 @@ func (s *Service) RetryTestExecution(
 	ctx context.Context,
 	req *connect.Request[testsv1.RetryTestExecutionRequest],
 ) (*connect.Response[testsv1.RetryTestExecutionResponse], error) {
+	if err := validateRetryTestExecutionRequest(req.Msg); err != nil {
+		return nil, err
+	}
+
 	testExecID, err := test.ParseTestExecutionID(req.Msg.TestExecutionId)
 	if err != nil {
 		return nil, err

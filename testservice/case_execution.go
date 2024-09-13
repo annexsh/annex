@@ -17,6 +17,10 @@ func (s *Service) ListCaseExecutions(
 	ctx context.Context,
 	req *connect.Request[testsv1.ListCaseExecutionsRequest],
 ) (*connect.Response[testsv1.ListCaseExecutionsResponse], error) {
+	if err := validateListCaseExecutionsRequest(req.Msg); err != nil {
+		return nil, err
+	}
+
 	testExecID, err := test.ParseTestExecutionID(req.Msg.TestExecutionId)
 	if err != nil {
 		return nil, err
@@ -49,6 +53,10 @@ func (s *Service) AckCaseExecutionScheduled(
 	ctx context.Context,
 	req *connect.Request[testsv1.AckCaseExecutionScheduledRequest],
 ) (*connect.Response[testsv1.AckCaseExecutionScheduledResponse], error) {
+	if err := validateAckCaseExecutionScheduledRequest(req.Msg); err != nil {
+		return nil, err
+	}
+
 	testExecID, err := test.ParseTestExecutionID(req.Msg.TestExecutionId)
 	if err != nil {
 		return nil, err
@@ -78,6 +86,10 @@ func (s *Service) AckCaseExecutionStarted(
 	ctx context.Context,
 	req *connect.Request[testsv1.AckCaseExecutionStartedRequest],
 ) (*connect.Response[testsv1.AckCaseExecutionStartedResponse], error) {
+	if err := validateAckCaseExecutionStartedRequest(req.Msg); err != nil {
+		return nil, err
+	}
+
 	testExecID, err := test.ParseTestExecutionID(req.Msg.TestExecutionId)
 	if err != nil {
 		return nil, err
@@ -106,6 +118,10 @@ func (s *Service) AckCaseExecutionFinished(
 	ctx context.Context,
 	req *connect.Request[testsv1.AckCaseExecutionFinishedRequest],
 ) (*connect.Response[testsv1.AckCaseExecutionFinishedResponse], error) {
+	if err := validateAckCaseExecutionFinishedRequest(req.Msg); err != nil {
+		return nil, err
+	}
+
 	testExecID, err := test.ParseTestExecutionID(req.Msg.TestExecutionId)
 	if err != nil {
 		return nil, err

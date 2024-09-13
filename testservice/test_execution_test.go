@@ -13,6 +13,7 @@ import (
 	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/api/workflowservice/v1"
 	"go.temporal.io/sdk/client"
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/annexsh/annex/internal/fake"
@@ -76,6 +77,54 @@ func TestService_GetTestExecution(t *testing.T) {
 	}
 }
 
+func TestService_GetTestExecution_validation(t *testing.T) {
+	tests := []struct {
+		name               string
+		req                *testsv1.GetTestExecutionRequest
+		wantFieldViolation *errdetails.BadRequest_FieldViolation
+	}{
+		{
+			name: "blank context",
+			req: &testsv1.GetTestExecutionRequest{
+				Context:         "",
+				TestExecutionId: uuid.NewString(),
+			},
+			wantFieldViolation: wantBlankContextFieldViolation,
+		},
+		{
+			name: "blank test execution id",
+			req: &testsv1.GetTestExecutionRequest{
+				Context:         "foo",
+				TestExecutionId: "",
+			},
+			wantFieldViolation: &errdetails.BadRequest_FieldViolation{
+				Field:       "test_execution_id",
+				Description: "Test execution id can't be blank",
+			},
+		},
+		{
+			name: "test execution id not a uuid",
+			req: &testsv1.GetTestExecutionRequest{
+				Context:         "foo",
+				TestExecutionId: "bar",
+			},
+			wantFieldViolation: &errdetails.BadRequest_FieldViolation{
+				Field:       "test_execution_id",
+				Description: "Test execution id must be a v7 UUID",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := Service{}
+			res, err := s.GetTestExecution(context.Background(), connect.NewRequest(tt.req))
+			require.Nil(t, res)
+			assertInvalidRequest(t, err, tt.wantFieldViolation)
+		})
+	}
+}
+
 func TestService_ListTestExecutions(t *testing.T) {
 	pageSize := 2
 	testID := uuid.New()
@@ -119,6 +168,69 @@ func TestService_ListTestExecutions(t *testing.T) {
 	assert.Empty(t, res.Msg.NextPageToken)
 }
 
+func TestService_ListTestExecutions_validation(t *testing.T) {
+	tests := []struct {
+		name               string
+		req                *testsv1.ListTestExecutionsRequest
+		wantFieldViolation *errdetails.BadRequest_FieldViolation
+	}{
+		{
+			name: "blank context",
+			req: &testsv1.ListTestExecutionsRequest{
+				Context:  "",
+				TestId:   uuid.NewString(),
+				PageSize: 1,
+			},
+			wantFieldViolation: wantBlankContextFieldViolation,
+		},
+		{
+			name: "blank test id",
+			req: &testsv1.ListTestExecutionsRequest{
+				Context:  "foo",
+				TestId:   "",
+				PageSize: 1,
+			},
+			wantFieldViolation: wantBlankTestIDFieldViolation,
+		},
+		{
+			name: "test id not a uuid",
+			req: &testsv1.ListTestExecutionsRequest{
+				Context:  "foo",
+				TestId:   "bar",
+				PageSize: 1,
+			},
+			wantFieldViolation: wantTestIDNotUUIDFieldViolation,
+		},
+		{
+			name: "page size less than 0",
+			req: &testsv1.ListTestExecutionsRequest{
+				Context:  "foo",
+				TestId:   uuid.NewString(),
+				PageSize: int32(-1),
+			},
+			wantFieldViolation: wantPageSizeFieldViolation,
+		},
+		{
+			name: "page size greater than max",
+			req: &testsv1.ListTestExecutionsRequest{
+				Context:  "foo",
+				TestId:   uuid.NewString(),
+				PageSize: maxPageSize + 1,
+			},
+			wantFieldViolation: wantPageSizeFieldViolation,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := Service{}
+			res, err := s.ListTestExecutions(context.Background(), connect.NewRequest(tt.req))
+			require.Nil(t, res)
+			assertInvalidRequest(t, err, tt.wantFieldViolation)
+		})
+	}
+}
+
 func TestService_AckTestExecutionStarted(t *testing.T) {
 	wantTestExec := &test.TestExecution{
 		ID:           test.NewTestExecutionID(),
@@ -160,6 +272,81 @@ func TestService_AckTestExecutionStarted(t *testing.T) {
 	res, err := s.AckTestExecutionStarted(context.Background(), connect.NewRequest(req))
 	require.NoError(t, err)
 	assert.NotNil(t, res)
+}
+
+func TestService_AckTestExecutionStarted_validation(t *testing.T) {
+	tests := []struct {
+		name               string
+		req                *testsv1.AckTestExecutionStartedRequest
+		wantFieldViolation *errdetails.BadRequest_FieldViolation
+	}{
+		{
+			name: "blank context",
+			req: &testsv1.AckTestExecutionStartedRequest{
+				Context:         "",
+				TestExecutionId: uuid.NewString(),
+				StartTime:       timestamppb.Now(),
+			},
+			wantFieldViolation: wantBlankContextFieldViolation,
+		},
+		{
+			name: "blank test execution id",
+			req: &testsv1.AckTestExecutionStartedRequest{
+				Context:         "foo",
+				TestExecutionId: "",
+				StartTime:       timestamppb.Now(),
+			},
+			wantFieldViolation: &errdetails.BadRequest_FieldViolation{
+				Field:       "test_execution_id",
+				Description: "Test execution id can't be blank",
+			},
+		},
+		{
+			name: "test execution id not a uuid",
+			req: &testsv1.AckTestExecutionStartedRequest{
+				Context:         "foo",
+				TestExecutionId: "bar",
+				StartTime:       timestamppb.Now(),
+			},
+			wantFieldViolation: &errdetails.BadRequest_FieldViolation{
+				Field:       "test_execution_id",
+				Description: "Test execution id must be a v7 UUID",
+			},
+		},
+		{
+			name: "nil start time",
+			req: &testsv1.AckTestExecutionStartedRequest{
+				Context:         "foo",
+				TestExecutionId: uuid.NewString(),
+				StartTime:       nil,
+			},
+			wantFieldViolation: &errdetails.BadRequest_FieldViolation{
+				Field:       "start_time",
+				Description: "Start time must not be nil",
+			},
+		},
+		{
+			name: "invalid start time",
+			req: &testsv1.AckTestExecutionStartedRequest{
+				Context:         "foo",
+				TestExecutionId: uuid.NewString(),
+				StartTime:       &timestamppb.Timestamp{Seconds: 0, Nanos: 0},
+			},
+			wantFieldViolation: &errdetails.BadRequest_FieldViolation{
+				Field:       "start_time",
+				Description: "Start time must be a valid timestamp",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := Service{}
+			res, err := s.AckTestExecutionStarted(context.Background(), connect.NewRequest(tt.req))
+			require.Nil(t, res)
+			assertInvalidRequest(t, err, tt.wantFieldViolation)
+		})
+	}
 }
 
 func TestService_AckTestExecutionFinished(t *testing.T) {
@@ -209,6 +396,94 @@ func TestService_AckTestExecutionFinished(t *testing.T) {
 	res, err := s.AckTestExecutionFinished(context.Background(), connect.NewRequest(req))
 	require.NoError(t, err)
 	assert.NotNil(t, res)
+}
+
+func TestService_AckTestExecutionFinished_validation(t *testing.T) {
+	tests := []struct {
+		name               string
+		req                *testsv1.AckTestExecutionFinishedRequest
+		wantFieldViolation *errdetails.BadRequest_FieldViolation
+	}{
+		{
+			name: "blank context",
+			req: &testsv1.AckTestExecutionFinishedRequest{
+				Context:         "",
+				TestExecutionId: uuid.NewString(),
+				FinishTime:      timestamppb.Now(),
+			},
+			wantFieldViolation: wantBlankContextFieldViolation,
+		},
+		{
+			name: "blank test execution id",
+			req: &testsv1.AckTestExecutionFinishedRequest{
+				Context:         "foo",
+				TestExecutionId: "",
+				FinishTime:      timestamppb.Now(),
+			},
+			wantFieldViolation: &errdetails.BadRequest_FieldViolation{
+				Field:       "test_execution_id",
+				Description: "Test execution id can't be blank",
+			},
+		},
+		{
+			name: "test execution id not a uuid",
+			req: &testsv1.AckTestExecutionFinishedRequest{
+				Context:         "foo",
+				TestExecutionId: "bar",
+				FinishTime:      timestamppb.Now(),
+			},
+			wantFieldViolation: &errdetails.BadRequest_FieldViolation{
+				Field:       "test_execution_id",
+				Description: "Test execution id must be a v7 UUID",
+			},
+		},
+		{
+			name: "nil finish time",
+			req: &testsv1.AckTestExecutionFinishedRequest{
+				Context:         "foo",
+				TestExecutionId: uuid.NewString(),
+				FinishTime:      nil,
+			},
+			wantFieldViolation: &errdetails.BadRequest_FieldViolation{
+				Field:       "finish_time",
+				Description: "Finish time must not be nil",
+			},
+		},
+		{
+			name: "invalid finish time",
+			req: &testsv1.AckTestExecutionFinishedRequest{
+				Context:         "foo",
+				TestExecutionId: uuid.NewString(),
+				FinishTime:      &timestamppb.Timestamp{Seconds: 0, Nanos: 0},
+			},
+			wantFieldViolation: &errdetails.BadRequest_FieldViolation{
+				Field:       "finish_time",
+				Description: "Finish time must be a valid timestamp",
+			},
+		},
+		{
+			name: "blank error",
+			req: &testsv1.AckTestExecutionFinishedRequest{
+				Context:         "foo",
+				TestExecutionId: uuid.NewString(),
+				FinishTime:      timestamppb.Now(),
+				Error:           ptr.Get(""),
+			},
+			wantFieldViolation: &errdetails.BadRequest_FieldViolation{
+				Field:       "error",
+				Description: "Error can't be blank",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := Service{}
+			res, err := s.AckTestExecutionFinished(context.Background(), connect.NewRequest(tt.req))
+			require.Nil(t, res)
+			assertInvalidRequest(t, err, tt.wantFieldViolation)
+		})
+	}
 }
 
 func TestService_RetryTestExecution(t *testing.T) {
@@ -288,6 +563,7 @@ func TestService_RetryTestExecution(t *testing.T) {
 
 	// Retry test execution
 	req := &testsv1.RetryTestExecutionRequest{
+		Context:         "foo",
 		TestExecutionId: testExec.ID.String(),
 	}
 	res, err := svc.RetryTestExecution(ctx, connect.NewRequest(req))
@@ -302,4 +578,52 @@ func TestService_RetryTestExecution(t *testing.T) {
 	assert.Nil(t, gotTestExec.StartTime)
 	assert.Nil(t, gotTestExec.FinishTime)
 	assert.Nil(t, gotTestExec.Error)
+}
+
+func TestService_RetryTestExecution_validation(t *testing.T) {
+	tests := []struct {
+		name               string
+		req                *testsv1.RetryTestExecutionRequest
+		wantFieldViolation *errdetails.BadRequest_FieldViolation
+	}{
+		{
+			name: "blank context",
+			req: &testsv1.RetryTestExecutionRequest{
+				Context:         "",
+				TestExecutionId: uuid.NewString(),
+			},
+			wantFieldViolation: wantBlankContextFieldViolation,
+		},
+		{
+			name: "blank test execution id",
+			req: &testsv1.RetryTestExecutionRequest{
+				Context:         "foo",
+				TestExecutionId: "",
+			},
+			wantFieldViolation: &errdetails.BadRequest_FieldViolation{
+				Field:       "test_execution_id",
+				Description: "Test execution id can't be blank",
+			},
+		},
+		{
+			name: "test execution id not a uuid",
+			req: &testsv1.RetryTestExecutionRequest{
+				Context:         "foo",
+				TestExecutionId: "bar",
+			},
+			wantFieldViolation: &errdetails.BadRequest_FieldViolation{
+				Field:       "test_execution_id",
+				Description: "Test execution id must be a v7 UUID",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := Service{}
+			res, err := s.RetryTestExecution(context.Background(), connect.NewRequest(tt.req))
+			require.Nil(t, res)
+			assertInvalidRequest(t, err, tt.wantFieldViolation)
+		})
+	}
 }

@@ -13,7 +13,7 @@ import (
 )
 
 func newTestDB(t *testing.T) (*DB, func()) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	pool, err := newPool(ctx, "postgres://postgres:postgres@0.0.0.0:5432/postgres")

@@ -50,7 +50,8 @@ func GenDefaultInput() *test.Payload {
 		panic(err)
 	}
 	return &test.Payload{
-		Data: p.Data,
+		Data:     p.Data,
+		Metadata: p.Metadata,
 	}
 }
 
