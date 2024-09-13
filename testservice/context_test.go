@@ -9,6 +9,7 @@ import (
 	testsv1 "github.com/annexsh/annex-proto/go/gen/annex/tests/v1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
 
 	"github.com/annexsh/annex/test"
 )
@@ -21,7 +22,8 @@ func TestService_RegisterContext(t *testing.T) {
 		{
 			name:    "success",
 			wantErr: nil,
-		}, {
+		},
+		{
 			name:    "error",
 			wantErr: errors.New("bang"),
 		},
@@ -52,6 +54,31 @@ func TestService_RegisterContext(t *testing.T) {
 
 			require.NoError(t, err)
 			assert.NotNil(t, res)
+		})
+	}
+}
+
+func TestService_RegisterContext_validation(t *testing.T) {
+	tests := []struct {
+		name               string
+		req                *testsv1.RegisterContextRequest
+		wantFieldViolation *errdetails.BadRequest_FieldViolation
+	}{
+		{
+			name: "blank context",
+			req: &testsv1.RegisterContextRequest{
+				Context: "",
+			},
+			wantFieldViolation: wantBlankContextFieldViolation,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := Service{}
+			res, err := s.RegisterContext(context.Background(), connect.NewRequest(tt.req))
+			require.Nil(t, res)
+			assertInvalidRequest(t, err, tt.wantFieldViolation)
 		})
 	}
 }
@@ -93,4 +120,36 @@ func TestService_ListContexts(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, wantPage2, res.Msg.Contexts)
 	assert.Empty(t, res.Msg.NextPageToken)
+}
+
+func TestService_ListContexts_validation(t *testing.T) {
+	tests := []struct {
+		name               string
+		req                *testsv1.ListContextsRequest
+		wantFieldViolation *errdetails.BadRequest_FieldViolation
+	}{
+		{
+			name: "page size less than 0",
+			req: &testsv1.ListContextsRequest{
+				PageSize: int32(-1),
+			},
+			wantFieldViolation: wantPageSizeFieldViolation,
+		},
+		{
+			name: "page size greater than max",
+			req: &testsv1.ListContextsRequest{
+				PageSize: maxPageSize + 1,
+			},
+			wantFieldViolation: wantPageSizeFieldViolation,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := Service{}
+			res, err := s.ListContexts(context.Background(), connect.NewRequest(tt.req))
+			require.Nil(t, res)
+			assertInvalidRequest(t, err, tt.wantFieldViolation)
+		})
+	}
 }

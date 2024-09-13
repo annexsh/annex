@@ -13,6 +13,7 @@ import (
 	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/api/taskqueue/v1"
 	"go.temporal.io/api/workflowservice/v1"
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/annexsh/annex/test"
@@ -26,7 +27,8 @@ func TestService_RegisterGroup(t *testing.T) {
 		{
 			name:    "success",
 			wantErr: nil,
-		}, {
+		},
+		{
 			name:    "error",
 			wantErr: errors.New("bang"),
 		},
@@ -60,6 +62,43 @@ func TestService_RegisterGroup(t *testing.T) {
 
 			require.NoError(t, err)
 			assert.NotNil(t, res)
+		})
+	}
+}
+
+func TestService_RegisterGroup_validation(t *testing.T) {
+	tests := []struct {
+		name               string
+		req                *testsv1.RegisterGroupRequest
+		wantFieldViolation *errdetails.BadRequest_FieldViolation
+	}{
+		{
+			name: "blank context",
+			req: &testsv1.RegisterGroupRequest{
+				Context: "",
+				Name:    "foo",
+			},
+			wantFieldViolation: wantBlankContextFieldViolation,
+		},
+		{
+			name: "blank name",
+			req: &testsv1.RegisterGroupRequest{
+				Context: "foo",
+				Name:    "",
+			},
+			wantFieldViolation: &errdetails.BadRequest_FieldViolation{
+				Field:       "name",
+				Description: "Name can't be blank",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := Service{}
+			res, err := s.RegisterGroup(context.Background(), connect.NewRequest(tt.req))
+			require.Nil(t, res)
+			assertInvalidRequest(t, err, tt.wantFieldViolation)
 		})
 	}
 }
@@ -163,6 +202,48 @@ func TestService_ListGroups(t *testing.T) {
 				}
 				assert.Equal(t, wantGroup, res.Msg.Groups[i])
 			}
+		})
+	}
+}
+
+func TestService_ListGroups_validation(t *testing.T) {
+	tests := []struct {
+		name               string
+		req                *testsv1.ListGroupsRequest
+		wantFieldViolation *errdetails.BadRequest_FieldViolation
+	}{
+		{
+			name: "blank context",
+			req: &testsv1.ListGroupsRequest{
+				Context:  "",
+				PageSize: 1,
+			},
+			wantFieldViolation: wantBlankContextFieldViolation,
+		},
+		{
+			name: "page size less than 0",
+			req: &testsv1.ListGroupsRequest{
+				Context:  "foo",
+				PageSize: int32(-1),
+			},
+			wantFieldViolation: wantPageSizeFieldViolation,
+		},
+		{
+			name: "page size greater than max",
+			req: &testsv1.ListGroupsRequest{
+				Context:  "foo",
+				PageSize: maxPageSize + 1,
+			},
+			wantFieldViolation: wantPageSizeFieldViolation,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := Service{}
+			res, err := s.ListGroups(context.Background(), connect.NewRequest(tt.req))
+			require.Nil(t, res)
+			assertInvalidRequest(t, err, tt.wantFieldViolation)
 		})
 	}
 }

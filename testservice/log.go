@@ -19,6 +19,10 @@ func (s *Service) PublishLog(
 	ctx context.Context,
 	req *connect.Request[testsv1.PublishLogRequest],
 ) (*connect.Response[testsv1.PublishLogResponse], error) {
+	if err := validatePublishLogRequest(req.Msg); err != nil {
+		return nil, err
+	}
+
 	testExecID, err := test.ParseTestExecutionID(req.Msg.TestExecutionId)
 	if err != nil {
 		return nil, err
@@ -63,6 +67,10 @@ func (s *Service) ListTestExecutionLogs(
 	ctx context.Context,
 	req *connect.Request[testsv1.ListTestExecutionLogsRequest],
 ) (*connect.Response[testsv1.ListTestExecutionLogsResponse], error) {
+	if err := validateListTestExecutionLogsRequest(req.Msg); err != nil {
+		return nil, err
+	}
+
 	testExecID, err := test.ParseTestExecutionID(req.Msg.TestExecutionId)
 	if err != nil {
 		return nil, err

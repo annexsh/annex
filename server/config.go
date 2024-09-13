@@ -3,9 +3,11 @@ package server
 import (
 	"fmt"
 
+	"github.com/cohesivestack/valgo"
 	"github.com/cristalhq/aconfig"
 	"github.com/cristalhq/aconfig/aconfigyaml"
-	"github.com/go-ozzo/ozzo-validation/v4"
+
+	"github.com/annexsh/annex/internal/validator"
 )
 
 type AllInOneConfig struct {
@@ -17,31 +19,20 @@ type AllInOneConfig struct {
 }
 
 func (c AllInOneConfig) Validate() error {
-	if err := validation.ValidateStruct(&c,
-		validation.Field(&c.Port, validation.Required, validation.Min(0)),
-	); err != nil {
-		return err
-	}
-
+	v := validator.New(validator.WithBaseErrorMessage("invalid config"))
+	v.Is(valgo.Int(c.Port, "port").GreaterOrEqualTo(0))
 	if c.Postgres.Empty() && !c.Development.SQLiteDatabase {
-		return fmt.Errorf("Postgres required")
+		v.AddErrorMessage("postgres", "Postgres configuration required")
 	}
 	if !c.Postgres.Empty() && c.Development.SQLiteDatabase {
-		return fmt.Errorf("Postgres and SQLite are mutually exclusive")
+		v.AddErrorMessage("postgres", "Postgres and SQLite configuration are mutually exclusive")
 	}
 	if !c.Development.SQLiteDatabase {
-		if err := c.Postgres.Validate(); err != nil {
-			return err
-		}
+		v.In("postgres", c.Postgres.Validation())
 	}
-	if err := c.Nats.Validate(); err != nil {
-		return err
-	}
-	if err := c.Temporal.Validate(); err != nil {
-		return err
-	}
-
-	return nil
+	v.In("nats", c.Nats.Validation())
+	v.In("temporal", c.Temporal.Validation())
+	return v.Error()
 }
 
 func LoadAllInOneConfig() (AllInOneConfig, error) {
@@ -60,21 +51,11 @@ type TestServiceConfig struct {
 }
 
 func (c TestServiceConfig) Validate() error {
-	if err := validation.ValidateStruct(&c,
-		validation.Field(&c.Port, validation.Required, validation.Min(0)),
-		validation.Field(&c.WorkflowServiceURL, validation.Required),
-	); err != nil {
-		return err
-	}
-
-	if err := c.Postgres.Validate(); err != nil {
-		return err
-	}
-	if err := c.Nats.Validate(); err != nil {
-		return err
-	}
-
-	return nil
+	v := validator.New(validator.WithBaseErrorMessage("invalid config"))
+	v.Is(valgo.Int(c.Port, "port").GreaterOrEqualTo(0))
+	v.In("postgres", c.Postgres.Validation())
+	v.In("nats", c.Nats.Validation())
+	return v.Error()
 }
 
 func LoadTestServiceConfig() (TestServiceConfig, error) {
@@ -92,18 +73,13 @@ type EventServiceConfig struct {
 }
 
 func (c EventServiceConfig) Validate() error {
-	if err := validation.ValidateStruct(&c,
-		validation.Field(&c.Port, validation.Required, validation.Min(0)),
-		validation.Field(&c.TestServiceURL, validation.Required),
-	); err != nil {
-		return err
-	}
-
-	if err := c.Nats.Validate(); err != nil {
-		return err
-	}
-
-	return nil
+	v := validator.New()
+	v.Is(
+		valgo.Int(c.Port, "port").GreaterOrEqualTo(0),
+		valgo.String(c.TestServiceURL, "testServiceURL").Not().Blank(),
+	)
+	v.In("nats", c.Nats.Validation())
+	return v.Error()
 }
 
 func LoadEventServiceConfig() (EventServiceConfig, error) {
@@ -121,17 +97,12 @@ type WorkflowProxyServiceConfig struct {
 }
 
 func (c WorkflowProxyServiceConfig) Validate() error {
-	if err := validation.ValidateStruct(&c,
-		validation.Field(&c.Port, validation.Required, validation.Min(0)),
-		validation.Field(&c.TestServiceURL, validation.Required),
-	); err != nil {
-		return err
-	}
-
-	if err := c.Temporal.Validate(); err != nil {
-		return err
-	}
-
+	v := validator.New(validator.WithBaseErrorMessage("invalid config"))
+	v.Is(
+		valgo.Int(c.Port, "port").GreaterOrEqualTo(0),
+		valgo.String(c.TestServiceURL, "testServiceURL").Not().Blank(),
+	)
+	v.In("temporal", c.Temporal.Validation())
 	return nil
 }
 
@@ -149,15 +120,11 @@ type PostgresConfig struct {
 	Password string `yaml:"password"`
 }
 
-func (c PostgresConfig) Validate() error {
-	if err := validation.ValidateStruct(&c,
-		validation.Field(&c.HostPort, validation.Required),
-		validation.Field(&c.User, validation.Required),
-		validation.Field(&c.Password, validation.Required),
-	); err != nil {
-		return fmt.Errorf("Postgres: %w", err)
-	}
-	return nil
+func (c PostgresConfig) Validation() *valgo.Validation {
+	return valgo.Is(
+		validator.HostPort(c.HostPort, "hostPort"),
+		valgo.String(c.User, "user").Not().Blank(),
+	)
 }
 
 func (c PostgresConfig) Empty() bool {
@@ -171,13 +138,8 @@ type NatsConfig struct {
 	Embedded bool `yaml:"embedded"`
 }
 
-func (c NatsConfig) Validate() error {
-	if err := validation.ValidateStruct(&c,
-		validation.Field(&c.HostPort, validation.Required),
-	); err != nil {
-		return fmt.Errorf("Nats: %w", err)
-	}
-	return nil
+func (c NatsConfig) Validation() *valgo.Validation {
+	return valgo.Is(validator.HostPort(c.HostPort, "hostPort"))
 }
 
 type TemporalConfig struct {
@@ -185,14 +147,11 @@ type TemporalConfig struct {
 	Namespace string `yaml:"namespace"`
 }
 
-func (c TemporalConfig) Validate() error {
-	if err := validation.ValidateStruct(&c,
-		validation.Field(&c.HostPort, validation.Required),
-		validation.Field(&c.Namespace, validation.Required),
-	); err != nil {
-		return fmt.Errorf("Temporal: %w", err)
-	}
-	return nil
+func (c TemporalConfig) Validation() *valgo.Validation {
+	return valgo.Is(
+		validator.HostPort(c.HostPort, "hostPort"),
+		valgo.String(c.Namespace, "namespace").Not().Blank(),
+	)
 }
 
 type DevelopmentConfig struct {
@@ -201,11 +160,11 @@ type DevelopmentConfig struct {
 	SQLiteDatabase   bool `yaml:"sqliteDatabase"`
 }
 
-type validator interface {
+type configValidator interface {
 	Validate() error
 }
 
-func loadConfig(dst validator) error {
+func loadConfig(dst configValidator) error {
 	loaderCfg := aconfig.Config{
 		FileDecoders: map[string]aconfig.FileDecoder{
 			".yaml": aconfigyaml.New(),

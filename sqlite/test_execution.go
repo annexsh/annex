@@ -40,7 +40,7 @@ func (t *TestExecutionReader) GetTestExecutionInput(ctx context.Context, id test
 			return nil, test.ErrorTestExecutionPayloadNotFound
 		}
 	}
-	return marshalTestExecPayload(payload), nil
+	return marshalTestExecInput(payload), nil
 }
 
 func (t *TestExecutionReader) ListTestExecutions(ctx context.Context, testID uuid.V7, filter test.PageFilter[test.TestExecutionID]) (test.TestExecutionList, error) {

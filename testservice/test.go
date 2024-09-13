@@ -2,7 +2,6 @@ package testservice
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"time"
 
@@ -18,6 +17,10 @@ func (s *Service) RegisterTests(
 	ctx context.Context,
 	req *connect.Request[testsv1.RegisterTestsRequest],
 ) (*connect.Response[testsv1.RegisterTestsResponse], error) {
+	if err := validateRegisterTestsRequest(req.Msg); err != nil {
+		return nil, err
+	}
+
 	createTime := time.Now().UTC()
 	var tests test.TestList
 
@@ -66,6 +69,10 @@ func (s *Service) GetTest(
 	ctx context.Context,
 	req *connect.Request[testsv1.GetTestRequest],
 ) (*connect.Response[testsv1.GetTestResponse], error) {
+	if err := validateGetTestRequest(req.Msg); err != nil {
+		return nil, err
+	}
+
 	testID, err := uuid.Parse(req.Msg.TestId)
 	if err != nil {
 		return nil, err
@@ -85,6 +92,10 @@ func (s *Service) GetTestDefaultInput(
 	ctx context.Context,
 	req *connect.Request[testsv1.GetTestDefaultInputRequest],
 ) (*connect.Response[testsv1.GetTestDefaultInputResponse], error) {
+	if err := validateGetTestDefaultInputRequest(req.Msg); err != nil {
+		return nil, err
+	}
+
 	testID, err := uuid.Parse(req.Msg.TestId)
 	if err != nil {
 		return nil, err
@@ -92,11 +103,6 @@ func (s *Service) GetTestDefaultInput(
 
 	payload, err := s.repo.GetTestDefaultInput(ctx, testID)
 	if err != nil {
-		if errors.Is(err, test.ErrorTestPayloadNotFound) {
-			return connect.NewResponse(&testsv1.GetTestDefaultInputResponse{
-				DefaultInput: "",
-			}), nil
-		}
 		return nil, err
 	}
 
@@ -109,6 +115,10 @@ func (s *Service) ListTests(
 	ctx context.Context,
 	req *connect.Request[testsv1.ListTestsRequest],
 ) (*connect.Response[testsv1.ListTestsResponse], error) {
+	if err := validateListTestsRequest(req.Msg); err != nil {
+		return nil, err
+	}
+
 	filter, err := pagination.FilterFromRequest(req.Msg, pagination.WithUUID())
 	if err != nil {
 		return nil, err
@@ -136,8 +146,21 @@ func (s *Service) ExecuteTest(
 	ctx context.Context,
 	req *connect.Request[testsv1.ExecuteTestRequest],
 ) (*connect.Response[testsv1.ExecuteTestResponse], error) {
+	if err := validateExecuteTestRequest(req.Msg); err != nil {
+		return nil, err
+	}
+
 	testID, err := uuid.Parse(req.Msg.TestId)
 	if err != nil {
+		return nil, err
+	}
+
+	t, err := s.repo.GetTest(ctx, testID)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = validateExecuteTestRequestInputRequired(t.HasInput, req.Msg); err != nil {
 		return nil, err
 	}
 
@@ -146,7 +169,7 @@ func (s *Service) ExecuteTest(
 		opts = append(opts, withInput(req.Msg.Input))
 	}
 
-	testExec, err := s.executor.execute(ctx, testID, opts...)
+	testExec, err := s.executor.execute(ctx, t, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute test: %w", err)
 	}
