@@ -10,43 +10,78 @@ import (
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 )
 
-var (
-	wantBlankContextFieldViolation = &errdetails.BadRequest_FieldViolation{
-		Field:       "context",
+func wantBlankContextFieldViolation(streamIndex ...int) *errdetails.BadRequest_FieldViolation {
+	return &errdetails.BadRequest_FieldViolation{
+		Field:       fieldViolationName("context", streamIndex...),
 		Description: "Context can't be blank",
 	}
-	wantBlankGroupFieldViolation = &errdetails.BadRequest_FieldViolation{
-		Field:       "group",
-		Description: "Group can't be blank",
+}
+
+func wantBlankTestSuiteFieldViolation(streamIndex ...int) *errdetails.BadRequest_FieldViolation {
+	return &errdetails.BadRequest_FieldViolation{
+		Field:       fieldViolationName("test_suite_id", streamIndex...),
+		Description: "Test suite id can't be blank",
 	}
-	wantBlankTestIDFieldViolation = &errdetails.BadRequest_FieldViolation{
-		Field:       "test_id",
+}
+
+func wantBlankTestIDFieldViolation(streamIndex ...int) *errdetails.BadRequest_FieldViolation {
+	return &errdetails.BadRequest_FieldViolation{
+		Field:       fieldViolationName("test_id", streamIndex...),
 		Description: "Test id can't be blank",
 	}
-	wantTestIDNotUUIDFieldViolation = &errdetails.BadRequest_FieldViolation{
-		Field:       "test_id",
+}
+
+func wantTestIDNotUUIDFieldViolation(streamIndex ...int) *errdetails.BadRequest_FieldViolation {
+	return &errdetails.BadRequest_FieldViolation{
+		Field:       fieldViolationName("test_id", streamIndex...),
 		Description: "Test id must be a v7 UUID",
 	}
-	wantBlankTestExecIDFieldViolation = &errdetails.BadRequest_FieldViolation{
-		Field:       "test_execution_id",
+}
+
+func wantBlankTestExecIDFieldViolation(streamIndex ...int) *errdetails.BadRequest_FieldViolation {
+	return &errdetails.BadRequest_FieldViolation{
+		Field:       fieldViolationName("test_execution_id", streamIndex...),
 		Description: "Test execution id can't be blank",
 	}
-	wantTestExecIDNotUUIDFieldViolation = &errdetails.BadRequest_FieldViolation{
-		Field:       "test_execution_id",
+}
+
+func wantTestExecIDNotUUIDFieldViolation(streamIndex ...int) *errdetails.BadRequest_FieldViolation {
+	return &errdetails.BadRequest_FieldViolation{
+		Field:       fieldViolationName("test_execution_id", streamIndex...),
 		Description: "Test execution id must be a v7 UUID",
 	}
-	wantPageSizeFieldViolation = &errdetails.BadRequest_FieldViolation{
-		Field:       "page_size",
+}
+
+func wantPageSizeFieldViolation(streamIndex ...int) *errdetails.BadRequest_FieldViolation {
+	return &errdetails.BadRequest_FieldViolation{
+		Field:       fieldViolationName("page_size", streamIndex...),
 		Description: fmt.Sprintf(`Page size must be between "0" and "%d"`, maxPageSize),
 	}
-)
+}
 
-func assertInvalidRequest(t *testing.T, err error, wantFieldViolation *errdetails.BadRequest_FieldViolation) {
+func fieldViolationName(name string, streamIndex ...int) string {
+	if len(streamIndex) > 1 {
+		panic("only one `streamIndex` permitted")
+	} else if len(streamIndex) == 1 {
+		return fmt.Sprintf("stream[%d].%s", streamIndex[0], name)
+	}
+	return name
+}
+
+func assertInvalidRequest(t *testing.T, err error, wantFieldViolation *errdetails.BadRequest_FieldViolation, isStream ...bool) {
+	baseMsg := reqValidationBaseErrMsg
+
+	if len(isStream) > 1 {
+		panic("only one `isStream` permitted")
+	} else if len(isStream) == 1 && isStream[0] {
+		baseMsg = streamReqValidationBaseErrMsg
+	}
+
 	var cErr *connect.Error
 	require.ErrorAs(t, err, &cErr)
 
 	assert.Equal(t, connect.CodeInvalidArgument, cErr.Code())
-	assert.Equal(t, reqValidationBaseErrMsg, cErr.Message())
+	assert.Equal(t, baseMsg, cErr.Message())
 
 	require.Len(t, cErr.Details(), 1)
 	val, err := cErr.Details()[0].Value()

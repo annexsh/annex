@@ -5,7 +5,7 @@ go 1.22.0
 require (
 	connectrpc.com/connect v1.16.2
 	connectrpc.com/grpcreflect v1.2.0
-	github.com/annexsh/annex-proto/go v0.0.0-20240911004546-a4e7d61cec64
+	github.com/annexsh/annex-proto/go v0.0.0-20241007123620-ae2c3f2c27fc
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/cohesivestack/valgo v0.4.1
 	github.com/cristalhq/aconfig v0.18.5

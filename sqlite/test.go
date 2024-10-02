@@ -32,11 +32,11 @@ func (t *TestReader) GetTest(ctx context.Context, id uuid.V7) (*test.Test, error
 	return marshalTest(tt), nil
 }
 
-func (t *TestReader) ListTests(ctx context.Context, contextID string, groupID string, filter test.PageFilter[uuid.V7]) (test.TestList, error) {
+func (t *TestReader) ListTests(ctx context.Context, contextID string, testSuiteID uuid.V7, filter test.PageFilter[uuid.V7]) (test.TestList, error) {
 	params := sqlc.ListTestsParams{
-		ContextID: contextID,
-		GroupID:   groupID,
-		PageSize:  int64(filter.Size),
+		ContextID:   contextID,
+		TestSuiteID: testSuiteID,
+		PageSize:    int64(filter.Size),
 	}
 	if filter.OffsetID != nil {
 		params.OffsetID = ptr.Get(filter.OffsetID.String())
@@ -46,6 +46,7 @@ func (t *TestReader) ListTests(ctx context.Context, contextID string, groupID st
 	if err != nil {
 		return nil, err
 	}
+
 	return marshalTests(tests), nil
 }
 
@@ -70,17 +71,21 @@ func NewTestWriter(db *DB) *TestWriter {
 
 func (t *TestWriter) CreateTest(ctx context.Context, test *test.Test) (*test.Test, error) {
 	tt, err := t.db.CreateTest(ctx, sqlc.CreateTestParams{
-		ContextID:  test.ContextID,
-		GroupID:    test.GroupID,
-		ID:         test.ID,
-		Name:       test.Name,
-		HasInput:   test.HasInput,
-		CreateTime: test.CreateTime,
+		ContextID:   test.ContextID,
+		TestSuiteID: test.TestSuiteID,
+		ID:          test.ID,
+		Name:        test.Name,
+		HasInput:    test.HasInput,
+		CreateTime:  test.CreateTime,
 	})
 	if err != nil {
 		return nil, err
 	}
 	return marshalTest(tt), nil
+}
+
+func (t *TestWriter) DeleteTest(ctx context.Context, id uuid.V7) error {
+	return t.db.DeleteTest(ctx, id)
 }
 
 func (t *TestWriter) CreateTestDefaultInput(ctx context.Context, testID uuid.V7, defaultInput *test.Payload) error {

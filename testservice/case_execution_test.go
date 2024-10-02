@@ -75,7 +75,7 @@ func TestService_ListCaseExecutions_validation(t *testing.T) {
 				TestExecutionId: uuid.NewString(),
 				PageSize:        1,
 			},
-			wantFieldViolation: wantBlankContextFieldViolation,
+			wantFieldViolation: wantBlankContextFieldViolation(),
 		},
 		{
 			name: "blank test execution id",
@@ -84,7 +84,7 @@ func TestService_ListCaseExecutions_validation(t *testing.T) {
 				TestExecutionId: "",
 				PageSize:        1,
 			},
-			wantFieldViolation: wantBlankTestExecIDFieldViolation,
+			wantFieldViolation: wantBlankTestExecIDFieldViolation(),
 		},
 		{
 			name: "test execution id not a uuid",
@@ -93,7 +93,7 @@ func TestService_ListCaseExecutions_validation(t *testing.T) {
 				TestExecutionId: "bar",
 				PageSize:        1,
 			},
-			wantFieldViolation: wantTestExecIDNotUUIDFieldViolation,
+			wantFieldViolation: wantTestExecIDNotUUIDFieldViolation(),
 		},
 		{
 			name: "page size less than 0",
@@ -102,7 +102,7 @@ func TestService_ListCaseExecutions_validation(t *testing.T) {
 				TestExecutionId: uuid.NewString(),
 				PageSize:        int32(-1),
 			},
-			wantFieldViolation: wantPageSizeFieldViolation,
+			wantFieldViolation: wantPageSizeFieldViolation(),
 		},
 		{
 			name: "page size greater than max",
@@ -111,7 +111,7 @@ func TestService_ListCaseExecutions_validation(t *testing.T) {
 				TestExecutionId: uuid.NewString(),
 				PageSize:        maxPageSize + 1,
 			},
-			wantFieldViolation: wantPageSizeFieldViolation,
+			wantFieldViolation: wantPageSizeFieldViolation(),
 		},
 	}
 
@@ -186,7 +186,7 @@ func TestService_AckCaseExecutionScheduled_validation(t *testing.T) {
 				CaseName:        "foo",
 				ScheduleTime:    timestamppb.Now(),
 			},
-			wantFieldViolation: wantBlankContextFieldViolation,
+			wantFieldViolation: wantBlankContextFieldViolation(),
 		},
 		{
 			name: "blank test execution id",
@@ -343,7 +343,7 @@ func TestService_AckCaseExecutionStarted_validation(t *testing.T) {
 				CaseExecutionId: 1,
 				StartTime:       timestamppb.Now(),
 			},
-			wantFieldViolation: wantBlankContextFieldViolation,
+			wantFieldViolation: wantBlankContextFieldViolation(),
 		},
 		{
 			name: "blank test execution id",
@@ -491,7 +491,7 @@ func TestService_AckCaseExecutionFinished_validation(t *testing.T) {
 				CaseExecutionId: 1,
 				FinishTime:      timestamppb.Now(),
 			},
-			wantFieldViolation: wantBlankContextFieldViolation,
+			wantFieldViolation: wantBlankContextFieldViolation(),
 		},
 		{
 			name: "blank test execution id",

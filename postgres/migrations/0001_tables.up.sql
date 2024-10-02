@@ -3,23 +3,33 @@ CREATE TABLE contexts
     id TEXT PRIMARY KEY
 );
 
-CREATE TABLE groups
+CREATE TABLE test_suites
 (
-    context_id TEXT NOT NULL REFERENCES contexts (id) ON DELETE CASCADE,
-    id         TEXT NOT NULL,
-    PRIMARY KEY (context_id, id)
+    id          UUID NOT NULL PRIMARY KEY,
+    context_id  TEXT NOT NULL REFERENCES contexts (id) ON DELETE CASCADE,
+    name        TEXT NOT NULL,
+    description TEXT,
+    UNIQUE (context_id, name)
+);
+
+CREATE TABLE test_suite_registrations
+(
+    context_id    TEXT NOT NULL REFERENCES contexts (id) ON DELETE CASCADE,
+    test_suite_id UUID NOT NULL REFERENCES test_suites (id) ON DELETE CASCADE,
+    runner_id     TEXT NOT NULL,
+    version       TEXT NOT NULL,
+    PRIMARY KEY (context_id, test_suite_id)
 );
 
 CREATE TABLE tests
 (
-    id          UUID      NOT NULL PRIMARY KEY,
-    context_id  TEXT      NOT NULL,
-    group_id    TEXT      NOT NULL,
-    name        TEXT      NOT NULL,
-    has_input   BOOLEAN   NOT NULL,
-    create_time TIMESTAMP NOT NULL,
-    FOREIGN KEY (context_id, group_id) REFERENCES groups (context_id, id) ON UPDATE CASCADE DEFERRABLE,
-    UNIQUE (context_id, group_id, name)
+    id            UUID      NOT NULL PRIMARY KEY,
+    context_id    TEXT      NOT NULL REFERENCES contexts (id) ON DELETE CASCADE,
+    test_suite_id UUID      NOT NULL REFERENCES test_suites (id) ON DELETE CASCADE,
+    name          TEXT      NOT NULL,
+    has_input     BOOLEAN   NOT NULL,
+    create_time   TIMESTAMP NOT NULL,
+    UNIQUE (context_id, test_suite_id, name)
 );
 
 CREATE TABLE test_default_inputs

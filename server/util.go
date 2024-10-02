@@ -16,14 +16,14 @@ import (
 )
 
 func serve(ctx context.Context, srv *rpc.Server, logger log.Logger) error {
-	logger.Info("starting server", "connect.address", srv.ConnectAddress(), "grpc.address", srv.GRPCAddress())
-
 	srvErrCh := make(chan error, 1)
 	go func() {
 		if err := srv.Serve(); err != nil {
 			srvErrCh <- err
 		}
 	}()
+
+	logger.Info("started server", "connect.address", srv.ConnectAddress(), "grpc.address", srv.GRPCAddress())
 
 	select {
 	case <-ctx.Done():

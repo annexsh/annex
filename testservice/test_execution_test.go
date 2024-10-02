@@ -89,7 +89,7 @@ func TestService_GetTestExecution_validation(t *testing.T) {
 				Context:         "",
 				TestExecutionId: uuid.NewString(),
 			},
-			wantFieldViolation: wantBlankContextFieldViolation,
+			wantFieldViolation: wantBlankContextFieldViolation(),
 		},
 		{
 			name: "blank test execution id",
@@ -181,7 +181,7 @@ func TestService_ListTestExecutions_validation(t *testing.T) {
 				TestId:   uuid.NewString(),
 				PageSize: 1,
 			},
-			wantFieldViolation: wantBlankContextFieldViolation,
+			wantFieldViolation: wantBlankContextFieldViolation(),
 		},
 		{
 			name: "blank test id",
@@ -190,7 +190,7 @@ func TestService_ListTestExecutions_validation(t *testing.T) {
 				TestId:   "",
 				PageSize: 1,
 			},
-			wantFieldViolation: wantBlankTestIDFieldViolation,
+			wantFieldViolation: wantBlankTestIDFieldViolation(),
 		},
 		{
 			name: "test id not a uuid",
@@ -199,7 +199,7 @@ func TestService_ListTestExecutions_validation(t *testing.T) {
 				TestId:   "bar",
 				PageSize: 1,
 			},
-			wantFieldViolation: wantTestIDNotUUIDFieldViolation,
+			wantFieldViolation: wantTestIDNotUUIDFieldViolation(),
 		},
 		{
 			name: "page size less than 0",
@@ -208,7 +208,7 @@ func TestService_ListTestExecutions_validation(t *testing.T) {
 				TestId:   uuid.NewString(),
 				PageSize: int32(-1),
 			},
-			wantFieldViolation: wantPageSizeFieldViolation,
+			wantFieldViolation: wantPageSizeFieldViolation(),
 		},
 		{
 			name: "page size greater than max",
@@ -217,7 +217,7 @@ func TestService_ListTestExecutions_validation(t *testing.T) {
 				TestId:   uuid.NewString(),
 				PageSize: maxPageSize + 1,
 			},
-			wantFieldViolation: wantPageSizeFieldViolation,
+			wantFieldViolation: wantPageSizeFieldViolation(),
 		},
 	}
 
@@ -287,7 +287,7 @@ func TestService_AckTestExecutionStarted_validation(t *testing.T) {
 				TestExecutionId: uuid.NewString(),
 				StartTime:       timestamppb.Now(),
 			},
-			wantFieldViolation: wantBlankContextFieldViolation,
+			wantFieldViolation: wantBlankContextFieldViolation(),
 		},
 		{
 			name: "blank test execution id",
@@ -411,7 +411,7 @@ func TestService_AckTestExecutionFinished_validation(t *testing.T) {
 				TestExecutionId: uuid.NewString(),
 				FinishTime:      timestamppb.Now(),
 			},
-			wantFieldViolation: wantBlankContextFieldViolation,
+			wantFieldViolation: wantBlankContextFieldViolation(),
 		},
 		{
 			name: "blank test execution id",
@@ -592,7 +592,7 @@ func TestService_RetryTestExecution_validation(t *testing.T) {
 				Context:         "",
 				TestExecutionId: uuid.NewString(),
 			},
-			wantFieldViolation: wantBlankContextFieldViolation,
+			wantFieldViolation: wantBlankContextFieldViolation(),
 		},
 		{
 			name: "blank test execution id",

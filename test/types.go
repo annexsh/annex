@@ -6,13 +6,29 @@ import (
 	"github.com/annexsh/annex/uuid"
 )
 
+type TestSuite struct {
+	ID          uuid.V7
+	ContextID   string
+	Name        string
+	Description *string
+}
+
+type TestSuiteList []*TestSuite
+
+type TestSuiteRunner struct {
+	ID             string
+	LastAccessTime time.Time
+}
+
+type TestSuiteRunnerList []*TestSuiteRunner
+
 type Test struct {
-	ContextID  string
-	GroupID    string
-	ID         uuid.V7
-	Name       string
-	HasInput   bool
-	CreateTime time.Time
+	ContextID   string
+	TestSuiteID uuid.V7
+	ID          uuid.V7
+	Name        string
+	HasInput    bool
+	CreateTime  time.Time
 }
 
 type TestList []*Test

@@ -11,8 +11,8 @@ type testRepository struct {
 	db *DB
 	*ContextReader
 	*ContextWriter
-	*GroupReader
-	*GroupWriter
+	*TestSuiteReader
+	*TestSuiteWriter
 	*TestReader
 	*TestWriter
 	*TestExecutionReader
@@ -28,8 +28,8 @@ func NewTestRepository(db *DB) test.Repository {
 		db:                  db,
 		ContextReader:       NewContextReader(db),
 		ContextWriter:       NewContextWriter(db),
-		GroupReader:         NewGroupReader(db),
-		GroupWriter:         NewGroupWriter(db),
+		TestSuiteReader:     NewTestSuiteReader(db),
+		TestSuiteWriter:     NewTestSuiteWriter(db),
 		TestReader:          NewTestReader(db),
 		TestWriter:          NewTestWriter(db),
 		TestExecutionReader: NewTestExecutionReader(db),

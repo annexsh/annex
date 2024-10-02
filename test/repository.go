@@ -14,7 +14,7 @@ type Tx interface {
 
 type Repository interface {
 	ContextReadWriter
-	GroupReadWriter
+	TestSuiteReadWriter
 	TestReadWriter
 	TestExecutionReadWriter
 	CaseExecutionReadWriter
@@ -36,17 +36,18 @@ type ContextWriter interface {
 	CreateContext(ctx context.Context, id string) error
 }
 
-type GroupReadWriter interface {
-	GroupReader
-	GroupWriter
+type TestSuiteReadWriter interface {
+	TestSuiteReader
+	TestSuiteWriter
 }
 
-type GroupReader interface {
-	ListGroups(ctx context.Context, contextID string, filter PageFilter[string]) ([]string, error)
+type TestSuiteReader interface {
+	ListTestSuites(ctx context.Context, contextID string, filter PageFilter[string]) (TestSuiteList, error)
+	GetTestSuiteVersion(ctx context.Context, contextID string, id uuid.V7) (string, error)
 }
 
-type GroupWriter interface {
-	CreateGroup(ctx context.Context, contextID string, groupID string) error
+type TestSuiteWriter interface {
+	CreateTestSuite(ctx context.Context, testSuite *TestSuite) (uuid.V7, error)
 }
 
 type TestReadWriter interface {
@@ -56,12 +57,13 @@ type TestReadWriter interface {
 
 type TestReader interface {
 	GetTest(ctx context.Context, id uuid.V7) (*Test, error)
-	ListTests(ctx context.Context, contextID string, groupID string, filter PageFilter[uuid.V7]) (TestList, error)
+	ListTests(ctx context.Context, contextID string, testSuiteID uuid.V7, filter PageFilter[uuid.V7]) (TestList, error)
 	GetTestDefaultInput(ctx context.Context, testID uuid.V7) (*Payload, error)
 }
 
 type TestWriter interface {
 	CreateTest(ctx context.Context, test *Test) (*Test, error)
+	DeleteTest(ctx context.Context, id uuid.V7) error
 	CreateTestDefaultInput(ctx context.Context, testID uuid.V7, defaultInput *Payload) error
 }
 
