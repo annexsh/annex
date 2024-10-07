@@ -16,6 +16,18 @@ sql:
 overrides:
   go:
     overrides:
+      - column: "test_suites.id"
+        go_type:
+          import: "github.com/annexsh/annex/uuid"
+          type: "V7"
+      - column: "test_suite_registrations.id"
+        go_type:
+          import: "github.com/annexsh/annex/uuid"
+          type: "V7"
+      - column: "tests.test_suite_id"
+        go_type:
+          import: "github.com/annexsh/annex/uuid"
+          type: "V7"
       - column: "tests.id"
         go_type:
           import: "github.com/annexsh/annex/uuid"

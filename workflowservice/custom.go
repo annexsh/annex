@@ -56,6 +56,7 @@ func (s *ProxyService) PollWorkflowTaskQueue(ctx context.Context, req *workflows
 			testExecID, err := test.ParseTestWorkflowID(res.WorkflowExecution.WorkflowId)
 			if err == nil {
 				if _, err = s.test.AckTestExecutionStarted(ctx, connect.NewRequest(&testsv1.AckTestExecutionStartedRequest{
+					Context:         Namespace,
 					TestExecutionId: testExecID.String(),
 					StartTime:       res.StartedTime,
 				})); err != nil {
@@ -100,6 +101,7 @@ func (s *ProxyService) RespondWorkflowTaskCompleted(ctx context.Context, req *wo
 			}
 
 			if _, err = s.test.AckCaseExecutionScheduled(ctx, connect.NewRequest(&testsv1.AckCaseExecutionScheduledRequest{
+				Context:         Namespace,
 				TestExecutionId: testExecID.String(),
 				CaseExecutionId: caseExecID.Int32(),
 				CaseName:        attrs.ActivityType.Name,
@@ -114,6 +116,7 @@ func (s *ProxyService) RespondWorkflowTaskCompleted(ctx context.Context, req *wo
 			}
 
 			if _, err = s.test.AckTestExecutionFinished(ctx, connect.NewRequest(&testsv1.AckTestExecutionFinishedRequest{
+				Context:         Namespace,
 				TestExecutionId: testExecID.String(),
 				FinishTime:      timestamppb.New(time.Now().UTC()),
 			})); err != nil {
@@ -131,6 +134,7 @@ func (s *ProxyService) RespondWorkflowTaskCompleted(ctx context.Context, req *wo
 			}
 
 			if _, err = s.test.AckTestExecutionFinished(ctx, connect.NewRequest(&testsv1.AckTestExecutionFinishedRequest{
+				Context:         Namespace,
 				TestExecutionId: testExecID.String(),
 				FinishTime:      timestamppb.New(time.Now().UTC()),
 				Error:           testExecError,
@@ -170,6 +174,7 @@ func (s *ProxyService) PollActivityTaskQueue(ctx context.Context, req *workflows
 	}
 
 	if _, err = s.test.AckCaseExecutionStarted(ctx, connect.NewRequest(&testsv1.AckCaseExecutionStartedRequest{
+		Context:         Namespace,
 		TestExecutionId: testExecID.String(),
 		CaseExecutionId: caseExecID.Int32(),
 		StartTime:       timestamppb.Now(),
@@ -207,6 +212,7 @@ func (s *ProxyService) RespondActivityTaskCompleted(ctx context.Context, req *wo
 	}
 
 	if _, err = s.test.AckCaseExecutionFinished(ctx, connect.NewRequest(&testsv1.AckCaseExecutionFinishedRequest{
+		Context:         Namespace,
 		TestExecutionId: testExecID.String(),
 		CaseExecutionId: caseExecID.Int32(),
 		FinishTime:      timestamppb.Now(),
@@ -249,6 +255,7 @@ func (s *ProxyService) RespondActivityTaskFailed(ctx context.Context, req *workf
 	}
 
 	if _, err = s.test.AckCaseExecutionFinished(ctx, connect.NewRequest(&testsv1.AckCaseExecutionFinishedRequest{
+		Context:         Namespace,
 		TestExecutionId: testExecID.String(),
 		CaseExecutionId: caseExecID.Int32(),
 		Error:           execErr,

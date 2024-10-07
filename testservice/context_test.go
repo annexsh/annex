@@ -69,7 +69,7 @@ func TestService_RegisterContext_validation(t *testing.T) {
 			req: &testsv1.RegisterContextRequest{
 				Context: "",
 			},
-			wantFieldViolation: wantBlankContextFieldViolation,
+			wantFieldViolation: wantBlankContextFieldViolation(),
 		},
 	}
 
@@ -133,14 +133,14 @@ func TestService_ListContexts_validation(t *testing.T) {
 			req: &testsv1.ListContextsRequest{
 				PageSize: int32(-1),
 			},
-			wantFieldViolation: wantPageSizeFieldViolation,
+			wantFieldViolation: wantPageSizeFieldViolation(),
 		},
 		{
 			name: "page size greater than max",
 			req: &testsv1.ListContextsRequest{
 				PageSize: maxPageSize + 1,
 			},
-			wantFieldViolation: wantPageSizeFieldViolation,
+			wantFieldViolation: wantPageSizeFieldViolation(),
 		},
 	}
 

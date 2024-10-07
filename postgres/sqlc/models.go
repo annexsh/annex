@@ -25,11 +25,6 @@ type Context struct {
 	ID string `json:"id"`
 }
 
-type Group struct {
-	ContextID string `json:"context_id"`
-	ID        string `json:"id"`
-}
-
 type Log struct {
 	ID              uuid.V7               `json:"id"`
 	TestExecutionID test.TestExecutionID  `json:"test_execution_id"`
@@ -40,12 +35,12 @@ type Log struct {
 }
 
 type Test struct {
-	ContextID  string    `json:"context_id"`
-	GroupID    string    `json:"group_id"`
-	ID         uuid.V7   `json:"id"`
-	Name       string    `json:"name"`
-	HasInput   bool      `json:"has_input"`
-	CreateTime time.Time `json:"create_time"`
+	ID          uuid.V7   `json:"id"`
+	ContextID   string    `json:"context_id"`
+	TestSuiteID uuid.V7   `json:"test_suite_id"`
+	Name        string    `json:"name"`
+	HasInput    bool      `json:"has_input"`
+	CreateTime  time.Time `json:"create_time"`
 }
 
 type TestDefaultInput struct {
@@ -66,4 +61,18 @@ type TestExecution struct {
 type TestExecutionInput struct {
 	TestExecutionID test.TestExecutionID `json:"test_execution_id"`
 	Data            []byte               `json:"data"`
+}
+
+type TestSuite struct {
+	ID          uuid.V7 `json:"id"`
+	ContextID   string  `json:"context_id"`
+	Name        string  `json:"name"`
+	Description *string `json:"description"`
+}
+
+type TestSuiteRegistration struct {
+	ContextID   string  `json:"context_id"`
+	TestSuiteID uuid.V7 `json:"test_suite_id"`
+	RunnerID    string  `json:"runner_id"`
+	Version     string  `json:"version"`
 }

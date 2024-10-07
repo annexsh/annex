@@ -98,7 +98,7 @@ func (e *executor) execute(ctx context.Context, t *test.Test, opts ...executeOpt
 		return nil, fmt.Errorf("failed to publish test execution event: %w", err)
 	}
 
-	wfOpts := newStartWorkflowOpts(workflowID, t.ContextID, t.GroupID)
+	wfOpts := newStartWorkflowOpts(workflowID, t.ContextID, t.TestSuiteID)
 
 	if options.payload == nil {
 		if _, err = e.temporal.ExecuteWorkflow(ctx, wfOpts, t.Name); err != nil {
@@ -113,10 +113,10 @@ func (e *executor) execute(ctx context.Context, t *test.Test, opts ...executeOpt
 	return testExec, nil
 }
 
-func newStartWorkflowOpts(workflowID string, contextID string, groupID string) client.StartWorkflowOptions {
+func newStartWorkflowOpts(workflowID string, contextID string, testSuiteID uuid.V7) client.StartWorkflowOptions {
 	return client.StartWorkflowOptions{
 		ID:                       workflowID,
-		TaskQueue:                getTaskQueue(contextID, groupID),
+		TaskQueue:                getTaskQueue(contextID, testSuiteID),
 		WorkflowExecutionTimeout: 7 * 24 * time.Hour, // 1 week
 		RetryPolicy: &temporal.RetryPolicy{
 			MaximumAttempts: 1,

@@ -2,6 +2,7 @@ package test
 
 const (
 	ErrorContextAlreadyExists         = testErr("context already exists")
+	ErrorTestSuiteNotFound            = testErr("test suite not found")
 	ErrorTestNotFound                 = testErr("test not found")
 	ErrorTestPayloadNotFound          = testErr("test payload not found")
 	ErrorTestExecutionNotFound        = testErr("test execution not found")

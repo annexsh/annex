@@ -2,7 +2,7 @@ port: 50051
 postgres:
   hostPort: 0.0.0.0:5432
   user: postgres
-  password: password
+  password: postgres
 nats:
   hostPort: 0.0.0.0:4222
   embedded: true

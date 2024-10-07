@@ -8,12 +8,13 @@ import (
 	"go.temporal.io/sdk/converter"
 
 	"github.com/annexsh/annex/internal/validator"
+	"github.com/annexsh/annex/uuid"
 )
 
 const (
-	reqValidationBaseErrMsg = "invalid request"
-	maxPageSize             = 1000
-	maxRegisterTests        = 50
+	reqValidationBaseErrMsg       = "invalid request"
+	streamReqValidationBaseErrMsg = "invalid stream request"
+	maxPageSize                   = 1000
 )
 
 func validateRegisterContextRequest(req *testsv1.RegisterContextRequest) error {
@@ -28,16 +29,19 @@ func validateListContextsRequest(req *testsv1.ListContextsRequest) error {
 	return v.ConnectError()
 }
 
-func validateRegisterGroupRequest(req *testsv1.RegisterGroupRequest) error {
+func validateRegisterTestSuiteRequest(req *testsv1.RegisterTestSuiteRequest) error {
 	v := newValidator()
 	v.Is(
 		validator.Context(req.Context),
 		valgo.String(req.Name, "name").Not().Blank(),
 	)
+	if req.Description != nil {
+		v.Is(valgo.StringP(req.Description, "description").Not().Blank())
+	}
 	return v.ConnectError()
 }
 
-func validateListGroupsRequest(req *testsv1.ListGroupsRequest) error {
+func validateListTestSuitesRequest(req *testsv1.ListTestSuitesRequest) error {
 	v := newValidator()
 	v.Is(
 		validator.Context(req.Context),
@@ -46,27 +50,42 @@ func validateListGroupsRequest(req *testsv1.ListGroupsRequest) error {
 	return v.ConnectError()
 }
 
-func validateRegisterTestsRequest(req *testsv1.RegisterTestsRequest) error {
-	v := newValidator()
-	v.Is(
-		validator.Context(req.Context),
-		validator.Group(req.Group),
+func validateRegisterTestsMessage(i int, msg *testsv1.RegisterTestsRequest) error {
+	v := newStreamValidator()
+	validation := valgo.Is(
+		validator.Context(msg.Context),
+		validator.TestSuiteID(msg.TestSuiteId),
+		valgo.String(msg.Version, "version").Not().Blank(),
+		valgo.Any(msg.Definition, "definition").Not().Nil(),
 	)
-
-	if len(req.Definitions) == 0 {
-		v.AddErrorMessage("definitions", "Definitions must not be empty")
-	} else if len(req.Definitions) > maxRegisterTests {
-		v.AddErrorMessage("definitions", fmt.Sprintf("Definitions must not exceed a length of %d per request", maxRegisterTests))
-	}
-
-	for i, def := range req.Definitions {
-		defValidator := valgo.Is(valgo.String(def.Name).Not().Blank())
-		if def.DefaultInput != nil {
-			validatePayload(defValidator, "default_input", def.DefaultInput)
+	if msg.Definition != nil {
+		defValidation := valgo.Is(valgo.String(msg.Definition.Name, "name").Not().Blank())
+		if msg.Definition.DefaultInput != nil {
+			validatePayload(defValidation, "default_input", msg.Definition.DefaultInput)
 		}
-		v.InRow("definitions", i, defValidator)
+		validation = validation.Merge(valgo.In("definition", defValidation))
 	}
+	v.InRow("stream", i, validation)
 
+	return v.ConnectError()
+}
+
+func validateRegisterTestsMessageMismatch(i int, msg *testsv1.RegisterTestsRequest, contextID string, testSuiteID uuid.V7, version string) error {
+	v := newStreamValidator()
+	v.InRow("stream", i, valgo.Is(
+		valgo.String(msg.Context, "context").EqualTo(
+			contextID,
+			fmt.Sprintf(`Only one {{name}} permitted in stream, found "%s" and "{{value}}"`, msg.Context),
+		),
+		valgo.String(msg.TestSuiteId, "test_suite_id").EqualTo(
+			testSuiteID.String(),
+			fmt.Sprintf(`Only one {{name}} permitted in stream, found "%s" and "{{value}}"`, msg.TestSuiteId),
+		),
+		valgo.String(msg.Version, "version").EqualTo(
+			version,
+			fmt.Sprintf(`Only one {{name}} permitted in stream, found "%s" and "{{value}}"`, version),
+		),
+	))
 	return v.ConnectError()
 }
 
@@ -92,7 +111,7 @@ func validateListTestsRequest(req *testsv1.ListTestsRequest) error {
 	v := newValidator()
 	v.Is(
 		validator.Context(req.Context),
-		validator.Group(req.Group),
+		validator.TestSuiteID(req.TestSuiteId),
 		validator.PageSize(req.PageSize, maxPageSize),
 	)
 	return v.ConnectError()
@@ -263,4 +282,8 @@ func validatePayload(v *valgo.Validation, fieldName string, payload *testsv1.Pay
 
 func newValidator() *validator.Validator {
 	return validator.New(validator.WithBaseErrorMessage(reqValidationBaseErrMsg))
+}
+
+func newStreamValidator() *validator.Validator {
+	return validator.New(validator.WithBaseErrorMessage(streamReqValidationBaseErrMsg))
 }

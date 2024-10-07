@@ -39,19 +39,24 @@ func TestCreateGetTest(t *testing.T) {
 			r := NewTestReader(db)
 
 			contextID := "foo"
-			groupID := "bar"
+			testSuiteID := uuid.New()
 
 			err := db.CreateContext(ctx, contextID)
 			require.NoError(t, err)
-			err = db.CreateGroup(ctx, sqlc.CreateGroupParams{ContextID: contextID, ID: groupID})
+
+			_, err = db.CreateTestSuite(ctx, sqlc.CreateTestSuiteParams{
+				ID:        testSuiteID,
+				ContextID: contextID,
+				Name:      "bar",
+			})
 			require.NoError(t, err)
 
-			def := fake.GenTest(fake.WithContextID(contextID), fake.WithGroupID(groupID))
+			def := fake.GenTest(fake.WithContextID(contextID), fake.WithTestSuiteID(testSuiteID))
 
 			assertEqual := func(got *test.Test) {
 				assert.Equal(t, def.ID, got.ID)
 				assert.Equal(t, def.ContextID, got.ContextID)
-				assert.Equal(t, def.GroupID, got.GroupID)
+				assert.Equal(t, def.TestSuiteID, got.TestSuiteID)
 				assert.Equal(t, def.Name, got.Name)
 				assert.Equal(t, def.HasInput, got.HasInput)
 				assert.Equal(t, def.CreateTime, got.CreateTime)
@@ -91,25 +96,25 @@ func TestListTests(t *testing.T) {
 	r := NewTestReader(db)
 
 	contextID := "foo"
-	groupID := "bar"
+	testSuiteID := uuid.New()
 	count := 4
 	pageSize := 2
 
 	err := db.CreateContext(ctx, contextID)
 	require.NoError(t, err)
-	err = db.CreateGroup(ctx, sqlc.CreateGroupParams{ContextID: contextID, ID: groupID})
+	_, err = db.CreateTestSuite(ctx, sqlc.CreateTestSuiteParams{ContextID: contextID, ID: testSuiteID})
 	require.NoError(t, err)
 
 	want := make(test.TestList, count)
 	for i := count - 1; i >= 0; i-- {
-		tt := fake.GenTest(fake.WithContextID(contextID), fake.WithGroupID(groupID))
+		tt := fake.GenTest(fake.WithContextID(contextID), fake.WithTestSuiteID(testSuiteID))
 		created, err := w.CreateTest(ctx, tt)
 		require.NoError(t, err)
 		want[i] = created // add in reverse since we expect order by ascending
 	}
 
 	// Page 1
-	got1, err := r.ListTests(ctx, contextID, groupID, test.PageFilter[uuid.V7]{
+	got1, err := r.ListTests(ctx, contextID, testSuiteID, test.PageFilter[uuid.V7]{
 		Size:     pageSize,
 		OffsetID: nil,
 	})
@@ -117,7 +122,7 @@ func TestListTests(t *testing.T) {
 	require.Len(t, got1, pageSize)
 
 	// Page 2
-	got2, err := r.ListTests(ctx, contextID, groupID, test.PageFilter[uuid.V7]{
+	got2, err := r.ListTests(ctx, contextID, testSuiteID, test.PageFilter[uuid.V7]{
 		Size:     pageSize,
 		OffsetID: ptr.Get(got1[1].ID),
 	})
@@ -128,7 +133,7 @@ func TestListTests(t *testing.T) {
 	assert.Equal(t, want, got)
 
 	// Page 3 (empty)
-	got3, err := r.ListTests(ctx, contextID, groupID, test.PageFilter[uuid.V7]{
+	got3, err := r.ListTests(ctx, contextID, testSuiteID, test.PageFilter[uuid.V7]{
 		Size:     pageSize,
 		OffsetID: ptr.Get(got2[1].ID),
 	})

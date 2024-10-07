@@ -27,9 +27,6 @@ var _ test.Repository = &RepositoryMock{}
 //			CreateContextFunc: func(ctx context.Context, id string) error {
 //				panic("mock out the CreateContext method")
 //			},
-//			CreateGroupFunc: func(ctx context.Context, contextID string, groupID string) error {
-//				panic("mock out the CreateGroup method")
-//			},
 //			CreateLogFunc: func(ctx context.Context, log *test.Log) error {
 //				panic("mock out the CreateLog method")
 //			},
@@ -45,11 +42,17 @@ var _ test.Repository = &RepositoryMock{}
 //			CreateTestExecutionScheduledFunc: func(ctx context.Context, scheduled *test.ScheduledTestExecution) (*test.TestExecution, error) {
 //				panic("mock out the CreateTestExecutionScheduled method")
 //			},
+//			CreateTestSuiteFunc: func(ctx context.Context, testSuite *test.TestSuite) (uuid.V7, error) {
+//				panic("mock out the CreateTestSuite method")
+//			},
 //			DeleteCaseExecutionFunc: func(ctx context.Context, testExecID test.TestExecutionID, id test.CaseExecutionID) error {
 //				panic("mock out the DeleteCaseExecution method")
 //			},
 //			DeleteLogFunc: func(ctx context.Context, id uuid.V7) error {
 //				panic("mock out the DeleteLog method")
+//			},
+//			DeleteTestFunc: func(ctx context.Context, id uuid.V7) error {
+//				panic("mock out the DeleteTest method")
 //			},
 //			ExecuteTxFunc: func(ctx context.Context, query func(repo test.Repository) error) error {
 //				panic("mock out the ExecuteTx method")
@@ -72,14 +75,14 @@ var _ test.Repository = &RepositoryMock{}
 //			GetTestExecutionInputFunc: func(ctx context.Context, id test.TestExecutionID) (*test.Payload, error) {
 //				panic("mock out the GetTestExecutionInput method")
 //			},
+//			GetTestSuiteVersionFunc: func(ctx context.Context, contextID string, id uuid.V7) (string, error) {
+//				panic("mock out the GetTestSuiteVersion method")
+//			},
 //			ListCaseExecutionsFunc: func(ctx context.Context, testExecID test.TestExecutionID, filter test.PageFilter[test.CaseExecutionID]) (test.CaseExecutionList, error) {
 //				panic("mock out the ListCaseExecutions method")
 //			},
 //			ListContextsFunc: func(ctx context.Context, filter test.PageFilter[string]) ([]string, error) {
 //				panic("mock out the ListContexts method")
-//			},
-//			ListGroupsFunc: func(ctx context.Context, contextID string, filter test.PageFilter[string]) ([]string, error) {
-//				panic("mock out the ListGroups method")
 //			},
 //			ListLogsFunc: func(ctx context.Context, testExecID test.TestExecutionID, filter test.PageFilter[uuid.V7]) (test.LogList, error) {
 //				panic("mock out the ListLogs method")
@@ -87,7 +90,10 @@ var _ test.Repository = &RepositoryMock{}
 //			ListTestExecutionsFunc: func(ctx context.Context, testID uuid.V7, filter test.PageFilter[test.TestExecutionID]) (test.TestExecutionList, error) {
 //				panic("mock out the ListTestExecutions method")
 //			},
-//			ListTestsFunc: func(ctx context.Context, contextID string, groupID string, filter test.PageFilter[uuid.V7]) (test.TestList, error) {
+//			ListTestSuitesFunc: func(ctx context.Context, contextID string, filter test.PageFilter[string]) (test.TestSuiteList, error) {
+//				panic("mock out the ListTestSuites method")
+//			},
+//			ListTestsFunc: func(ctx context.Context, contextID string, testSuiteID uuid.V7, filter test.PageFilter[uuid.V7]) (test.TestList, error) {
 //				panic("mock out the ListTests method")
 //			},
 //			ResetTestExecutionFunc: func(ctx context.Context, testExecID test.TestExecutionID, resetTime time.Time) (*test.TestExecution, error) {
@@ -121,9 +127,6 @@ type RepositoryMock struct {
 	// CreateContextFunc mocks the CreateContext method.
 	CreateContextFunc func(ctx context.Context, id string) error
 
-	// CreateGroupFunc mocks the CreateGroup method.
-	CreateGroupFunc func(ctx context.Context, contextID string, groupID string) error
-
 	// CreateLogFunc mocks the CreateLog method.
 	CreateLogFunc func(ctx context.Context, log *test.Log) error
 
@@ -139,11 +142,17 @@ type RepositoryMock struct {
 	// CreateTestExecutionScheduledFunc mocks the CreateTestExecutionScheduled method.
 	CreateTestExecutionScheduledFunc func(ctx context.Context, scheduled *test.ScheduledTestExecution) (*test.TestExecution, error)
 
+	// CreateTestSuiteFunc mocks the CreateTestSuite method.
+	CreateTestSuiteFunc func(ctx context.Context, testSuite *test.TestSuite) (uuid.V7, error)
+
 	// DeleteCaseExecutionFunc mocks the DeleteCaseExecution method.
 	DeleteCaseExecutionFunc func(ctx context.Context, testExecID test.TestExecutionID, id test.CaseExecutionID) error
 
 	// DeleteLogFunc mocks the DeleteLog method.
 	DeleteLogFunc func(ctx context.Context, id uuid.V7) error
+
+	// DeleteTestFunc mocks the DeleteTest method.
+	DeleteTestFunc func(ctx context.Context, id uuid.V7) error
 
 	// ExecuteTxFunc mocks the ExecuteTx method.
 	ExecuteTxFunc func(ctx context.Context, query func(repo test.Repository) error) error
@@ -166,14 +175,14 @@ type RepositoryMock struct {
 	// GetTestExecutionInputFunc mocks the GetTestExecutionInput method.
 	GetTestExecutionInputFunc func(ctx context.Context, id test.TestExecutionID) (*test.Payload, error)
 
+	// GetTestSuiteVersionFunc mocks the GetTestSuiteVersion method.
+	GetTestSuiteVersionFunc func(ctx context.Context, contextID string, id uuid.V7) (string, error)
+
 	// ListCaseExecutionsFunc mocks the ListCaseExecutions method.
 	ListCaseExecutionsFunc func(ctx context.Context, testExecID test.TestExecutionID, filter test.PageFilter[test.CaseExecutionID]) (test.CaseExecutionList, error)
 
 	// ListContextsFunc mocks the ListContexts method.
 	ListContextsFunc func(ctx context.Context, filter test.PageFilter[string]) ([]string, error)
-
-	// ListGroupsFunc mocks the ListGroups method.
-	ListGroupsFunc func(ctx context.Context, contextID string, filter test.PageFilter[string]) ([]string, error)
 
 	// ListLogsFunc mocks the ListLogs method.
 	ListLogsFunc func(ctx context.Context, testExecID test.TestExecutionID, filter test.PageFilter[uuid.V7]) (test.LogList, error)
@@ -181,8 +190,11 @@ type RepositoryMock struct {
 	// ListTestExecutionsFunc mocks the ListTestExecutions method.
 	ListTestExecutionsFunc func(ctx context.Context, testID uuid.V7, filter test.PageFilter[test.TestExecutionID]) (test.TestExecutionList, error)
 
+	// ListTestSuitesFunc mocks the ListTestSuites method.
+	ListTestSuitesFunc func(ctx context.Context, contextID string, filter test.PageFilter[string]) (test.TestSuiteList, error)
+
 	// ListTestsFunc mocks the ListTests method.
-	ListTestsFunc func(ctx context.Context, contextID string, groupID string, filter test.PageFilter[uuid.V7]) (test.TestList, error)
+	ListTestsFunc func(ctx context.Context, contextID string, testSuiteID uuid.V7, filter test.PageFilter[uuid.V7]) (test.TestList, error)
 
 	// ResetTestExecutionFunc mocks the ResetTestExecution method.
 	ResetTestExecutionFunc func(ctx context.Context, testExecID test.TestExecutionID, resetTime time.Time) (*test.TestExecution, error)
@@ -217,15 +229,6 @@ type RepositoryMock struct {
 			Ctx context.Context
 			// ID is the id argument value.
 			ID string
-		}
-		// CreateGroup holds details about calls to the CreateGroup method.
-		CreateGroup []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// ContextID is the contextID argument value.
-			ContextID string
-			// GroupID is the groupID argument value.
-			GroupID string
 		}
 		// CreateLog holds details about calls to the CreateLog method.
 		CreateLog []struct {
@@ -266,6 +269,13 @@ type RepositoryMock struct {
 			// Scheduled is the scheduled argument value.
 			Scheduled *test.ScheduledTestExecution
 		}
+		// CreateTestSuite holds details about calls to the CreateTestSuite method.
+		CreateTestSuite []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// TestSuite is the testSuite argument value.
+			TestSuite *test.TestSuite
+		}
 		// DeleteCaseExecution holds details about calls to the DeleteCaseExecution method.
 		DeleteCaseExecution []struct {
 			// Ctx is the ctx argument value.
@@ -277,6 +287,13 @@ type RepositoryMock struct {
 		}
 		// DeleteLog holds details about calls to the DeleteLog method.
 		DeleteLog []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ID is the id argument value.
+			ID uuid.V7
+		}
+		// DeleteTest holds details about calls to the DeleteTest method.
+		DeleteTest []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 			// ID is the id argument value.
@@ -333,6 +350,15 @@ type RepositoryMock struct {
 			// ID is the id argument value.
 			ID test.TestExecutionID
 		}
+		// GetTestSuiteVersion holds details about calls to the GetTestSuiteVersion method.
+		GetTestSuiteVersion []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ContextID is the contextID argument value.
+			ContextID string
+			// ID is the id argument value.
+			ID uuid.V7
+		}
 		// ListCaseExecutions holds details about calls to the ListCaseExecutions method.
 		ListCaseExecutions []struct {
 			// Ctx is the ctx argument value.
@@ -346,15 +372,6 @@ type RepositoryMock struct {
 		ListContexts []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
-			// Filter is the filter argument value.
-			Filter test.PageFilter[string]
-		}
-		// ListGroups holds details about calls to the ListGroups method.
-		ListGroups []struct {
-			// Ctx is the ctx argument value.
-			Ctx context.Context
-			// ContextID is the contextID argument value.
-			ContextID string
 			// Filter is the filter argument value.
 			Filter test.PageFilter[string]
 		}
@@ -376,14 +393,23 @@ type RepositoryMock struct {
 			// Filter is the filter argument value.
 			Filter test.PageFilter[test.TestExecutionID]
 		}
+		// ListTestSuites holds details about calls to the ListTestSuites method.
+		ListTestSuites []struct {
+			// Ctx is the ctx argument value.
+			Ctx context.Context
+			// ContextID is the contextID argument value.
+			ContextID string
+			// Filter is the filter argument value.
+			Filter test.PageFilter[string]
+		}
 		// ListTests holds details about calls to the ListTests method.
 		ListTests []struct {
 			// Ctx is the ctx argument value.
 			Ctx context.Context
 			// ContextID is the contextID argument value.
 			ContextID string
-			// GroupID is the groupID argument value.
-			GroupID string
+			// TestSuiteID is the testSuiteID argument value.
+			TestSuiteID uuid.V7
 			// Filter is the filter argument value.
 			Filter test.PageFilter[uuid.V7]
 		}
@@ -432,14 +458,15 @@ type RepositoryMock struct {
 	}
 	lockCreateCaseExecutionScheduled sync.RWMutex
 	lockCreateContext                sync.RWMutex
-	lockCreateGroup                  sync.RWMutex
 	lockCreateLog                    sync.RWMutex
 	lockCreateTest                   sync.RWMutex
 	lockCreateTestDefaultInput       sync.RWMutex
 	lockCreateTestExecutionInput     sync.RWMutex
 	lockCreateTestExecutionScheduled sync.RWMutex
+	lockCreateTestSuite              sync.RWMutex
 	lockDeleteCaseExecution          sync.RWMutex
 	lockDeleteLog                    sync.RWMutex
+	lockDeleteTest                   sync.RWMutex
 	lockExecuteTx                    sync.RWMutex
 	lockGetCaseExecution             sync.RWMutex
 	lockGetLog                       sync.RWMutex
@@ -447,11 +474,12 @@ type RepositoryMock struct {
 	lockGetTestDefaultInput          sync.RWMutex
 	lockGetTestExecution             sync.RWMutex
 	lockGetTestExecutionInput        sync.RWMutex
+	lockGetTestSuiteVersion          sync.RWMutex
 	lockListCaseExecutions           sync.RWMutex
 	lockListContexts                 sync.RWMutex
-	lockListGroups                   sync.RWMutex
 	lockListLogs                     sync.RWMutex
 	lockListTestExecutions           sync.RWMutex
+	lockListTestSuites               sync.RWMutex
 	lockListTests                    sync.RWMutex
 	lockResetTestExecution           sync.RWMutex
 	lockUpdateCaseExecutionFinished  sync.RWMutex
@@ -530,46 +558,6 @@ func (mock *RepositoryMock) CreateContextCalls() []struct {
 	mock.lockCreateContext.RLock()
 	calls = mock.calls.CreateContext
 	mock.lockCreateContext.RUnlock()
-	return calls
-}
-
-// CreateGroup calls CreateGroupFunc.
-func (mock *RepositoryMock) CreateGroup(ctx context.Context, contextID string, groupID string) error {
-	if mock.CreateGroupFunc == nil {
-		panic("RepositoryMock.CreateGroupFunc: method is nil but Repository.CreateGroup was just called")
-	}
-	callInfo := struct {
-		Ctx       context.Context
-		ContextID string
-		GroupID   string
-	}{
-		Ctx:       ctx,
-		ContextID: contextID,
-		GroupID:   groupID,
-	}
-	mock.lockCreateGroup.Lock()
-	mock.calls.CreateGroup = append(mock.calls.CreateGroup, callInfo)
-	mock.lockCreateGroup.Unlock()
-	return mock.CreateGroupFunc(ctx, contextID, groupID)
-}
-
-// CreateGroupCalls gets all the calls that were made to CreateGroup.
-// Check the length with:
-//
-//	len(mockedRepository.CreateGroupCalls())
-func (mock *RepositoryMock) CreateGroupCalls() []struct {
-	Ctx       context.Context
-	ContextID string
-	GroupID   string
-} {
-	var calls []struct {
-		Ctx       context.Context
-		ContextID string
-		GroupID   string
-	}
-	mock.lockCreateGroup.RLock()
-	calls = mock.calls.CreateGroup
-	mock.lockCreateGroup.RUnlock()
 	return calls
 }
 
@@ -761,6 +749,42 @@ func (mock *RepositoryMock) CreateTestExecutionScheduledCalls() []struct {
 	return calls
 }
 
+// CreateTestSuite calls CreateTestSuiteFunc.
+func (mock *RepositoryMock) CreateTestSuite(ctx context.Context, testSuite *test.TestSuite) (uuid.V7, error) {
+	if mock.CreateTestSuiteFunc == nil {
+		panic("RepositoryMock.CreateTestSuiteFunc: method is nil but Repository.CreateTestSuite was just called")
+	}
+	callInfo := struct {
+		Ctx       context.Context
+		TestSuite *test.TestSuite
+	}{
+		Ctx:       ctx,
+		TestSuite: testSuite,
+	}
+	mock.lockCreateTestSuite.Lock()
+	mock.calls.CreateTestSuite = append(mock.calls.CreateTestSuite, callInfo)
+	mock.lockCreateTestSuite.Unlock()
+	return mock.CreateTestSuiteFunc(ctx, testSuite)
+}
+
+// CreateTestSuiteCalls gets all the calls that were made to CreateTestSuite.
+// Check the length with:
+//
+//	len(mockedRepository.CreateTestSuiteCalls())
+func (mock *RepositoryMock) CreateTestSuiteCalls() []struct {
+	Ctx       context.Context
+	TestSuite *test.TestSuite
+} {
+	var calls []struct {
+		Ctx       context.Context
+		TestSuite *test.TestSuite
+	}
+	mock.lockCreateTestSuite.RLock()
+	calls = mock.calls.CreateTestSuite
+	mock.lockCreateTestSuite.RUnlock()
+	return calls
+}
+
 // DeleteCaseExecution calls DeleteCaseExecutionFunc.
 func (mock *RepositoryMock) DeleteCaseExecution(ctx context.Context, testExecID test.TestExecutionID, id test.CaseExecutionID) error {
 	if mock.DeleteCaseExecutionFunc == nil {
@@ -834,6 +858,42 @@ func (mock *RepositoryMock) DeleteLogCalls() []struct {
 	mock.lockDeleteLog.RLock()
 	calls = mock.calls.DeleteLog
 	mock.lockDeleteLog.RUnlock()
+	return calls
+}
+
+// DeleteTest calls DeleteTestFunc.
+func (mock *RepositoryMock) DeleteTest(ctx context.Context, id uuid.V7) error {
+	if mock.DeleteTestFunc == nil {
+		panic("RepositoryMock.DeleteTestFunc: method is nil but Repository.DeleteTest was just called")
+	}
+	callInfo := struct {
+		Ctx context.Context
+		ID  uuid.V7
+	}{
+		Ctx: ctx,
+		ID:  id,
+	}
+	mock.lockDeleteTest.Lock()
+	mock.calls.DeleteTest = append(mock.calls.DeleteTest, callInfo)
+	mock.lockDeleteTest.Unlock()
+	return mock.DeleteTestFunc(ctx, id)
+}
+
+// DeleteTestCalls gets all the calls that were made to DeleteTest.
+// Check the length with:
+//
+//	len(mockedRepository.DeleteTestCalls())
+func (mock *RepositoryMock) DeleteTestCalls() []struct {
+	Ctx context.Context
+	ID  uuid.V7
+} {
+	var calls []struct {
+		Ctx context.Context
+		ID  uuid.V7
+	}
+	mock.lockDeleteTest.RLock()
+	calls = mock.calls.DeleteTest
+	mock.lockDeleteTest.RUnlock()
 	return calls
 }
 
@@ -1093,6 +1153,46 @@ func (mock *RepositoryMock) GetTestExecutionInputCalls() []struct {
 	return calls
 }
 
+// GetTestSuiteVersion calls GetTestSuiteVersionFunc.
+func (mock *RepositoryMock) GetTestSuiteVersion(ctx context.Context, contextID string, id uuid.V7) (string, error) {
+	if mock.GetTestSuiteVersionFunc == nil {
+		panic("RepositoryMock.GetTestSuiteVersionFunc: method is nil but Repository.GetTestSuiteVersion was just called")
+	}
+	callInfo := struct {
+		Ctx       context.Context
+		ContextID string
+		ID        uuid.V7
+	}{
+		Ctx:       ctx,
+		ContextID: contextID,
+		ID:        id,
+	}
+	mock.lockGetTestSuiteVersion.Lock()
+	mock.calls.GetTestSuiteVersion = append(mock.calls.GetTestSuiteVersion, callInfo)
+	mock.lockGetTestSuiteVersion.Unlock()
+	return mock.GetTestSuiteVersionFunc(ctx, contextID, id)
+}
+
+// GetTestSuiteVersionCalls gets all the calls that were made to GetTestSuiteVersion.
+// Check the length with:
+//
+//	len(mockedRepository.GetTestSuiteVersionCalls())
+func (mock *RepositoryMock) GetTestSuiteVersionCalls() []struct {
+	Ctx       context.Context
+	ContextID string
+	ID        uuid.V7
+} {
+	var calls []struct {
+		Ctx       context.Context
+		ContextID string
+		ID        uuid.V7
+	}
+	mock.lockGetTestSuiteVersion.RLock()
+	calls = mock.calls.GetTestSuiteVersion
+	mock.lockGetTestSuiteVersion.RUnlock()
+	return calls
+}
+
 // ListCaseExecutions calls ListCaseExecutionsFunc.
 func (mock *RepositoryMock) ListCaseExecutions(ctx context.Context, testExecID test.TestExecutionID, filter test.PageFilter[test.CaseExecutionID]) (test.CaseExecutionList, error) {
 	if mock.ListCaseExecutionsFunc == nil {
@@ -1166,46 +1266,6 @@ func (mock *RepositoryMock) ListContextsCalls() []struct {
 	mock.lockListContexts.RLock()
 	calls = mock.calls.ListContexts
 	mock.lockListContexts.RUnlock()
-	return calls
-}
-
-// ListGroups calls ListGroupsFunc.
-func (mock *RepositoryMock) ListGroups(ctx context.Context, contextID string, filter test.PageFilter[string]) ([]string, error) {
-	if mock.ListGroupsFunc == nil {
-		panic("RepositoryMock.ListGroupsFunc: method is nil but Repository.ListGroups was just called")
-	}
-	callInfo := struct {
-		Ctx       context.Context
-		ContextID string
-		Filter    test.PageFilter[string]
-	}{
-		Ctx:       ctx,
-		ContextID: contextID,
-		Filter:    filter,
-	}
-	mock.lockListGroups.Lock()
-	mock.calls.ListGroups = append(mock.calls.ListGroups, callInfo)
-	mock.lockListGroups.Unlock()
-	return mock.ListGroupsFunc(ctx, contextID, filter)
-}
-
-// ListGroupsCalls gets all the calls that were made to ListGroups.
-// Check the length with:
-//
-//	len(mockedRepository.ListGroupsCalls())
-func (mock *RepositoryMock) ListGroupsCalls() []struct {
-	Ctx       context.Context
-	ContextID string
-	Filter    test.PageFilter[string]
-} {
-	var calls []struct {
-		Ctx       context.Context
-		ContextID string
-		Filter    test.PageFilter[string]
-	}
-	mock.lockListGroups.RLock()
-	calls = mock.calls.ListGroups
-	mock.lockListGroups.RUnlock()
 	return calls
 }
 
@@ -1289,26 +1349,66 @@ func (mock *RepositoryMock) ListTestExecutionsCalls() []struct {
 	return calls
 }
 
-// ListTests calls ListTestsFunc.
-func (mock *RepositoryMock) ListTests(ctx context.Context, contextID string, groupID string, filter test.PageFilter[uuid.V7]) (test.TestList, error) {
-	if mock.ListTestsFunc == nil {
-		panic("RepositoryMock.ListTestsFunc: method is nil but Repository.ListTests was just called")
+// ListTestSuites calls ListTestSuitesFunc.
+func (mock *RepositoryMock) ListTestSuites(ctx context.Context, contextID string, filter test.PageFilter[string]) (test.TestSuiteList, error) {
+	if mock.ListTestSuitesFunc == nil {
+		panic("RepositoryMock.ListTestSuitesFunc: method is nil but Repository.ListTestSuites was just called")
 	}
 	callInfo := struct {
 		Ctx       context.Context
 		ContextID string
-		GroupID   string
-		Filter    test.PageFilter[uuid.V7]
+		Filter    test.PageFilter[string]
 	}{
 		Ctx:       ctx,
 		ContextID: contextID,
-		GroupID:   groupID,
 		Filter:    filter,
+	}
+	mock.lockListTestSuites.Lock()
+	mock.calls.ListTestSuites = append(mock.calls.ListTestSuites, callInfo)
+	mock.lockListTestSuites.Unlock()
+	return mock.ListTestSuitesFunc(ctx, contextID, filter)
+}
+
+// ListTestSuitesCalls gets all the calls that were made to ListTestSuites.
+// Check the length with:
+//
+//	len(mockedRepository.ListTestSuitesCalls())
+func (mock *RepositoryMock) ListTestSuitesCalls() []struct {
+	Ctx       context.Context
+	ContextID string
+	Filter    test.PageFilter[string]
+} {
+	var calls []struct {
+		Ctx       context.Context
+		ContextID string
+		Filter    test.PageFilter[string]
+	}
+	mock.lockListTestSuites.RLock()
+	calls = mock.calls.ListTestSuites
+	mock.lockListTestSuites.RUnlock()
+	return calls
+}
+
+// ListTests calls ListTestsFunc.
+func (mock *RepositoryMock) ListTests(ctx context.Context, contextID string, testSuiteID uuid.V7, filter test.PageFilter[uuid.V7]) (test.TestList, error) {
+	if mock.ListTestsFunc == nil {
+		panic("RepositoryMock.ListTestsFunc: method is nil but Repository.ListTests was just called")
+	}
+	callInfo := struct {
+		Ctx         context.Context
+		ContextID   string
+		TestSuiteID uuid.V7
+		Filter      test.PageFilter[uuid.V7]
+	}{
+		Ctx:         ctx,
+		ContextID:   contextID,
+		TestSuiteID: testSuiteID,
+		Filter:      filter,
 	}
 	mock.lockListTests.Lock()
 	mock.calls.ListTests = append(mock.calls.ListTests, callInfo)
 	mock.lockListTests.Unlock()
-	return mock.ListTestsFunc(ctx, contextID, groupID, filter)
+	return mock.ListTestsFunc(ctx, contextID, testSuiteID, filter)
 }
 
 // ListTestsCalls gets all the calls that were made to ListTests.
@@ -1316,16 +1416,16 @@ func (mock *RepositoryMock) ListTests(ctx context.Context, contextID string, gro
 //
 //	len(mockedRepository.ListTestsCalls())
 func (mock *RepositoryMock) ListTestsCalls() []struct {
-	Ctx       context.Context
-	ContextID string
-	GroupID   string
-	Filter    test.PageFilter[uuid.V7]
+	Ctx         context.Context
+	ContextID   string
+	TestSuiteID uuid.V7
+	Filter      test.PageFilter[uuid.V7]
 } {
 	var calls []struct {
-		Ctx       context.Context
-		ContextID string
-		GroupID   string
-		Filter    test.PageFilter[uuid.V7]
+		Ctx         context.Context
+		ContextID   string
+		TestSuiteID uuid.V7
+		Filter      test.PageFilter[uuid.V7]
 	}
 	mock.lockListTests.RLock()
 	calls = mock.calls.ListTests

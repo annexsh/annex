@@ -22,19 +22,23 @@ func newTestDB(t *testing.T) (*DB, func()) {
 
 func createDummyTest(ctx context.Context, t *testing.T, db *DB, hasInput bool) *sqlc.Test {
 	contextID := "foo"
-	groupID := "bar"
+	testSuiteID := uuid.New()
 	err := db.CreateContext(ctx, contextID)
 	require.NoError(t, err)
-	err = db.CreateGroup(ctx, sqlc.CreateGroupParams{ContextID: contextID, ID: groupID})
+	_, err = db.CreateTestSuite(ctx, sqlc.CreateTestSuiteParams{
+		ID:        testSuiteID,
+		ContextID: contextID,
+		Name:      "foobar",
+	})
 	require.NoError(t, err)
 
 	dummyTest, err := db.CreateTest(ctx, sqlc.CreateTestParams{
-		ContextID:  contextID,
-		GroupID:    groupID,
-		ID:         uuid.New(),
-		Name:       "baz",
-		HasInput:   hasInput,
-		CreateTime: time.Now(),
+		ContextID:   contextID,
+		TestSuiteID: testSuiteID,
+		ID:          uuid.New(),
+		Name:        "baz",
+		HasInput:    hasInput,
+		CreateTime:  time.Now(),
 	})
 	require.NoError(t, err)
 	return dummyTest

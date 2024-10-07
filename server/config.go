@@ -1,8 +1,6 @@
 package server
 
 import (
-	"fmt"
-
 	"github.com/cohesivestack/valgo"
 	"github.com/cristalhq/aconfig"
 	"github.com/cristalhq/aconfig/aconfigyaml"
@@ -73,7 +71,7 @@ type EventServiceConfig struct {
 }
 
 func (c EventServiceConfig) Validate() error {
-	v := validator.New()
+	v := validator.New(validator.WithBaseErrorMessage("invalid config"))
 	v.Is(
 		valgo.Int(c.Port, "port").GreaterOrEqualTo(0),
 		valgo.String(c.TestServiceURL, "testServiceURL").Not().Blank(),
@@ -178,9 +176,5 @@ func loadConfig(dst configValidator) error {
 		return err
 	}
 
-	if err := dst.Validate(); err != nil {
-		return fmt.Errorf("invalid config: %w", err)
-	}
-
-	return nil
+	return dst.Validate()
 }

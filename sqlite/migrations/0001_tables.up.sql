@@ -3,24 +3,38 @@ CREATE TABLE contexts
     id TEXT PRIMARY KEY
 );
 
-CREATE TABLE groups
+CREATE TABLE test_suites
 (
-    context_id TEXT NOT NULL,
-    id         TEXT NOT NULL,
-    PRIMARY KEY (context_id, id),
+    id          TEXT NOT NULL PRIMARY KEY,
+    context_id  TEXT NOT NULL,
+    name        TEXT NOT NULL,
+    description TEXT,
+    UNIQUE (context_id, name),
     FOREIGN KEY (context_id) REFERENCES contexts (id) ON DELETE CASCADE
+);
+
+CREATE TABLE test_suite_registrations
+(
+    context_id    TEXT NOT NULL,
+    test_suite_id TEXT NOT NULL,
+    runner_id     TEXT NOT NULL,
+    version       TEXT NOT NULL,
+    PRIMARY KEY (context_id, test_suite_id),
+    FOREIGN KEY (context_id) REFERENCES contexts (id) ON DELETE CASCADE,
+    FOREIGN KEY (test_suite_id) REFERENCES test_suites (id) ON DELETE CASCADE
 );
 
 CREATE TABLE tests
 (
-    id          TEXT     NOT NULL PRIMARY KEY,
-    context_id  TEXT     NOT NULL,
-    group_id    TEXT     NOT NULL,
-    name        TEXT     NOT NULL,
-    has_input   BOOLEAN  NOT NULL,
-    create_time DATETIME NOT NULL,
-    FOREIGN KEY (context_id, group_id) REFERENCES groups (context_id, id) ON UPDATE CASCADE DEFERRABLE INITIALLY DEFERRED,
-    UNIQUE (context_id, group_id, name)
+    id            TEXT     NOT NULL PRIMARY KEY,
+    context_id    TEXT     NOT NULL,
+    test_suite_id TEXT     NOT NULL,
+    name          TEXT     NOT NULL,
+    has_input     BOOLEAN  NOT NULL,
+    create_time   DATETIME NOT NULL,
+    FOREIGN KEY (context_id) REFERENCES contexts (id) ON DELETE CASCADE,
+    FOREIGN KEY (test_suite_id) REFERENCES test_suites (id) ON DELETE CASCADE,
+    UNIQUE (context_id, test_suite_id, name)
 );
 
 CREATE TABLE test_default_inputs

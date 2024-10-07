@@ -20,9 +20,9 @@ func WithContextID(contextID string) TestOption {
 	}
 }
 
-func WithGroupID(groupID string) TestOption {
+func WithTestSuiteID(testSuiteID uuid.V7) TestOption {
 	return func(t *test.Test) {
-		t.GroupID = groupID
+		t.TestSuiteID = testSuiteID
 	}
 }
 
@@ -55,14 +55,23 @@ func GenDefaultInput() *test.Payload {
 	}
 }
 
+func GenTestSuite(contextID string) *test.TestSuite {
+	return &test.TestSuite{
+		ID:          uuid.New(),
+		ContextID:   contextID,
+		Name:        "Something-" + uuid.NewString(),
+		Description: ptr.Get("Lorem ipsum dolor sit amet, consectetur adipiscing elit."),
+	}
+}
+
 func GenTest(opts ...TestOption) *test.Test {
 	t := &test.Test{
-		ContextID:  "default-context",
-		GroupID:    "default-group",
-		ID:         uuid.New(),
-		Name:       uuid.NewString(),
-		HasInput:   true,
-		CreateTime: time.Now().UTC(),
+		ContextID:   "default-context",
+		TestSuiteID: uuid.New(),
+		ID:          uuid.New(),
+		Name:        uuid.NewString(),
+		HasInput:    true,
+		CreateTime:  time.Now().UTC(),
 	}
 	for _, opt := range opts {
 		opt(t)

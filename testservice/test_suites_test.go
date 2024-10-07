@@ -16,10 +16,13 @@ import (
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/annexsh/annex/internal/fake"
+	"github.com/annexsh/annex/internal/ptr"
 	"github.com/annexsh/annex/test"
+	"github.com/annexsh/annex/uuid"
 )
 
-func TestService_RegisterGroup(t *testing.T) {
+func TestService_RegisterTestSuite(t *testing.T) {
 	tests := []struct {
 		name    string
 		wantErr error
@@ -36,24 +39,28 @@ func TestService_RegisterGroup(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			contextID := "foo"
-			groupID := "bar"
+			req := &testsv1.RegisterTestSuiteRequest{
+				Context:     "foo",
+				Name:        "bar",
+				Description: ptr.Get("lorem ipsum"),
+			}
+
+			var wantID string
 
 			r := &RepositoryMock{
-				CreateGroupFunc: func(ctx context.Context, contextID string, groupID string) error {
-					assert.Equal(t, contextID, contextID)
-					assert.Equal(t, groupID, groupID)
-					return tt.wantErr
+				CreateTestSuiteFunc: func(ctx context.Context, testSuite *test.TestSuite) (uuid.V7, error) {
+					assert.False(t, testSuite.ID.Empty())
+					wantID = testSuite.ID.String()
+					assert.Equal(t, req.Context, testSuite.ContextID)
+					assert.Equal(t, req.Name, testSuite.Name)
+					assert.Equal(t, req.Description, testSuite.Description)
+					return testSuite.ID, tt.wantErr
 				},
 			}
 
 			s := Service{repo: r}
 
-			req := &testsv1.RegisterGroupRequest{
-				Context: contextID,
-				Name:    groupID,
-			}
-			res, err := s.RegisterGroup(context.Background(), connect.NewRequest(req))
+			res, err := s.RegisterTestSuite(context.Background(), connect.NewRequest(req))
 			if tt.wantErr != nil {
 				require.ErrorIs(t, err, tt.wantErr)
 				assert.Nil(t, res)
@@ -61,28 +68,28 @@ func TestService_RegisterGroup(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			assert.NotNil(t, res)
+			assert.Equal(t, wantID, res.Msg.Id)
 		})
 	}
 }
 
-func TestService_RegisterGroup_validation(t *testing.T) {
+func TestService_RegisterTestSuite_validation(t *testing.T) {
 	tests := []struct {
 		name               string
-		req                *testsv1.RegisterGroupRequest
+		req                *testsv1.RegisterTestSuiteRequest
 		wantFieldViolation *errdetails.BadRequest_FieldViolation
 	}{
 		{
 			name: "blank context",
-			req: &testsv1.RegisterGroupRequest{
+			req: &testsv1.RegisterTestSuiteRequest{
 				Context: "",
 				Name:    "foo",
 			},
-			wantFieldViolation: wantBlankContextFieldViolation,
+			wantFieldViolation: wantBlankContextFieldViolation(),
 		},
 		{
 			name: "blank name",
-			req: &testsv1.RegisterGroupRequest{
+			req: &testsv1.RegisterTestSuiteRequest{
 				Context: "foo",
 				Name:    "",
 			},
@@ -96,14 +103,14 @@ func TestService_RegisterGroup_validation(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := Service{}
-			res, err := s.RegisterGroup(context.Background(), connect.NewRequest(tt.req))
+			res, err := s.RegisterTestSuite(context.Background(), connect.NewRequest(tt.req))
 			require.Nil(t, res)
 			assertInvalidRequest(t, err, tt.wantFieldViolation)
 		})
 	}
 }
 
-func TestService_ListGroups(t *testing.T) {
+func TestService_ListTestSuites(t *testing.T) {
 	tests := []struct {
 		name            string
 		wantAvailable   bool
@@ -126,20 +133,20 @@ func TestService_ListGroups(t *testing.T) {
 			contextID := "foo"
 			pageSize := 2
 
-			wantPage1 := []string{"a", "b"}
-			wantPage2 := []string{"c"}
+			wantPage1 := test.TestSuiteList{fake.GenTestSuite(contextID), fake.GenTestSuite(contextID)}
+			wantPage2 := test.TestSuiteList{fake.GenTestSuite(contextID)}
 
 			r := new(RepositoryMock)
-			r.ListGroupsFunc = func(ctx context.Context, contextID string, filter test.PageFilter[string]) ([]string, error) {
+			r.ListTestSuitesFunc = func(ctx context.Context, contextID string, filter test.PageFilter[string]) (test.TestSuiteList, error) {
 				assert.Equal(t, contextID, contextID)
 				assert.Equal(t, pageSize, filter.Size)
 
-				switch len(r.ListGroupsCalls()) {
+				switch len(r.ListTestSuitesCalls()) {
 				case 1:
 					assert.Nil(t, filter.OffsetID)
 					return wantPage1, nil
 				case 2:
-					assert.Equal(t, wantPage1[pageSize-1], *filter.OffsetID)
+					assert.Equal(t, wantPage1[pageSize-1].Name, *filter.OffsetID)
 					return wantPage2, nil
 				default:
 					panic("unexpected list invocation")
@@ -166,82 +173,86 @@ func TestService_ListGroups(t *testing.T) {
 
 			s := Service{repo: r, workflower: w}
 
-			req := &testsv1.ListGroupsRequest{
+			req := &testsv1.ListTestSuitesRequest{
 				Context:  contextID,
 				PageSize: int32(pageSize),
 			}
-			res, err := s.ListGroups(context.Background(), connect.NewRequest(req))
+			res, err := s.ListTestSuites(context.Background(), connect.NewRequest(req))
 			require.NoError(t, err)
 			require.NotEmpty(t, res.Msg.NextPageToken)
-			require.Len(t, res.Msg.Groups, len(wantPage1))
+			require.Len(t, res.Msg.TestSuites, len(wantPage1))
 
-			wantRunners := []*testsv1.Group_Runner{{Id: runnerID, LastAccessTime: runnerLastAccessTime}}
+			wantRunners := []*testsv1.TestSuite_Runner{{Id: runnerID, LastAccessTime: runnerLastAccessTime}}
 
-			for i, groupID := range wantPage1 {
-				wantGroup := &testsv1.Group{
-					Context:   contextID,
-					Name:      groupID,
-					Runners:   wantRunners,
-					Available: tt.wantAvailable,
+			for i, suite := range wantPage1 {
+				wantTestSuite := &testsv1.TestSuite{
+					Id:          suite.ID.String(),
+					Context:     contextID,
+					Name:        suite.Name,
+					Description: suite.Description,
+					Runners:     wantRunners,
+					Available:   tt.wantAvailable,
 				}
-				assert.Equal(t, wantGroup, res.Msg.Groups[i])
+				assert.Equal(t, wantTestSuite, res.Msg.TestSuites[i])
 			}
 
 			req.NextPageToken = res.Msg.NextPageToken
-			res, err = s.ListGroups(context.Background(), connect.NewRequest(req))
+			res, err = s.ListTestSuites(context.Background(), connect.NewRequest(req))
 			require.NoError(t, err)
 			assert.Empty(t, res.Msg.NextPageToken)
-			require.Len(t, res.Msg.Groups, len(wantPage2))
+			require.Len(t, res.Msg.TestSuites, len(wantPage2))
 
-			for i, groupID := range wantPage2 {
-				wantGroup := &testsv1.Group{
-					Context:   contextID,
-					Name:      groupID,
-					Runners:   wantRunners,
-					Available: tt.wantAvailable,
+			for i, suite := range wantPage2 {
+				wantTestSuite := &testsv1.TestSuite{
+					Id:          suite.ID.String(),
+					Context:     contextID,
+					Name:        suite.Name,
+					Description: suite.Description,
+					Runners:     wantRunners,
+					Available:   tt.wantAvailable,
 				}
-				assert.Equal(t, wantGroup, res.Msg.Groups[i])
+				assert.Equal(t, wantTestSuite, res.Msg.TestSuites[i])
 			}
 		})
 	}
 }
 
-func TestService_ListGroups_validation(t *testing.T) {
+func TestService_ListTestSuites_validation(t *testing.T) {
 	tests := []struct {
 		name               string
-		req                *testsv1.ListGroupsRequest
+		req                *testsv1.ListTestSuitesRequest
 		wantFieldViolation *errdetails.BadRequest_FieldViolation
 	}{
 		{
 			name: "blank context",
-			req: &testsv1.ListGroupsRequest{
+			req: &testsv1.ListTestSuitesRequest{
 				Context:  "",
 				PageSize: 1,
 			},
-			wantFieldViolation: wantBlankContextFieldViolation,
+			wantFieldViolation: wantBlankContextFieldViolation(),
 		},
 		{
 			name: "page size less than 0",
-			req: &testsv1.ListGroupsRequest{
+			req: &testsv1.ListTestSuitesRequest{
 				Context:  "foo",
 				PageSize: int32(-1),
 			},
-			wantFieldViolation: wantPageSizeFieldViolation,
+			wantFieldViolation: wantPageSizeFieldViolation(),
 		},
 		{
 			name: "page size greater than max",
-			req: &testsv1.ListGroupsRequest{
+			req: &testsv1.ListTestSuitesRequest{
 				Context:  "foo",
 				PageSize: maxPageSize + 1,
 			},
-			wantFieldViolation: wantPageSizeFieldViolation,
+			wantFieldViolation: wantPageSizeFieldViolation(),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := Service{}
-			res, err := s.ListGroups(context.Background(), connect.NewRequest(tt.req))
+			res, err := s.ListTestSuites(context.Background(), connect.NewRequest(tt.req))
 			require.Nil(t, res)
 			assertInvalidRequest(t, err, tt.wantFieldViolation)
 		})

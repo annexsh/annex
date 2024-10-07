@@ -7,14 +7,40 @@ import (
 	"github.com/annexsh/annex/internal/ptr"
 )
 
+func (t *TestSuite) Proto(available bool, runners ...*TestSuiteRunner) *testsv1.TestSuite {
+	return &testsv1.TestSuite{
+		Id:          t.ID.String(),
+		Context:     t.ContextID,
+		Name:        t.Name,
+		Description: t.Description,
+		Runners:     TestSuiteRunnerList(runners).Proto(),
+		Available:   available,
+	}
+}
+
+func (t *TestSuiteRunner) Proto() *testsv1.TestSuite_Runner {
+	return &testsv1.TestSuite_Runner{
+		Id:             t.ID,
+		LastAccessTime: timestamppb.New(t.LastAccessTime),
+	}
+}
+
+func (t TestSuiteRunnerList) Proto() []*testsv1.TestSuite_Runner {
+	runnerspb := make([]*testsv1.TestSuite_Runner, len(t))
+	for i, runner := range t {
+		runnerspb[i] = runner.Proto()
+	}
+	return runnerspb
+}
+
 func (t *Test) Proto() *testsv1.Test {
 	return &testsv1.Test{
-		Context:    t.ContextID,
-		Group:      t.GroupID,
-		Id:         t.ID.String(),
-		Name:       t.Name,
-		HasInput:   t.HasInput,
-		CreateTime: timestamppb.New(t.CreateTime),
+		Context:     t.ContextID,
+		TestSuiteId: t.TestSuiteID.String(),
+		Id:          t.ID.String(),
+		Name:        t.Name,
+		HasInput:    t.HasInput,
+		CreateTime:  timestamppb.New(t.CreateTime),
 	}
 }
 

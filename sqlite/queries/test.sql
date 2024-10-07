@@ -1,9 +1,8 @@
 -- name: CreateTest :one
-INSERT INTO tests (context_id, group_id, id, name, has_input, create_time)
+INSERT INTO tests (context_id, test_suite_id, id, name, has_input, create_time)
 VALUES (?, ?, ?, ?, ?, ?)
-ON CONFLICT(context_id, group_id, name) DO UPDATE
-    SET has_input   = excluded.has_input,
-        create_time = create_time
+ON CONFLICT(context_id, test_suite_id, name) DO UPDATE
+    SET has_input   = excluded.has_input
 RETURNING *;
 
 -- name: GetTest :one
@@ -15,17 +14,21 @@ WHERE id = ?;
 SELECT *
 FROM tests
 WHERE name = ?
-  AND group_id = ?;
+  AND test_suite_id = ?;
 
 -- name: ListTests :many
 SELECT *
 FROM tests
-WHERE (context_id = @context_id AND group_id = @group_id)
+WHERE (context_id = @context_id AND test_suite_id = @test_suite_id)
   -- Cast as text required below since sqlc.narg doesn't work with overridden column type
   AND (CAST(sqlc.narg('offset_id') AS TEXT) IS NULL OR id < CAST(sqlc.narg('offset_id') AS TEXT))
 ORDER BY id DESC
 LIMIT @page_size;
 
+-- name: DeleteTest :exec
+DELETE
+FROM tests
+WHERE id = ?;
 
 -- name: CreateTestDefaultInput :exec
 INSERT INTO test_default_inputs (test_id, data)

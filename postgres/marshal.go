@@ -8,23 +8,40 @@ import (
 	"github.com/annexsh/annex/test"
 )
 
+func marshalTestSuite(t *sqlc.TestSuite) *test.TestSuite {
+	return &test.TestSuite{
+		ID:          t.ID,
+		ContextID:   t.ContextID,
+		Name:        t.Name,
+		Description: t.Description,
+	}
+}
+
+func marshalTestSuites(suites []*sqlc.TestSuite) []*test.TestSuite {
+	out := make([]*test.TestSuite, len(suites))
+	for i, t := range suites {
+		out[i] = marshalTestSuite(t)
+	}
+	return out
+}
+
 func marshalTest(t *sqlc.Test) *test.Test {
 	return &test.Test{
-		ContextID:  t.ContextID,
-		GroupID:    t.GroupID,
-		ID:         t.ID,
-		Name:       t.Name,
-		HasInput:   t.HasInput,
-		CreateTime: t.CreateTime,
+		ContextID:   t.ContextID,
+		TestSuiteID: t.TestSuiteID,
+		ID:          t.ID,
+		Name:        t.Name,
+		HasInput:    t.HasInput,
+		CreateTime:  t.CreateTime,
 	}
 }
 
 func marshalTests(tests []*sqlc.Test) []*test.Test {
-	testspb := make([]*test.Test, len(tests))
+	out := make([]*test.Test, len(tests))
 	for i, t := range tests {
-		testspb[i] = marshalTest(t)
+		out[i] = marshalTest(t)
 	}
-	return testspb
+	return out
 }
 
 func marshalTestDefaultInput(input *sqlc.TestDefaultInput) *test.Payload {
@@ -54,11 +71,11 @@ func marshalTestExec(testExec *sqlc.TestExecution) *test.TestExecution {
 }
 
 func marshalTestExecs(testExecs []*sqlc.TestExecution) []*test.TestExecution {
-	te := make([]*test.TestExecution, len(testExecs))
+	out := make([]*test.TestExecution, len(testExecs))
 	for i, testExec := range testExecs {
-		te[i] = marshalTestExec(testExec)
+		out[i] = marshalTestExec(testExec)
 	}
-	return te
+	return out
 }
 
 func marshalCaseExec(caseExec *sqlc.CaseExecution) *test.CaseExecution {
@@ -74,11 +91,11 @@ func marshalCaseExec(caseExec *sqlc.CaseExecution) *test.CaseExecution {
 }
 
 func marshalCaseExecs(caseExecs []*sqlc.CaseExecution) []*test.CaseExecution {
-	ce := make([]*test.CaseExecution, len(caseExecs))
+	out := make([]*test.CaseExecution, len(caseExecs))
 	for i, caseExec := range caseExecs {
-		ce[i] = marshalCaseExec(caseExec)
+		out[i] = marshalCaseExec(caseExec)
 	}
-	return ce
+	return out
 }
 
 func marshalLog(log *sqlc.Log) *test.Log {
@@ -93,9 +110,9 @@ func marshalLog(log *sqlc.Log) *test.Log {
 }
 
 func marshalExecLogs(logs []*sqlc.Log) []*test.Log {
-	execLogs := make([]*test.Log, len(logs))
+	out := make([]*test.Log, len(logs))
 	for i, log := range logs {
-		execLogs[i] = marshalLog(log)
+		out[i] = marshalLog(log)
 	}
-	return execLogs
+	return out
 }

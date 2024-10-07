@@ -9,17 +9,6 @@ import (
 	"context"
 )
 
-const contextExists = `-- name: ContextExists :exec
-SELECT id
-FROM contexts
-WHERE id = ?
-`
-
-func (q *Queries) ContextExists(ctx context.Context, id string) error {
-	_, err := q.db.ExecContext(ctx, contextExists, id)
-	return err
-}
-
 const createContext = `-- name: CreateContext :exec
 INSERT INTO contexts (id)
 VALUES (?)

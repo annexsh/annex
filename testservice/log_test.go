@@ -86,7 +86,7 @@ func TestService_PublishLog_validation(t *testing.T) {
 				Message:         "bar",
 				CreateTime:      timestamppb.Now(),
 			},
-			wantFieldViolation: wantBlankContextFieldViolation,
+			wantFieldViolation: wantBlankContextFieldViolation(),
 		},
 		{
 			name: "blank test execution id",
@@ -227,7 +227,7 @@ func TestService_ListTestExecutionLogs_validation(t *testing.T) {
 				TestExecutionId: uuid.NewString(),
 				PageSize:        1,
 			},
-			wantFieldViolation: wantBlankContextFieldViolation,
+			wantFieldViolation: wantBlankContextFieldViolation(),
 		},
 		{
 			name: "blank test execution id",
@@ -236,7 +236,7 @@ func TestService_ListTestExecutionLogs_validation(t *testing.T) {
 				TestExecutionId: "",
 				PageSize:        1,
 			},
-			wantFieldViolation: wantBlankTestExecIDFieldViolation,
+			wantFieldViolation: wantBlankTestExecIDFieldViolation(),
 		},
 		{
 			name: "test execution id not a uuid",
@@ -245,7 +245,7 @@ func TestService_ListTestExecutionLogs_validation(t *testing.T) {
 				TestExecutionId: "bar",
 				PageSize:        1,
 			},
-			wantFieldViolation: wantTestExecIDNotUUIDFieldViolation,
+			wantFieldViolation: wantTestExecIDNotUUIDFieldViolation(),
 		},
 		{
 			name: "page size less than 0",
@@ -254,7 +254,7 @@ func TestService_ListTestExecutionLogs_validation(t *testing.T) {
 				TestExecutionId: uuid.NewString(),
 				PageSize:        int32(-1),
 			},
-			wantFieldViolation: wantPageSizeFieldViolation,
+			wantFieldViolation: wantPageSizeFieldViolation(),
 		},
 		{
 			name: "page size greater than max",
@@ -263,7 +263,7 @@ func TestService_ListTestExecutionLogs_validation(t *testing.T) {
 				TestExecutionId: uuid.NewString(),
 				PageSize:        maxPageSize + 1,
 			},
-			wantFieldViolation: wantPageSizeFieldViolation,
+			wantFieldViolation: wantPageSizeFieldViolation(),
 		},
 	}
 

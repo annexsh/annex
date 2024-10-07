@@ -13,8 +13,8 @@ func Context(context string) valgo.Validator {
 	return valgo.String(context, "context").Not().Blank()
 }
 
-func Group(group string) valgo.Validator {
-	return valgo.String(group, "group").Not().Blank()
+func TestSuiteID(testSuiteID string) valgo.Validator {
+	return UUIDv7(testSuiteID, "test_suite_id")
 }
 
 func TestID(testID string) valgo.Validator {
