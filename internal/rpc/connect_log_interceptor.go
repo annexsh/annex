@@ -2,11 +2,13 @@ package rpc
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"strings"
 	"time"
 
 	"connectrpc.com/connect"
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
 )
 
 type ConnectLogInterceptor struct {
@@ -29,6 +31,18 @@ func (c *ConnectLogInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryF
 		res, err := next(ctx, req)
 		if err != nil {
 			level = slog.LevelError
+			var cErr *connect.Error
+			if errors.As(err, &cErr) && cErr.Code() == connect.CodeInvalidArgument {
+				if detail, dErr := cErr.Details()[0].Value(); dErr == nil {
+					if br, ok := detail.(*errdetails.BadRequest); ok && len(br.FieldViolations) > 0 {
+						var fvStrs []string
+						for _, fv := range br.FieldViolations {
+							fvStrs = append(fvStrs, fv.Field+": "+fv.Description)
+						}
+						keyVals = append(keyVals, "connect.bad_request.field_violations", fvStrs)
+					}
+				}
+			}
 			keyVals = append(keyVals, "connect.error", err)
 		}
 
