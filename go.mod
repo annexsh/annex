@@ -4,6 +4,7 @@ go 1.22.0
 
 require (
 	connectrpc.com/connect v1.16.2
+	connectrpc.com/cors v0.1.0
 	connectrpc.com/grpcreflect v1.2.0
 	github.com/annexsh/annex-proto/go v0.0.0-20241007123620-ae2c3f2c27fc
 	github.com/cenkalti/backoff/v4 v4.3.0
@@ -19,6 +20,7 @@ require (
 	github.com/lmittmann/tint v1.0.4
 	github.com/nats-io/nats-server/v2 v2.10.17
 	github.com/nats-io/nats.go v1.36.0
+	github.com/rs/cors v1.11.1
 	github.com/stretchr/testify v1.9.0
 	github.com/temporalio/cli v0.12.0
 	go.temporal.io/api v1.29.2

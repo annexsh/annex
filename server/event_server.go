@@ -56,7 +56,8 @@ func ServeEventService(ctx context.Context, cfg EventServiceConfig) error {
 	eventSvc := eventservice.New(pubSub, testClient, eventservice.WithLogger(logger))
 
 	srv := rpc.NewServer(fmt.Sprint(":", cfg.Port))
-	srv.RegisterConnect(eventsv1connect.NewEventServiceHandler(eventSvc, rpc.WithConnectInterceptors(logger)))
+	path, handler := eventsv1connect.NewEventServiceHandler(eventSvc, rpc.WithConnectInterceptors(logger))
+	srv.RegisterConnect(path, handler, cfg.CorsOrigins...)
 
 	return serve(ctx, srv, logger)
 }

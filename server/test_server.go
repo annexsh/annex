@@ -53,7 +53,8 @@ func ServeTestService(ctx context.Context, cfg TestServiceConfig) error {
 	}
 
 	testSvc := testservice.New(repo, pubSub, workflowProxyClient, testservice.WithLogger(logger))
-	srv.RegisterConnect(testsv1connect.NewTestServiceHandler(testSvc, rpc.WithConnectInterceptors(logger)))
+	path, handler := testsv1connect.NewTestServiceHandler(testSvc, rpc.WithConnectInterceptors(logger))
+	srv.RegisterConnect(path, handler, cfg.CorsOrigins...)
 
 	return serve(ctx, srv, logger)
 }
