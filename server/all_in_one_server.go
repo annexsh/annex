@@ -27,9 +27,9 @@ import (
 )
 
 func ServeAllInOne(ctx context.Context, cfg AllInOneConfig) error {
-	logger := log.NewLogger("app", "annex")
-	if cfg.Development.Logger {
-		logger = log.NewDevLogger("app", "annex")
+	logger := log.NewDevLogger("app", "annex")
+	if cfg.StructuredLogging {
+		logger = log.NewLogger("app", "annex")
 	}
 
 	srv := rpc.NewServer(fmt.Sprint(":", cfg.Port))
@@ -40,7 +40,7 @@ func ServeAllInOne(ctx context.Context, cfg AllInOneConfig) error {
 
 	// Repository
 
-	if cfg.Development.SQLiteDatabase {
+	if cfg.SQLite {
 		db, err := sqlite.Open(sqlite.WithMigration())
 		if err != nil {
 			return err
@@ -85,17 +85,6 @@ func ServeAllInOne(ctx context.Context, cfg AllInOneConfig) error {
 	defer nc.Close()
 	pubSub := nats.NewPubSub(nc, nats.WithLogger(logger))
 
-	// Temporal dev server
-
-	if cfg.Development.EmbeddedTemporal {
-		temporalDevSrv, temporalAddr, err := setupTemporalDevServer()
-		if err != nil {
-			return err
-		}
-		cfg.Temporal.HostPort = temporalAddr
-		defer temporalDevSrv.Stop()
-	}
-
 	// Test service
 
 	workflowProxyClient, err := client.NewLazyClient(client.Options{
@@ -107,7 +96,8 @@ func ServeAllInOne(ctx context.Context, cfg AllInOneConfig) error {
 	}
 
 	testSvc := testservice.New(repo, pubSub, workflowProxyClient, testservice.WithLogger(logger))
-	srv.RegisterConnect(testsv1connect.NewTestServiceHandler(testSvc, rpc.WithConnectInterceptors(logger)))
+	testPath, testHandler := testsv1connect.NewTestServiceHandler(testSvc, rpc.WithConnectInterceptors(logger))
+	srv.RegisterConnect(testPath, testHandler, cfg.CorsOrigins...)
 
 	httpClient := &http.Client{Timeout: 30 * time.Second}
 	testClient := testsv1connect.NewTestServiceClient(httpClient, srv.ConnectAddress())
@@ -115,7 +105,8 @@ func ServeAllInOne(ctx context.Context, cfg AllInOneConfig) error {
 	// Event service
 
 	eventSvc := eventservice.New(pubSub, testClient, eventservice.WithLogger(logger))
-	srv.RegisterConnect(eventsv1connect.NewEventServiceHandler(eventSvc, rpc.WithConnectInterceptors(logger)))
+	eventPath, eventHandler := eventsv1connect.NewEventServiceHandler(eventSvc, rpc.WithConnectInterceptors(logger))
+	srv.RegisterConnect(eventPath, eventHandler, cfg.CorsOrigins...)
 
 	// Workflow Proxy service
 

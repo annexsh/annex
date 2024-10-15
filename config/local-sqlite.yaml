@@ -1,11 +1,11 @@
-port: 50051
+port: 4400
+structuredLogging: false
+corsOrigins: ["http://localhost:5400", "http://localhost:5173"]
+sqlite: true
 nats:
   hostPort: 0.0.0.0:4222
   embedded: true
 temporal:
   hostPort: 0.0.0.0:7233
   namespace: default
-development:
-  embeddedTemporal: true
-  sqliteDatabase: true
-  logger: true
+

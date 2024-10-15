@@ -9,23 +9,25 @@ import (
 )
 
 type AllInOneConfig struct {
-	Port        int               `yaml:"port"`
-	Postgres    PostgresConfig    `yaml:"postgres"`
-	Nats        NatsConfig        `yaml:"nats"`
-	Temporal    TemporalConfig    `yaml:"temporal"`
-	Development DevelopmentConfig `yaml:"development"`
+	Port              int            `yaml:"port"`
+	StructuredLogging bool           `yaml:"structuredLogging"`
+	CorsOrigins       []string       `yaml:"corsOrigins"`
+	SQLite            bool           `yaml:"sqlite"`
+	Postgres          PostgresConfig `yaml:"postgres"`
+	Nats              NatsConfig     `yaml:"nats"`
+	Temporal          TemporalConfig `yaml:"temporal"`
 }
 
 func (c AllInOneConfig) Validate() error {
 	v := validator.New(validator.WithBaseErrorMessage("invalid config"))
 	v.Is(valgo.Int(c.Port, "port").GreaterOrEqualTo(0))
-	if c.Postgres.Empty() && !c.Development.SQLiteDatabase {
+	if c.Postgres.Empty() && !c.SQLite {
 		v.AddErrorMessage("postgres", "Postgres configuration required")
 	}
-	if !c.Postgres.Empty() && c.Development.SQLiteDatabase {
+	if !c.Postgres.Empty() && c.SQLite {
 		v.AddErrorMessage("postgres", "Postgres and SQLite configuration are mutually exclusive")
 	}
-	if !c.Development.SQLiteDatabase {
+	if !c.SQLite {
 		v.In("postgres", c.Postgres.Validation())
 	}
 	v.In("nats", c.Nats.Validation())
@@ -43,6 +45,7 @@ func LoadAllInOneConfig() (AllInOneConfig, error) {
 
 type TestServiceConfig struct {
 	Port               int            `yaml:"port"`
+	CorsOrigins        []string       `yaml:"corsOrigins"`
 	WorkflowServiceURL string         `yaml:"workflowServiceURL"`
 	Postgres           PostgresConfig `yaml:"postgres"`
 	Nats               NatsConfig     `yaml:"nats"`
@@ -66,6 +69,7 @@ func LoadTestServiceConfig() (TestServiceConfig, error) {
 
 type EventServiceConfig struct {
 	Port           int        `yaml:"port"`
+	CorsOrigins    []string   `yaml:"corsOrigins"`
 	TestServiceURL string     `yaml:"testServiceURL"`
 	Nats           NatsConfig `yaml:"nats"`
 }
@@ -150,12 +154,6 @@ func (c TemporalConfig) Validation() *valgo.Validation {
 		validator.HostPort(c.HostPort, "hostPort"),
 		valgo.String(c.Namespace, "namespace").Not().Blank(),
 	)
-}
-
-type DevelopmentConfig struct {
-	Logger           bool `yaml:"logger"`
-	EmbeddedTemporal bool `yaml:"embeddedTemporal"`
-	SQLiteDatabase   bool `yaml:"sqliteDatabase"`
 }
 
 type configValidator interface {

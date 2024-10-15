@@ -7,7 +7,9 @@ import (
 	"strings"
 	"time"
 
+	connectcors "connectrpc.com/cors"
 	"connectrpc.com/grpcreflect"
+	"github.com/rs/cors"
 	"golang.org/x/net/http2"
 	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
@@ -37,7 +39,17 @@ func NewServer(address string) *Server {
 	}
 }
 
-func (s *Server) RegisterConnect(path string, handler http.Handler) {
+func (s *Server) RegisterConnect(path string, handler http.Handler, corsOrigins ...string) {
+	if len(corsOrigins) > 0 {
+		c := cors.New(cors.Options{
+			AllowedOrigins: corsOrigins,
+			AllowedMethods: connectcors.AllowedMethods(),
+			AllowedHeaders: connectcors.AllowedHeaders(),
+			ExposedHeaders: connectcors.ExposedHeaders(),
+		})
+		handler = c.Handler(handler)
+	}
+
 	s.mux.Handle(connectPath+path, http.StripPrefix(connectPath, handler))
 	svcName := strings.TrimPrefix("/", path)
 	svcName = strings.TrimSuffix(svcName, "/")
