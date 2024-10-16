@@ -22,7 +22,7 @@ require (
 	github.com/nats-io/nats.go v1.37.0
 	github.com/rs/cors v1.11.1
 	github.com/stretchr/testify v1.9.0
-	go.temporal.io/api v1.39.0
+	go.temporal.io/api v1.38.0
 	go.temporal.io/sdk v1.29.1
 	go.temporal.io/server v1.25.1
 	golang.org/x/net v0.30.0

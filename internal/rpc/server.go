@@ -98,15 +98,13 @@ func (s *Server) Serve() error {
 }
 
 func (s *Server) Stop() error {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	err := s.httpSrv.Shutdown(ctx)
 	if s.grpcSrv != nil {
-		s.grpcSrv.GracefulStop()
+		s.grpcSrv.Stop()
 	}
-	if s.httpSrv != nil {
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		defer cancel()
-		return s.httpSrv.Shutdown(ctx)
-	}
-	return nil
+	return err
 }
 
 func (s *Server) ConnectAddress() string {

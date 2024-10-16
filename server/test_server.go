@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/annexsh/annex-proto/go/gen/annex/tests/v1/testsv1connect"
@@ -20,9 +19,8 @@ import (
 )
 
 func ServeTestService(ctx context.Context, cfg TestServiceConfig) error {
-	logger := log.NewLogger("app", "annex-test-service")
-
-	srv := rpc.NewServer(fmt.Sprint(":", cfg.Port))
+	logger := log.NewLogger("service", "test_service")
+	srv := rpc.NewServer(getHostPort(cfg.Port))
 
 	pgCfg := cfg.Postgres
 	pgPool, err := postgres.OpenPool(ctx, pgCfg.User, pgCfg.Password, pgCfg.HostPort, postgres.WithMigration())
@@ -47,6 +45,7 @@ func ServeTestService(ctx context.Context, cfg TestServiceConfig) error {
 	workflowProxyClient, err := client.NewLazyClient(client.Options{
 		HostPort:  srv.GRPCAddress(),
 		Namespace: workflowservice.Namespace,
+		Logger:    logger.With("component", "temporal_client"),
 	})
 	if err != nil {
 		return err

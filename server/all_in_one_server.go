@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -27,12 +26,12 @@ import (
 )
 
 func ServeAllInOne(ctx context.Context, cfg AllInOneConfig) error {
-	logger := log.NewDevLogger("app", "annex")
+	logger := log.NewDevLogger()
 	if cfg.StructuredLogging {
-		logger = log.NewLogger("app", "annex")
+		logger = log.NewLogger()
 	}
 
-	srv := rpc.NewServer(fmt.Sprint(":", cfg.Port))
+	srv := rpc.NewServer(getHostPort(cfg.Port))
 
 	var pgPool *pgxpool.Pool
 	var repo test.Repository
@@ -87,16 +86,18 @@ func ServeAllInOne(ctx context.Context, cfg AllInOneConfig) error {
 
 	// Test service
 
+	testSvcLogger := logger.With("service", "test_service")
 	workflowProxyClient, err := client.NewLazyClient(client.Options{
 		HostPort:  srv.GRPCAddress(),
 		Namespace: workflowservice.Namespace,
+		Logger:    testSvcLogger.With("component", "temporal_client"),
 	})
 	if err != nil {
 		return err
 	}
 
-	testSvc := testservice.New(repo, pubSub, workflowProxyClient, testservice.WithLogger(logger))
-	testPath, testHandler := testsv1connect.NewTestServiceHandler(testSvc, rpc.WithConnectInterceptors(logger))
+	testSvc := testservice.New(repo, pubSub, workflowProxyClient, testservice.WithLogger(testSvcLogger))
+	testPath, testHandler := testsv1connect.NewTestServiceHandler(testSvc, rpc.WithConnectInterceptors(testSvcLogger))
 	srv.RegisterConnect(testPath, testHandler, cfg.CorsOrigins...)
 
 	httpClient := &http.Client{Timeout: 30 * time.Second}
@@ -104,16 +105,17 @@ func ServeAllInOne(ctx context.Context, cfg AllInOneConfig) error {
 
 	// Event service
 
-	eventSvc := eventservice.New(pubSub, testClient, eventservice.WithLogger(logger))
-	eventPath, eventHandler := eventsv1connect.NewEventServiceHandler(eventSvc, rpc.WithConnectInterceptors(logger))
+	eventSvcLogger := logger.With("service", "event_service")
+	eventSvc := eventservice.New(pubSub, testClient, eventservice.WithLogger(eventSvcLogger))
+	eventPath, eventHandler := eventsv1connect.NewEventServiceHandler(eventSvc, rpc.WithConnectInterceptors(eventSvcLogger))
 	srv.RegisterConnect(eventPath, eventHandler, cfg.CorsOrigins...)
 
 	// Workflow Proxy service
-
+	wfProxySvcLogger := logger.With("service", "workflow_proxy_service")
 	temporalClient, err := client.NewLazyClient(client.Options{
 		HostPort:  cfg.Temporal.HostPort,
 		Namespace: workflowservice.Namespace,
-		Logger:    logger.With("component", "temporal"),
+		Logger:    wfProxySvcLogger.With("component", "temporal_client"),
 	})
 	if err != nil {
 		return err
