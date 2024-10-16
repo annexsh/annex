@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -18,13 +17,13 @@ import (
 )
 
 func ServeWorkflowProxyService(ctx context.Context, cfg WorkflowProxyServiceConfig) error {
-	logger := log.NewLogger("app", "annex-workflow-proxy-service")
-
-	srv := rpc.NewServer(fmt.Sprint(":", cfg.Port))
+	logger := log.NewLogger("service", "workflow_proxy_service")
+	srv := rpc.NewServer(getHostPort(cfg.Port))
 
 	temporalClient, err := client.NewLazyClient(client.Options{
 		HostPort:  cfg.Temporal.HostPort,
 		Namespace: workflowservice.Namespace,
+		Logger:    logger.With("component", "temporal_client"),
 	})
 	if err != nil {
 		return err

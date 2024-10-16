@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -17,8 +16,7 @@ import (
 )
 
 func ServeEventService(ctx context.Context, cfg EventServiceConfig) error {
-	logger := log.NewLogger("app", "annex-event-service")
-
+	logger := log.NewLogger("service", "event_service")
 	httpClient := &http.Client{Timeout: 30 * time.Second}
 	testClient := testsv1connect.NewTestServiceClient(httpClient, cfg.TestServiceURL)
 
@@ -55,7 +53,7 @@ func ServeEventService(ctx context.Context, cfg EventServiceConfig) error {
 
 	eventSvc := eventservice.New(pubSub, testClient, eventservice.WithLogger(logger))
 
-	srv := rpc.NewServer(fmt.Sprint(":", cfg.Port))
+	srv := rpc.NewServer(getHostPort(cfg.Port))
 	path, handler := eventsv1connect.NewEventServiceHandler(eventSvc, rpc.WithConnectInterceptors(logger))
 	srv.RegisterConnect(path, handler, cfg.CorsOrigins...)
 
