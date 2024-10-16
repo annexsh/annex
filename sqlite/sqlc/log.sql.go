@@ -76,7 +76,6 @@ FROM logs
 WHERE (test_execution_id = ?1)
   -- Cast as text required below since sqlc.narg doesn't work with overridden column type
   AND (CAST(?2 AS TEXT) IS NULL OR id < CAST(?2 AS TEXT))
-ORDER BY id DESC
 LIMIT ?3
 `
 
