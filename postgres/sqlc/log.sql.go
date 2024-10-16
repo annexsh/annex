@@ -75,7 +75,6 @@ SELECT id, test_execution_id, case_execution_id, level, message, create_time
 FROM logs
 WHERE (test_execution_id = $1)
   AND ($2::uuid IS NULL OR id < $2::uuid)
-ORDER BY id DESC
 LIMIT $3
 `
 

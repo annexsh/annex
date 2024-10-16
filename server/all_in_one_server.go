@@ -113,6 +113,7 @@ func ServeAllInOne(ctx context.Context, cfg AllInOneConfig) error {
 	temporalClient, err := client.NewLazyClient(client.Options{
 		HostPort:  cfg.Temporal.HostPort,
 		Namespace: workflowservice.Namespace,
+		Logger:    logger.With("component", "temporal"),
 	})
 	if err != nil {
 		return err
