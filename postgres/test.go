@@ -36,7 +36,7 @@ func (t *TestReader) ListTests(ctx context.Context, contextID string, testSuiteI
 	params := sqlc.ListTestsParams{
 		ContextID:   contextID,
 		TestSuiteID: testSuiteID,
-		PageSize:    int32(filter.Size),
+		PageSize:    int64(filter.Size),
 	}
 	if filter.OffsetID != nil {
 		params.OffsetID = filter.OffsetID

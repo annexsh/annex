@@ -11,6 +11,7 @@ type TestSuite struct {
 	ContextID   string
 	Name        string
 	Description *string
+	TestCount   int
 }
 
 type TestSuiteList []*TestSuite

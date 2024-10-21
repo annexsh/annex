@@ -81,7 +81,7 @@ LIMIT $3
 type ListLogsParams struct {
 	TestExecutionID test.TestExecutionID `json:"test_execution_id"`
 	OffsetID        *uuid.V7             `json:"offset_id"`
-	PageSize        int32                `json:"page_size"`
+	PageSize        int64                `json:"page_size"`
 }
 
 func (q *Queries) ListLogs(ctx context.Context, arg ListLogsParams) ([]*Log, error) {

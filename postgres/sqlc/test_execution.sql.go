@@ -117,7 +117,7 @@ LIMIT $3
 type ListTestExecutionsParams struct {
 	TestID   uuid.V7  `json:"test_id"`
 	OffsetID *uuid.V7 `json:"offset_id"`
-	PageSize int32    `json:"page_size"`
+	PageSize int64    `json:"page_size"`
 }
 
 func (q *Queries) ListTestExecutions(ctx context.Context, arg ListTestExecutionsParams) ([]*TestExecution, error) {

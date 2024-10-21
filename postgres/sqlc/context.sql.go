@@ -29,7 +29,7 @@ LIMIT $2
 
 type ListContextsParams struct {
 	OffsetID *string `json:"offset_id"`
-	PageSize int32   `json:"page_size"`
+	PageSize int64   `json:"page_size"`
 }
 
 func (q *Queries) ListContexts(ctx context.Context, arg ListContextsParams) ([]string, error) {

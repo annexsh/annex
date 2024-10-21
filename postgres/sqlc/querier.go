@@ -35,7 +35,7 @@ type Querier interface {
 	ListContexts(ctx context.Context, arg ListContextsParams) ([]string, error)
 	ListLogs(ctx context.Context, arg ListLogsParams) ([]*Log, error)
 	ListTestExecutions(ctx context.Context, arg ListTestExecutionsParams) ([]*TestExecution, error)
-	ListTestSuites(ctx context.Context, arg ListTestSuitesParams) ([]*TestSuite, error)
+	ListTestSuites(ctx context.Context, arg ListTestSuitesParams) ([]*ListTestSuitesRow, error)
 	ListTests(ctx context.Context, arg ListTestsParams) ([]*Test, error)
 	ResetTestExecution(ctx context.Context, arg ResetTestExecutionParams) (*TestExecution, error)
 	SetTestSuiteVersion(ctx context.Context, arg SetTestSuiteVersionParams) error

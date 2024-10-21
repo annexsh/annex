@@ -150,7 +150,7 @@ type ListTestsParams struct {
 	ContextID   string   `json:"context_id"`
 	TestSuiteID uuid.V7  `json:"test_suite_id"`
 	OffsetID    *uuid.V7 `json:"offset_id"`
-	PageSize    int32    `json:"page_size"`
+	PageSize    int64    `json:"page_size"`
 }
 
 func (q *Queries) ListTests(ctx context.Context, arg ListTestsParams) ([]*Test, error) {

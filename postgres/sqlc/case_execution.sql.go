@@ -108,7 +108,7 @@ LIMIT $3
 type ListCaseExecutionsParams struct {
 	TestExecutionID test.TestExecutionID `json:"test_execution_id"`
 	OffsetID        *int32               `json:"offset_id"`
-	PageSize        int32                `json:"page_size"`
+	PageSize        int64                `json:"page_size"`
 }
 
 func (q *Queries) ListCaseExecutions(ctx context.Context, arg ListCaseExecutionsParams) ([]*CaseExecution, error) {

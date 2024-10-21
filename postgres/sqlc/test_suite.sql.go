@@ -58,34 +58,43 @@ func (q *Queries) GetTestSuiteVersion(ctx context.Context, arg GetTestSuiteVersi
 }
 
 const listTestSuites = `-- name: ListTestSuites :many
-SELECT id, context_id, name, description
-FROM test_suites
-WHERE (context_id = $1)
-  AND (name > COALESCE($2, ''))
-ORDER BY name
+SELECT ts.id, ts.context_id, ts.name, ts.description, COUNT(t.id) AS test_count
+FROM test_suites ts
+         LEFT JOIN
+     tests t ON ts.id = t.test_suite_id
+WHERE (ts.context_id = $1)
+  AND (ts.name > COALESCE($2, ''))
+GROUP BY ts.id
+ORDER BY ts.name
 LIMIT $3
 `
 
 type ListTestSuitesParams struct {
 	ContextID string  `json:"context_id"`
 	OffsetID  *string `json:"offset_id"`
-	PageSize  int32   `json:"page_size"`
+	PageSize  int64   `json:"page_size"`
 }
 
-func (q *Queries) ListTestSuites(ctx context.Context, arg ListTestSuitesParams) ([]*TestSuite, error) {
+type ListTestSuitesRow struct {
+	TestSuite TestSuite `json:"test_suite"`
+	TestCount int64     `json:"test_count"`
+}
+
+func (q *Queries) ListTestSuites(ctx context.Context, arg ListTestSuitesParams) ([]*ListTestSuitesRow, error) {
 	rows, err := q.db.Query(ctx, listTestSuites, arg.ContextID, arg.OffsetID, arg.PageSize)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []*TestSuite
+	var items []*ListTestSuitesRow
 	for rows.Next() {
-		var i TestSuite
+		var i ListTestSuitesRow
 		if err := rows.Scan(
-			&i.ID,
-			&i.ContextID,
-			&i.Name,
-			&i.Description,
+			&i.TestSuite.ID,
+			&i.TestSuite.ContextID,
+			&i.TestSuite.Name,
+			&i.TestSuite.Description,
+			&i.TestCount,
 		); err != nil {
 			return nil, err
 		}

@@ -6,12 +6,21 @@ ON CONFLICT (context_id, name) DO UPDATE
 RETURNING id;
 
 -- name: ListTestSuites :many
-SELECT *
-FROM test_suites
-WHERE (context_id = @context_id)
-  AND (name > COALESCE(sqlc.narg('offset_id'), ''))
-ORDER BY name
+SELECT sqlc.embed(ts), COUNT(t.id) AS test_count
+FROM test_suites ts
+         LEFT JOIN
+     tests t ON ts.id = t.test_suite_id
+WHERE (ts.context_id = @context_id)
+  AND (ts.name > COALESCE(sqlc.narg('offset_id'), ''))
+GROUP BY ts.id
+ORDER BY ts.name
 LIMIT @page_size;
+
+SELECT ts.*, COUNT(t.id) AS test_count
+FROM test_suites ts
+         LEFT JOIN
+     tests t ON ts.id = t.test_suite_id
+GROUP BY ts.id;
 
 -- name: SetTestSuiteVersion :exec
 INSERT INTO test_suite_registrations (context_id, test_suite_id, runner_id, version)
